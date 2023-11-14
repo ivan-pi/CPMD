@@ -921,7 +921,7 @@ CONTAINS
        DO is=1,ions1%nsp
           DO ia=1,ions0%na(is)
              iat=iat+1
-             CALL loadc(catom(1,iaorb),foc,ncpw%nhg,ncpw%nhg,atwp%nattot,SIZE(foc),&
+             CALL loadc(catom(1:,iaorb:),foc,ncpw%nhg,ncpw%nhg,atwp%nattot,SIZE(foc),&
                   is,iat,natst)
              iaorb=iaorb+natst
           ENDDO

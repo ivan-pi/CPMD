@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE updwf_utils
   USE adapttol_utils,                  ONLY: tol_chk_cnvgrad
   USE forcedr_driver,                  ONLY: forcedr
@@ -52,14 +54,15 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! ==               UPDATES THE WAVEFUNCTIONS                      ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: c0(:,:), c2(:,:), sc0(:,:)
-    REAL(real_8)                             :: tau0(:,:,:), fion(:,:,:)
-    COMPLEX(real_8)                          :: pme(*), gde(*)
-    REAL(real_8)                             :: vpp(nkpt%ngwk), rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
-    INTEGER                                  :: nstate
-    REAL(real_8)                             :: eigv(nstate)
-    LOGICAL                                  :: tfor, update_pot
+    COMPLEX(real_8),INTENT(INOUT) __CONTIGUOUS :: c0(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: c2(:,:), sc0(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: tau0(:,:,:), fion(:,:,:), rhoe(:,:)
+    REAL(real_8),INTENT(OUT)                   :: vpp(nkpt%ngwk)
+    COMPLEX(real_8),INTENT(OUT)                :: pme(*), gde(*)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: psi(:,:)
+    INTEGER,INTENT(IN)                         :: nstate
+    REAL(real_8),INTENT(INOUT)                 :: eigv(nstate)
+    LOGICAL,INTENT(IN)                         :: tfor, update_pot
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'updwf'
 

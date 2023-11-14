@@ -143,7 +143,7 @@ SUBROUTINE pwtoao(nw,ierror,nstate,nkpoint,c0,tau0,icompr,irecord)
   DO is=1,ions1%nsp
      DO ia=1,ions0%na(is)
         iat=iat+1
-        CALL loadc(catom(1,iaorb),foc,nkpt%ngwk,ncpw%ngw,atwp%nattot-iaorb+1,&
+        CALL loadc(catom(1:,iaorb:),foc,nkpt%ngwk,ncpw%ngw,atwp%nattot-iaorb+1,&
              SIZE(foc),is,iat,natst)
         DO ixx=iaorb,iaorb+natst-1
            sfc=dotp(ncpw%ngw,catom(:,ixx),catom(:,ixx))

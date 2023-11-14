@@ -217,7 +217,7 @@ CONTAINS
     DO is=1,ions1%nsp
        DO ia=1,ions0%na(is)
           iat=iat+1
-          CALL loadc(catom(1,iaorb),foc,ncpw%ngw,ncpw%ngw,atwp%nattot,SIZE(foc),&
+          CALL loadc(catom(1:,iaorb:),foc,ncpw%ngw,ncpw%ngw,atwp%nattot,SIZE(foc),&
                is,iat,natst)
           DO ixx=iaorb,iaorb+natst-1
              sfc=dotp(ncpw%ngw,catom(:,ixx),catom(:,ixx))
@@ -762,10 +762,10 @@ CONTAINS
           IF (cntl%tlsd) THEN
              IF (paral%io_parent)&
                   WRITE(6,'(21X,A)') ' ****** ALPHA SPIN ****** '
-             CALL dist_prtmat(xxmat(1,1),atwp%nattot,spin_mod%nsup,label,comp,crge%f)
+             CALL dist_prtmat(xxmat(1:,1:),atwp%nattot,spin_mod%nsup,label,comp,crge%f)
              IF (paral%io_parent)&
                   WRITE(6,'(/,21X,A)') ' ****** BETA  SPIN ****** '
-             CALL dist_prtmat(xxmat(1,spin_mod%nsup+1),atwp%nattot,spin_mod%nsdown,label,&
+             CALL dist_prtmat(xxmat(1:,spin_mod%nsup+1:),atwp%nattot,spin_mod%nsdown,label,&
                   comp(spin_mod%nsup+1),crge%f(spin_mod%nsup+1,1))
           ELSE
              CALL dist_prtmat(xxmat,atwp%nattot,prop2%numorb,label,comp,crge%f)

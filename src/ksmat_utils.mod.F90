@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE ksmat_utils
   USE atwf,                            ONLY: atwf_mod,&
                                              atwp,&
@@ -12,7 +14,8 @@ MODULE ksmat_utils
   USE hnlmat_utils,                    ONLY: hnlmat
   USE ions,                            ONLY: ions0,&
                                              ions1
-  USE kinds,                           ONLY: real_8
+  USE kinds,                           ONLY: real_8,&
+                                             int_8
   USE kpts,                            ONLY: tkpts
   USE nlforce_utils,                   ONLY: nlforce
   USE ovlap_utils,                     ONLY: ovlap
@@ -33,6 +36,10 @@ MODULE ksmat_utils
                                              tiset
   USE vpsi_utils,                      ONLY: vpsi
   USE zeroing_utils,                   ONLY: zeroing
+#ifdef _USE_SCRATCHLIBRARY
+  USE scratch_interface,               ONLY: request_scratch,&
+                                             free_scratch
+#endif
 
   IMPLICIT NONE
 
@@ -56,9 +63,16 @@ CONTAINS
     COMPLEX(real_8)                          :: pab(1)
     INTEGER                                  :: ia, is, ierr, &
                                                 ist, isub, natst
+    INTEGER(int_8)                           :: il_gam(2), il_fnl_save(3), il_fnlgam_packed(2)
     LOGICAL                                  :: tfdist2
     REAL(real_8), DIMENSION(20)              :: foc = 1.0_real_8
-    REAL(real_8), ALLOCATABLE                :: gam(:,:), fnlp_save(:,:), fnl_save(:,:,:), fnlgam_packed(:,:)
+#ifdef _USE_SCRATCHLIBRARY
+    REAL(real_8), POINTER __CONTIGUOUS       :: gam(:,:), fnlp_save(:,:), &
+         fnl_save(:,:,:), fnlgam_packed(:,:)
+#else
+    REAL(real_8), ALLOCATABLE                :: gam(:,:), fnlp_save(:,:), &
+         fnl_save(:,:,:), fnlgam_packed(:,:)
+#endif
     CHARACTER(*), PARAMETER                  :: procedureN = 'ksmat'
 ! ==--------------------------------------------------------------==
 
@@ -74,16 +88,42 @@ CONTAINS
     CALL fnlalloc(atwp%nattot,.FALSE.,.FALSE.)
     CALL rnlsm(catom,atwp%nattot,1,ikind,.FALSE.,unpack_dfnl_fnl=.NOT.pslo_com%tivan)
     IF(pslo_com%tivan)THEN
-       ALLOCATE(fnlp_save(int(il_fnl_packed(1)),int(il_fnl_packed(2))))
+#ifdef _USE_SCRATCHLIBRARY
+       CALL request_scratch(il_fnl_packed,fnlp_save,procedureN//'_fnlp_save',ierr)
+#else
+       ALLOCATE(fnlp_save(int(il_fnl_packed(1)),int(il_fnl_packed(2))),STAT=ierr)
+#endif
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
+            __LINE__,__FILE__)
+
        CALL dcopy(product(int(il_fnl_packed)),fnl_packed,1,fnlp_save,1)
     ELSE
-       allocate(fnl_save(ions1%nat,maxsys%nhxs,atwp%nattot))
-       call dcopy(ions1%nat*maxsys%nhxs*atwp%nattot,fnl,1,fnl_save,1)
+       il_fnl_save(1)=ions1%nat
+       il_fnl_save(2)=maxsys%nhxs
+       il_fnl_save(3)=atwp%nattot
+#ifdef _USE_SCRATCHLIBRARY
+       CALL request_scratch(il_fnl_save,fnl_save,procedureN//'_fnl_save',ierr)
+#else
+       ALLOCATE(fnl_save(il_fnl_save(1),il_fnl_save(2),il_fnl_save(3)),STAT=ierr)
+#endif
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
+            __LINE__,__FILE__)
+
+       CALL dcopy(ions1%nat*maxsys%nhxs*atwp%nattot,fnl,1,fnl_save,1)
     END IF
     ist=1
     DO is=1,ions1%nsp
        natst=atwf_mod%numaor(is)
-       allocate(gam(natst,natst))
+       il_gam(1)=natst
+       il_gam(2)=natst
+#ifdef _USE_SCRATCHLIBRARY
+       CALL request_scratch(il_gam,gam,procedureN//'_gam',ierr)
+#else
+       ALLOCATE(gam(natst,natst),STAT=ierr)
+#endif
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
+            __LINE__,__FILE__)
+
        DO ia=1,ions0%na(is)
           IF(pslo_com%tivan)THEN
              CALL dcopy(il_fnl_packed(1)*natst,fnlp_save(1,ist),1,fnl_packed,1)
@@ -96,7 +136,13 @@ CONTAINS
              CALL ovlap(natst,gam,c2,catom(:,ist:ist+natst-1),redist=.FALSE.,full=.FALSE.)
              CALL hnlmat(gam,foc,natst)
              CALL summat(gam,natst,lsd=.TRUE.,gid=parai%cp_grp,symmetrization=.FALSE.)
-             ALLOCATE(fnlgam_packed(il_fnl_packed(1),natst),STAT=ierr)
+             il_fnlgam_packed(1)=il_fnl_packed(1)
+             il_fnlgam_packed(2)=natst
+#ifdef _USE_SCRATCHLIBRARY
+             CALL request_scratch(il_fnlgam_packed,fnlgam_packed,procedureN//'_fnlgam_packed',ierr)
+#else
+             ALLOCATE(fnlgam_packed(il_fnlgam_packed(1),il_fnlgam_packed(2)),STAT=ierr)
+#endif
              IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
                   __LINE__,__FILE__)
              CALL rotate(-1.0_real_8,catom(:,ist:ist+natst-1),1.0_real_8,c2,gam,&
@@ -104,7 +150,11 @@ CONTAINS
                   use_cp=.TRUE.,redist=.TRUE.)
              CALL rotate_fnl(int(il_fnl_packed(1)),fnl_packed,fnlgam_packed,natst,gam)
              CALL nlforce(c2,foc,fnl_packed,fnlgam_packed,natst,redist=.TRUE.)
+#ifdef _USE_SCRATCHLIBRARY
+             CALL free_scratch(il_fnlgam_packed,fnlgam_packed,procedureN//'_fnlgam_packed',ierr)
+#else
              DEALLOCATE(fnlgam_packed, STAT=ierr)
+#endif
              IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
                   __LINE__,__FILE__)
           ELSE
@@ -117,13 +167,30 @@ CONTAINS
           ENDIF
           ist=ist+natst
        ENDDO
-       deallocate(gam)
+#ifdef _USE_SCRATCHLIBRARY
+       CALL free_scratch(il_gam,gam,procedureN//'_gam',ierr)
+#else
+       DEALLOCATE(gam,STAT=ierr)
+#endif
+       IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
+            __LINE__,__FILE__)
     ENDDO
     IF(pslo_com%tivan)THEN
-       deallocate(fnlp_save)
+#ifdef _USE_SCRATCHLIBRARY
+       CALL free_scratch(il_fnl_packed,fnlp_save,procedureN//'_fnlp_save',ierr)
+#else
+       DEALLOCATE(fnlp_save,STAT=ierr)
+#endif
     ELSE
-       deallocate(fnl_save)
+#ifdef _USE_SCRATCHLIBRARY
+       CALL free_scratch(il_fnl_save,fnl_save,procedureN//'_fnl_save',ierr)
+#else
+       DEALLOCATE(fnl_save,STAT=ierr)
+#endif
     END IF
+    IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
+         __LINE__,__FILE__)
+
     CALL fnldealloc(.FALSE.,.FALSE.)
     CALL fnl_set('RECV')
     cntl%tfdist=tfdist2

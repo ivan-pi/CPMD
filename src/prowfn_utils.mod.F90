@@ -169,7 +169,7 @@ CONTAINS
     DO is=1,ions1%nsp
        DO ia=1,ions0%na(is)
           iat=iat+1
-          CALL loadc(catom(1,iaorb),foc,ncpw%ngw,ncpw%ngw,atwp%nattot,SIZE(foc),&
+          CALL loadc(catom(:,iaorb:),foc,ncpw%ngw,ncpw%ngw,atwp%nattot,SIZE(foc),&
                is,iat,natst)
           DO ixx=iaorb,iaorb+natst-1
              sfc=dotp(ncpw%ngw,catom(:,ixx),catom(:,ixx))
@@ -300,9 +300,9 @@ CONTAINS
           WRITE(6,'(/,A,/)') ' WAVEFUNCTIONS IN ATOMIC ORBITAL BASIS'
           IF (cntl%tlsd) THEN
              WRITE(6,'(21X,A)') ' ****** ALPHA SPIN ******'
-             CALL prtmat(xxmat(1,1),atwp%nattot,spin_mod%nsup,label,comp,crge%f)
+             CALL prtmat(xxmat(1:,1:),atwp%nattot,spin_mod%nsup,label,comp,crge%f)
              WRITE(6,'(/,21X,A)') ' ****** BETA  SPIN ******'
-             CALL prtmat(xxmat(1,spin_mod%nsup+1),atwp%nattot,spin_mod%nsdown,label,&
+             CALL prtmat(xxmat(1:,spin_mod%nsup+1:),atwp%nattot,spin_mod%nsdown,label,&
                   comp(spin_mod%nsup+1),crge%f(spin_mod%nsup+1,1))
           ELSE
              CALL prtmat(xxmat,atwp%nattot,prop2%numorb,label,comp,crge%f)
