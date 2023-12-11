@@ -145,18 +145,18 @@ CONTAINS
     RETURN
   END SUBROUTINE set_buffers
   ! ==================================================================
-  SUBROUTINE proj_beta(na,igeq0,nstate,c0,ld_c0,eigkr,twnl,eiscr,t,ld_eiscr,startg,&
-       dai,ld_dai,deriv,tkpnt,geq0,gktemp)
+  SUBROUTINE proj_beta(na,igeq0,nstate,c0,ld_c0,eigkr,eiscr,ld_eiscr,startg,&
+       dai,ld_dai,deriv,tkpnt,geq0,twnl_nghtol,twnl_nghtol_gk)
     ! ==--------------------------------------------------------------==
     ! == Calculates the local projection of beta on C0                ==
     ! ==--------------------------------------------------------------==
     INTEGER,INTENT(IN)                       :: na(2,*), nstate, startg, ld_eiscr, ld_c0, &
                                                 ld_dai, igeq0
     COMPLEX(real_8),INTENT(IN)               :: c0(ld_c0,*),eigkr(ld_c0,*)
-    REAL(real_8),INTENT(IN)                  :: twnl(ld_c0,maxsys%nhxs,ions1%nsp)
     COMPLEX(real_8),INTENT(OUT)              :: eiscr(ld_eiscr,*)
-    REAL(real_8),INTENT(OUT)                 :: t(ld_eiscr), dai(ld_dai,*)
-    REAL(real_8),INTENT(IN),OPTIONAL         :: gktemp(ld_eiscr,*)
+    REAL(real_8),INTENT(OUT)                 :: dai(ld_dai,*)
+    REAL(real_8),INTENT(IN),OPTIONAL         :: twnl_nghtol(ld_c0,maxsys%nhxs,ions1%nsp)
+    REAL(real_8),INTENT(IN),OPTIONAL         :: twnl_nghtol_gk(ld_c0,3,maxsys%nhxs,ions1%nsp)
     LOGICAL,INTENT(IN)                       :: deriv, tkpnt, geq0
     COMPLEX(real_8), PARAMETER               :: zone = (1._real_8,0._real_8) ,&
                                                 zzero = (0._real_8,0._real_8)
@@ -164,9 +164,9 @@ CONTAINS
     REAL(real_8)                             :: tfac
 
     IF(deriv)THEN
-       CALL build_beta(na,eigkr,twnl(:,:,:),eiscr,t,ld_eiscr,startg,ld_c0,ld_dai,igeq0,geq0,tkpnt,gktemp)
+       CALL build_beta(na,eigkr,eiscr,ld_eiscr,startg,ld_c0,ld_dai,igeq0,geq0,tkpnt,twnl_nghtol_gk=twnl_nghtol_gk)
     ELSE
-       CALL build_beta(na,eigkr,twnl(:,:,:),eiscr,t,ld_eiscr,startg,ld_c0,ld_dai,igeq0,geq0,tkpnt)
+       CALL build_beta(na,eigkr,eiscr,ld_eiscr,startg,ld_c0,ld_dai,igeq0,geq0,tkpnt,twnl_nghtol=twnl_nghtol)
     END IF
     IF(TKPNT) THEN       
        IF(deriv)THEN 

@@ -1,7 +1,7 @@
 #include "cpmd_global.h"
 
 MODULE spsi_utils
-  USE cppt,                            ONLY: twnl
+  USE cppt,                            ONLY: twnl_nghtol
   USE cp_grp_utils,                    ONLY: cp_grp_split_atoms,&
                                              cp_grp_get_sizes
   USE beta_utils,                      ONLY: build_beta
@@ -65,14 +65,14 @@ CONTAINS
                                                 is, ia_sum, fnl_start, ia_fnl, isub, ierr, &
                                                 ld_grp(0:parai%cp_nogrp-1), grp,&
                                                  nthreads, nested_threads, methread
-    INTEGER(int_8)                           :: il_dai(3), il_eiscr(2), il_t(1)
+    INTEGER(int_8)                           :: il_dai(3), il_eiscr(2)
     INTEGER, ALLOCATABLE                     :: na_grp(:,:,:), na_fnl(:,:), na(:,:)
 
 #ifdef _USE_SCRATCHLIBRARY
     COMPLEX(real_8),POINTER __CONTIGUOUS     :: eiscr(:,:)
-    REAL(real_8),POINTER __CONTIGUOUS        :: dai(:,:,:), t(:)
+    REAL(real_8),POINTER __CONTIGUOUS        :: dai(:,:,:)
 #else
-    REAL(real_8),ALLOCATABLE                 :: t(:),dai(:,:,:)
+    REAL(real_8),ALLOCATABLE                 :: dai(:,:,:)
     COMPLEX(real_8),ALLOCATABLE              :: eiscr(:,:)
 #endif
 
@@ -122,7 +122,6 @@ CONTAINS
        il_dai(3)=parai%cp_nogrp
        il_eiscr(1)=ngw_local
        il_eiscr(2)=MAXVAL(ld_grp)
-       il_t(1)=ngw_local
 #ifdef _USE_SCRATCHLIBRARY
        CALL request_scratch(il_dai,dai,procedureN//'_dai',ierr)
 #else
@@ -136,13 +135,6 @@ CONTAINS
        ALLOCATE(eiscr(il_eiscr(1),il_eiscr(2)), stat=ierr)
 #endif
        IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate eiscr',&
-            __LINE__,__FILE__)
-#ifdef _USE_SCRATCHLIBRARY
-       CALL request_scratch(il_t,t,procedureN//'_t',ierr)
-#else
-       ALLOCATE(t(il_t(1)), stat=ierr)
-#endif
-       IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate t',&
             __LINE__,__FILE__)
        !$omp parallel private (i,offset_fnl,offset_dai,isa0,is,ia_fnl,ia_sum,fnl_start)
        !$omp do
@@ -206,8 +198,8 @@ CONTAINS
           !$ END IF
 
           grp=parai%cp_inter_me
-          CALL build_beta(na_grp(:,:,grp),eigr,twnl(:,:,:,1),eiscr,t,ncpw%ngw,ibeg,&
-               ngw_local)
+          CALL build_beta(na_grp(:,:,grp),eigr,eiscr,ncpw%ngw,ibeg,&
+               ngw_local,twnl_nghtol=twnl_nghtol(:,:,:,1))
           IF(ld_grp(grp).GT.0)THEN
              CALL DGEMM('N','N',2*ngw_local,nstate,ld_grp(grp)&
                   ,1._real_8,eiscr(1,1),2*ngw_local&
@@ -228,8 +220,8 @@ CONTAINS
        IF(parai%cp_nogrp.GT.1)THEN
           DO grp=0,parai%cp_nogrp-1
              IF(grp.EQ.parai%cp_inter_me)CYCLE
-             CALL build_beta(na_grp(:,:,grp),eigr,twnl(:,:,:,1),eiscr,t,ncpw%ngw,ibeg,&
-                  ngw_local)
+             CALL build_beta(na_grp(:,:,grp),eigr,eiscr,ncpw%ngw,ibeg,&
+                  ngw_local,twnl_nghtol=twnl_nghtol(:,:,:,1))
              IF(ld_grp(grp).GT.0)THEN
                 CALL DGEMM('N','N',2*ngw_local,nstate,ld_grp(grp)&
                      ,1._real_8,eiscr(1,1),2*ngw_local&
@@ -238,13 +230,6 @@ CONTAINS
           END DO
        END IF
     END IF
-#ifdef _USE_SCRATCHLIBRARY
-    CALL free_scratch(il_t,t,procedureN//'_t',ierr)
-#else
-    DEALLOCATE(t, stat=ierr)
-#endif
-    IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot deallocate t',&
-         __LINE__,__FILE__)
 #ifdef _USE_SCRATCHLIBRARY
     CALL free_scratch(il_eiscr,eiscr,procedureN//'_eiscr',ierr)
 #else

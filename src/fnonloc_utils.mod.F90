@@ -4,7 +4,7 @@ MODULE fnonloc_utils
   USE beta_utils,                      ONLY: build_beta
   USE cp_grp_utils,                    ONLY: cp_grp_get_sizes,&
                                              cp_grp_redist
-  USE cppt,                            ONLY: twnl
+  USE cppt,                            ONLY: twnl,twnl_nghtol
   USE cvan,                            ONLY: deeq,&
                                              dvan,&
                                              deeq_fnl_hfx
@@ -667,8 +667,7 @@ CONTAINS
                                                 ispin, offset_dai, &
                                                 na(2,ions1%nsp)
     REAL(real_8)                             :: weight
-    INTEGER(int_8)                           :: il_dai(2), il_eiscr(2), &
-                                                il_t(1)
+    INTEGER(int_8)                           :: il_dai(2), il_eiscr(2)
 #ifdef _USE_SCRATCHLIBRARY
     COMPLEX(real_8),POINTER __CONTIGUOUS &
                        , ASYNCHRONOUS        :: eiscr(:,:)
@@ -706,7 +705,6 @@ CONTAINS
     il_dai(2)=nstate
     il_eiscr(1)=ncpw%ngw
     il_eiscr(2)=il_dai(1)
-    il_t(1)=ncpw%ngw
 #ifdef _USE_SCRATCHLIBRARY
     CALL request_scratch(il_dai,dai,procedureN//'_dai',ierr)
 #else
@@ -720,13 +718,6 @@ CONTAINS
     ALLOCATE(eiscr(il_eiscr(1),il_eiscr(2)), stat=ierr)
 #endif
     IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate eiscr',&
-         __LINE__,__FILE__)
-#ifdef _USE_SCRATCHLIBRARY
-    CALL request_scratch(il_t,t,procedureN//'_t',ierr)
-#else
-    ALLOCATE(t(il_t(1)), stat=ierr)
-#endif
-    IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate t',&
          __LINE__,__FILE__)
       
     !$omp parallel private (i,weight,ispin,offset_dai,isa0,is)
@@ -752,19 +743,12 @@ CONTAINS
     END DO
     !$omp end do nowait
     !$omp end parallel
-    call build_beta(na,eigr,twnl(:,:,:,1),eiscr,t,ncpw%ngw,1,INT(il_eiscr(1),kind=int_4))
+    call build_beta(na,eigr,eiscr,ncpw%ngw,1,INT(il_eiscr(1),kind=int_4),twnl_nghtol=twnl_nghtol(:,:,:,1))
     
     CALL cpmd_dgemm("N","N",2*ncpw%ngw,nstate,INT(il_dai(1),kind=int_4),1._real_8,&
          eiscr,2*ncpw%ngw,dai(1,1),INT(il_dai(1),kind=int_4),1._real_8,&
          c2,2*ncpw%ngw)
 
-#ifdef _USE_SCRATCHLIBRARY
-    CALL free_scratch(il_t,t,procedureN//'_t',ierr)
-#else
-    DEALLOCATE(t, stat=ierr)
-#endif
-    IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot deallocate t',&
-         __LINE__,__FILE__)
 #ifdef _USE_SCRATCHLIBRARY
     CALL free_scratch(il_eiscr,eiscr,procedureN//'_eiscr',ierr)
 #else

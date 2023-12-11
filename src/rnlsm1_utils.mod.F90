@@ -1,7 +1,7 @@
 #include "cpmd_global.h"
 
 MODULE rnlsm1_utils
-  USE cppt,                            ONLY: twnl
+  USE cppt,                            ONLY: twnl_nghtol
   USE cp_grp_utils,                    ONLY: cp_grp_split_atoms,&
                                              cp_grp_redist_dfnl_fnl
   USE error_handling,                  ONLY: stopgm
@@ -91,7 +91,7 @@ CONTAINS
                                                 methread, nthreads, nested_threads, &
                                                 tot_work, start_dai, ld_dai, end_dai, &
                                                 ld_buffer(maxbuff), start_buffer(maxbuff)
-    INTEGER(int_8)                           :: il_eiscr(2),il_t(1),il_dai(1)
+    INTEGER(int_8)                           :: il_eiscr(2), il_dai(1)
     INTEGER,ALLOCATABLE                      :: na_buff(:,:,:), na_grp(:,:,:)
 
     REAL(real_8),POINTER __CONTIGUOUS &
@@ -99,11 +99,7 @@ CONTAINS
 #ifdef _USE_SCRATCHLIBRARY
     COMPLEX(real_8),POINTER __CONTIGUOUS &
                        , ASYNCHRONOUS        :: eiscr(:,:)
-    REAL(real_8),POINTER __CONTIGUOUS &
-                       , ASYNCHRONOUS        :: t(:)
 #else
-    REAL(real_8), ALLOCATABLE &
-                       , ASYNCHRONOUS        :: t(:)
     COMPLEX(real_8),ALLOCATABLE &
                        , ASYNCHRONOUS        :: eiscr(:,:)
 #endif
@@ -144,7 +140,6 @@ CONTAINS
     il_dai(1)=tot_work*nstate
     il_eiscr(1)=nkpt%ngwk
     il_eiscr(2)=MAXVAL(ld_buffer)/imagp
-    il_t(1)=nkpt%ngwk
     IF(buffcount.GT.1)THEN
 #ifdef _USE_SCRATCHLIBRARY
        CALL request_scratch(il_dai,dai,procedureN//'_dai',ierr)
@@ -163,13 +158,6 @@ CONTAINS
 #endif
     IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate eiscr',&
          __LINE__,__FILE__)
-#ifdef _USE_SCRATCHLIBRARY
-    CALL request_scratch(il_t,t,procedureN//'_t',ierr)
-#else
-    ALLOCATE(t(il_t(1)), stat=ierr)
-#endif
-    IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate t',&
-         __LINE__,__FILE__)
     IF(tkpts%tkpnt)THEN
        igeq0=ncpw%ngw+1
     ELSE
@@ -182,8 +170,8 @@ CONTAINS
     IF(autotune_it.GT.0.AND.autotune_it.LE.cnti%rnlsm_autotune_maxit) temp=m_walltime()
     IF(ld_dai.GT.0)THEN
        CALL proj_beta(na_buff(:,:,buff),igeq0,nstate,c0,nkpt%ngwk,eigkr(:,:,ikind),&
-            twnl(:,:,:,ikind),eiscr,t,nkpt%ngwk,1,dai(start_dai:end_dai),ld_dai/imagp,&
-            .FALSE.,tkpts%tkpnt,geq0)
+            eiscr,nkpt%ngwk,1,dai(start_dai:end_dai),ld_dai/imagp,&
+            .FALSE.,tkpts%tkpnt,geq0,twnl_nghtol=twnl_nghtol(:,:,:,ikind))
     END IF
     IF(autotune_it.GT.0.AND.autotune_it.LE.cnti%rnlsm_autotune_maxit)timings(1)=&
          timings(1)+m_walltime()-temp
@@ -231,8 +219,8 @@ CONTAINS
           end_dai=start_dai-1+ld_dai*nstate
           IF(ld_dai.GT.0)THEN
              CALL proj_beta(na_buff(:,:,buff),igeq0,nstate,c0,nkpt%ngwk,eigkr(:,:,ikind),&
-                  twnl(:,:,:,ikind),eiscr,t,nkpt%ngwk,1,dai(start_dai:end_dai),ld_dai/imagp,&
-                  .FALSE.,tkpts%tkpnt,geq0)
+                  eiscr,nkpt%ngwk,1,dai(start_dai:end_dai),ld_dai/imagp,&
+                  .FALSE.,tkpts%tkpnt,geq0,twnl_nghtol=twnl_nghtol(:,:,:,ikind))
           END IF
           !$ locks(buff) = .FALSE.
           !$omp flush(locks)
@@ -283,13 +271,6 @@ CONTAINS
        IF(parai%cp_nogrp.GT.1)CALL cp_grp_redist_dfnl_fnl(.TRUE.,.FALSE.,nstate,ikind)
     END IF
        
-#ifdef _USE_SCRATCHLIBRARY 
-    CALL free_scratch(il_t,t,procedureN//'_t',ierr)
-#else
-    DEALLOCATE(t, stat=ierr)
-#endif
-    IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot deallocate t',&
-         __LINE__,__FILE__)
 #ifdef _USE_SCRATCHLIBRARY 
     CALL free_scratch(il_eiscr,eiscr,procedureN//'_eiscr',ierr)
 #else

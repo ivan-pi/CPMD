@@ -50,9 +50,9 @@ MODULE cppt
   REAL(real_8), ALLOCATABLE :: rhops(:,:)
 
   REAL(real_8), ALLOCATABLE :: twnl(:,:,:,:) ! (:)??(:,:,:)??
-
+  REAL(real_8), ALLOCATABLE :: twnl_nghtol(:,:,:,:)
+  REAL(real_8), ALLOCATABLE :: twnl_nghtol_gk(:,:,:,:,:)
   REAL(real_8), ALLOCATABLE :: qrad(:,:,:,:,:)
-  REAL(real_8), ALLOCATABLE :: twnls(:,:,:)
   REAL(real_8), ALLOCATABLE :: ylmb(:,:,:)
 
 

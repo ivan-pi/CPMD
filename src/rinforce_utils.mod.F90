@@ -8,7 +8,8 @@ MODULE rinforce_utils
                                              vr
   USE cnst,                            ONLY: pi
   USE cppt,                            ONLY: &
-       gk, hg, qrad, rhops, tshel, tshels, twnl, vps, ylmb
+       gk, hg, qrad, rhops, tshel, tshels, twnl, vps, ylmb,&
+       twnl_nghtol, twnl_nghtol_gk
   USE cvan,                            ONLY: deeq,&
                                              dvan,&
                                              nelev,&
@@ -103,7 +104,7 @@ CONTAINS
     CHARACTER(len=30)                        :: tag
     INTEGER                                  :: ierr, im, is, istep, isub, &
                                                 iv, jv, lmaxv, lp, lpmax, &
-                                                lscr, lval, mrscr, nylmb
+                                                lval, mrscr, nylmb
     REAL(real_8)                             :: aa, eself, pf, pub
     REAL(real_8), ALLOCATABLE                :: rs1(:), rs2(:), rs3(:)
 
@@ -297,6 +298,12 @@ CONTAINS
     ALLOCATE(twnl(nkpt%ngwk,maxsys%nhxs,maxsys%nsx,kpts_com%nkptall),STAT=ierr)
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
          __LINE__,__FILE__) ! FIXME deallocate missing
+    ALLOCATE(twnl_nghtol(nkpt%ngwk,maxsys%nhxs,maxsys%nsx,kpts_com%nkptall),STAT=ierr)
+    IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
+         __LINE__,__FILE__) ! FIXME deallocate missing
+    ALLOCATE(twnl_nghtol_gk(nkpt%ngwk,3,maxsys%nhxs,maxsys%nsx,kpts_com%nkptall),STAT=ierr)
+    IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
+         __LINE__,__FILE__) ! FIXME deallocate missing
 
     CALL zeroing(twnl)!,maxsys%nsx*maxsys%nhxs*nkpt%ngwk*kpts_com%nkptall)
     CALL putwnl
@@ -475,11 +482,11 @@ CONTAINS
 
     INTEGER                                  :: ierr, ig, ik, ikk, ikpt, &
                                                 ikylmb, is, istep, isub, iv, &
-                                                kbeg, kend, kinc, l, lp
-    REAL(real_8)                             :: tw, vol, xx
+                                                kbeg, kend, kinc, l, lp, k
+    REAL(real_8)                             :: tw, vol, xx, fac, cii, cir
+    COMPLEX(real_8)                          :: ci
     REAL(real_8), ALLOCATABLE                :: gkrk(:,:)
     REAL(real_8), EXTERNAL                   :: dasum
-
     
     CALL tiset(procedureN,isub)
     IF (pslo_com%tivan) THEN
@@ -590,6 +597,53 @@ CONTAINS
                       ENDDO
                    ENDIF
                 ENDIF
+                ci=(0.0_real_8,-1.0_real_8)**nghtol(iv,is)
+                cir=REAL(ci,kind=real_8)
+                cii=AIMAG(ci)
+                !Make use of the special structure of CI
+                IF (ABS(cir).GT.0.5_real_8) THEN
+                   !CI is real
+                   fac=cir
+                ELSE
+                   !CI is imaginary
+                   fac=cii
+                END IF
+                !$omp parallel do private(IG)
+                DO  ig=1,ncpw%ngw
+                   twnl_nghtol(ig,iv,is,ik)=twnl(ig,iv,is,ik)*fac
+                END DO
+                ci=(0.0_real_8,-1.0_real_8)**(nghtol(iv,is)+1)
+                cir=REAL(ci,kind=real_8)
+                cii=AIMAG(ci)
+                !Make use of the special structure of CI
+                IF (ABS(cir).GT.0.5_real_8) THEN
+                   !CI is real
+                   fac=cir
+                ELSE
+                   !CI is imaginary
+                   fac=cii
+                END IF
+                IF (tkpts%tkpnt) THEN
+                   !$omp parallel do private(IG,K)
+                   DO  ig=1,ncpw%ngw
+                      DO k=1,3
+                         twnl_nghtol_gk(ig,k,iv,is,ik)=twnl(ig,iv,is,ik)*fac*(gk(k,ig)+rk(k,ik))
+                      END DO
+                   END DO
+                   !$omp parallel do private(IG,K)
+                   DO  ig=ncpw%ngw+1,nkpt%ngwk
+                      DO k=1,3
+                         twnl_nghtol_gk(ig,k,iv,is,ik)=twnl(ig,iv,is,ik)*fac*(-gk(k,ig)+rk(k,ik))
+                      END DO
+                   END DO
+                ELSE                  
+                   !$omp parallel do private(IG)
+                   DO  ig=1,ncpw%ngw
+                      DO k=1,3
+                         twnl_nghtol_gk(ig,k,iv,is,ik)=twnl(ig,iv,is,ik)*fac*gk(k,ig)
+                      END DO
+                   END DO
+                END IF
              ENDDO
           ENDDO
        ENDDO                 ! END OF 1,NKPNT
