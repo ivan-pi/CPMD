@@ -61,8 +61,7 @@ MODULE prcpmd_utils
                                              meta_stress
   USE metr,                            ONLY: metr_com
   USE mp_interface,                    ONLY: mp_bcast
-  USE newcell_utils,                   ONLY: give_scr_newcell,&
-                                             newcell
+  USE newcell_utils,                   ONLY: newcell
   USE nlcc,                            ONLY: corel
   USE norm,                            ONLY: cnorm,&
                                              gemax,&
@@ -689,7 +688,7 @@ CONTAINS
     INTEGER                                  :: lprcpmd
     CHARACTER(len=30)                        :: tag
 
-    INTEGER :: lcopot, lddipo, lforcedr, linitrun, lnewcell, lortho, &
+    INTEGER :: lcopot, lddipo, lforcedr, linitrun, lortho, &
       lposupa, lquenbo, lrhopri, lrortv, nstate
 
     nstate=crge%n
@@ -704,12 +703,11 @@ CONTAINS
     IF (cntl%tdipd.OR.vdwl%vdwd) CALL give_scr_ddipo(lddipo,tag)
     CALL give_scr_forcedr(lforcedr,tag,nstate,.FALSE.,.TRUE.)
     CALL give_scr_rortv(lrortv,tag,nstate)
-    CALL give_scr_newcell(lnewcell,tag)
     CALL give_scr_posupa(lposupa,tag,nstate)
     CALL give_scr_initrun(linitrun,tag)
     IF (rout1%rhoout) CALL give_scr_rhopri(lrhopri,tag,nstate)
     lprcpmd=MAX(lcopot,lortho,lquenbo,lddipo,lforcedr,&
-         lrortv,lposupa,lrhopri,lnewcell,linitrun)
+         lrortv,lposupa,lrhopri,linitrun)
     ! ==--------------------------------------------------------------==
     RETURN
   END SUBROUTINE give_scr_prcpmd

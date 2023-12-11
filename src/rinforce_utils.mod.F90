@@ -90,8 +90,6 @@ MODULE rinforce_utils
   PUBLIC :: testspline
   PUBLIC :: putps
   PUBLIC :: putwnl
-  PUBLIC :: give_scr_putwnl
-  PUBLIC :: calc_twnl
   PUBLIC :: setspline
 
 CONTAINS
@@ -301,7 +299,6 @@ CONTAINS
          __LINE__,__FILE__) ! FIXME deallocate missing
 
     CALL zeroing(twnl)!,maxsys%nsx*maxsys%nhxs*nkpt%ngwk*kpts_com%nkptall)
-    CALL give_scr_putwnl(lscr,tag)
     CALL putwnl
     IF(pslo_com%tivan) CALL qvan2_init()
     ! ==--------------------------------------------------------------==
@@ -465,7 +462,7 @@ CONTAINS
     RETURN
   END SUBROUTINE putps
   ! ==================================================================
-  SUBROUTINE putwnl
+  SUBROUTINE putwnl(ikpt_in)
     ! ==--------------------------------------------------------------==
     ! == CALCULATE TWNL(1:NGW,1:NGH(IS),1:NSP,1:NKPNT) [cppt.inc]     ==
     ! ==        Non-Local projectors array                            ==
@@ -473,6 +470,7 @@ CONTAINS
     ! == FOR TIVAN calculate also YLMB                                ==
     ! ==--------------------------------------------------------------==
     ! Variables
+    INTEGER,INTENT(IN),OPTIONAL              :: ikpt_in
     CHARACTER(*), PARAMETER                  :: procedureN = 'putwnl'
 
     INTEGER                                  :: ierr, ig, ik, ikk, ikpt, &
@@ -482,24 +480,33 @@ CONTAINS
     REAL(real_8), ALLOCATABLE                :: gkrk(:,:)
     REAL(real_8), EXTERNAL                   :: dasum
 
-    CALL tiset('    PUTWNL',isub)
+    
+    CALL tiset(procedureN,isub)
     IF (pslo_com%tivan) THEN
        ! YLMB is already allocated in RINFORCE
     ELSE
        ALLOCATE(ylmb(nkpt%nhgk, MAX(maxsys%lpmax,1), 1),STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
             __LINE__,__FILE__)
-       IF (tkpts%tkpnt) THEN
-          ALLOCATE(gkrk(3, ncpw%nhg),STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
-               __LINE__,__FILE__)
-       ENDIF
     ENDIF
+    IF (tkpts%tkpnt) THEN
+       ALLOCATE(gkrk(3, ncpw%nhg),STAT=ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
+            __LINE__,__FILE__)
+    ENDIF
+
     ! ==--------------------------------------------------------------==
     vol=1._real_8/SQRT(parm%omega)
-    CALL inq_swap(kbeg,kend,kinc)
+    IF(PRESENT(ikpt_in))THEN
+       kbeg=ikpt_in
+       kend=ikpt_in
+       kinc=1
+    ELSE
+       CALL inq_swap(kbeg,kend,kinc)
+    END IF
     DO ikpt=kbeg,kend,kinc
-       IF (tkpts%tkblock) CALL rkpt_swap(gkrk,1,ikpt,'HGKP HGKM MASKGW')
+       IF (tkpts%tkblock.AND..NOT.PRESENT(ikpt_in)) &
+            CALL rkpt_swap(gkrk,1,ikpt,'HGKP HGKM MASKGW')
        DO ik=1,nkpbl(ikpt)
           ikk=kpbeg(ikpt)+ik
           IF (tkpts%tkpnt) THEN
@@ -561,11 +568,13 @@ CONTAINS
                 xx=dasum(nsplpo,twns(1,1,iv,is),1)
                 IF (xx.GT.1.e-12_real_8) THEN
                    IF (tkpts%tkpnt) THEN
+                      !$omp parallel do private(IG,tw)
                       DO ig=1,ncpw%ngw
                          tw=curv2(hgkp(ig,ik),nsplpo,ggng(1),twns(1,1,iv,is),&
                               twns(1,2,iv,is),0.0_real_8)
                          twnl(ig,iv,is,ik)=ylmb(ig,lp,ikylmb)*tw*vol
                       ENDDO
+                      !$omp parallel do private(IG,tw)
                       DO ig=1,ncpw%ngw
                          tw=curv2(hgkm(ig,ik),nsplpo,ggng(1),twns(1,1,iv,is),&
                               twns(1,2,iv,is),0.0_real_8)
@@ -573,6 +582,7 @@ CONTAINS
                       ENDDO
                       CALL r_clean(twnl(1,iv,is,ik),1,ik)
                    ELSE
+                      !$omp parallel do private(IG,tw)
                       DO ig=1,ncpw%ngw
                          tw=curv2(hg(ig),nsplpo,ggng(1),twns(1,1,iv,is),&
                               twns(1,2,iv,is),0.0_real_8)
@@ -583,7 +593,8 @@ CONTAINS
              ENDDO
           ENDDO
        ENDDO                 ! END OF 1,NKPNT
-       IF (tkpts%tkblock) THEN
+       
+       IF (tkpts%tkblock.AND..NOT.PRESENT(ikpt_in)) THEN
           IF (pslo_com%tivan) THEN
              CALL wkpt_swap(gkrk,1,ikpt,'TWNL YLMB')
           ELSE
@@ -596,183 +607,17 @@ CONTAINS
        DEALLOCATE(ylmb,STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem',&
             __LINE__,__FILE__)
-       IF (tkpts%tkpnt) THEN
-          DEALLOCATE(gkrk,STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
-               __LINE__,__FILE__)
-       ENDIF
+    ENDIF
+    IF (tkpts%tkpnt) THEN
+       DEALLOCATE(gkrk,STAT=ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
+            __LINE__,__FILE__)
     ENDIF
     ! ==--------------------------------------------------------------==
-    CALL tihalt('    PUTWNL',isub)
+    CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==
     RETURN
   END SUBROUTINE putwnl
-  ! ==================================================================
-  SUBROUTINE calc_twnl(ikpt)
-    ! ==--------------------------------------------------------------==
-    ! == CALCULATE TWNL(1:NGW,1:NGH(IS),1:NSP,1:NKPNT) [cppt.inc]     ==
-    ! ==        Non-Local projectors array                            ==
-    ! ==        for each G-components (Kleinman-Bylander form)        ==
-    ! == FOR TIVAN calculate also YLMB                                ==
-    ! ==--------------------------------------------------------------==
-    ! == IF TIVAN=.TRUE. YLMB is used (need allocation)               ==
-    ! == otherwise  allocate temporarily YLMB and GKRK                ==
-    ! ==--------------------------------------------------------------==
-    INTEGER                                  :: ikpt
-
-    CHARACTER(*), PARAMETER                  :: procedureN = 'calc_twnl'
-
-    INTEGER                                  :: ierr, ig, ik, ikk, ikylmb, &
-                                                is, istep, isub, iv, l, lp
-    REAL(real_8)                             :: tw, vol, xx
-    REAL(real_8), ALLOCATABLE                :: gkrk(:,:)
-    REAL(real_8), EXTERNAL                   :: dasum
-
-    CALL tiset(' CALC_TWNL',isub)
-    IF (pslo_com%tivan) THEN
-       ! YLMB is already allocated and is used in this routine.
-       IF (tkpts%tkpnt)  THEN
-          ALLOCATE(gkrk(3,ncpw%nhg),STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-               __LINE__,__FILE__)
-       ENDIF
-    ELSE
-       ALLOCATE(ylmb(nkpt%nhgk, MAX(maxsys%lpmax,1),1),STAT=ierr)
-       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-            __LINE__,__FILE__)
-       !call memory90(ylmb, (/ nhgk, max(maxsys%lpmax,1),1/), 'YLMB')
-       IF (tkpts%tkpnt)  THEN
-          ALLOCATE(gkrk(3,ncpw%nhg),STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-               __LINE__,__FILE__)
-       ENDIF
-    ENDIF
-    ! ==--------------------------------------------------------------==
-    vol=1._real_8/SQRT(parm%omega)
-    DO ik=1,nkpbl(ikpt)
-       ikk=kpbeg(ikpt)+ik
-       IF (tkpts%tkpnt) THEN
-          IF (pslo_com%tivan) THEN
-             ikylmb=ik
-          ELSE
-             ikylmb=1
-          ENDIF
-          DO lp=1,maxsys%lpmax
-
-             !$omp parallel do private(IG)
-#ifdef __SR8000
-             !poption parallel
-#endif
-             DO ig = 1 , ncpw%nhg
-                gkrk(1,ig)=gk(1,ig)+rk(1,ikk)
-                gkrk(2,ig)=gk(2,ig)+rk(2,ikk)
-                gkrk(3,ig)=gk(3,ig)+rk(3,ikk)
-             ENDDO
-
-             CALL ylmr2(lp,ncpw%nhg,hgkp(1,ik),gkrk,ylmb(1,lp,ikylmb))
-
-             !$omp parallel do private(IG)
-#ifdef __SR8000
-             !poption parallel
-#endif
-             DO ig = 1 , ncpw%nhg
-                gkrk(1,ig)=-gk(1,ig)+rk(1,ikk)
-                gkrk(2,ig)=-gk(2,ig)+rk(2,ikk)
-                gkrk(3,ig)=-gk(3,ig)+rk(3,ikk)
-             ENDDO
-
-             CALL ylmr2(lp,ncpw%nhg,hgkm(1,ik),gkrk,ylmb(1+ncpw%nhg,lp,ikylmb))
-          ENDDO
-       ELSE
-          DO lp=1,maxsys%lpmax
-             CALL ylmr2(lp,ncpw%nhg,hg,gk,ylmb(1,lp,1))
-          ENDDO
-       ENDIF
-       DO is=1,ions1%nsp
-          ! Shell structure code disabled
-          tshel(is)=.FALSE.
-          tshels=.FALSE.
-          DO iv=1,nlps_com%ngh(is)
-             IF (pslo_com%tvan(is)) THEN
-                istep=ncpr1%nvales(is)*ncpr1%nvales(is)
-                l=nghtol(iv,is)+1
-                lp=1+MOD(iv-1,istep)
-             ELSEIF (dpot_mod%tkb(is)) THEN
-                l=nghtol(iv,is)+1
-                lp=nghcom(iv,is)
-             ELSEIF (sgpp1%tsgp(is)) THEN
-                lp=sgpp2%lpval(iv,is)
-             ELSE
-                istep=NINT(nlps_com%rmaxn(is))
-                l=nghtol(iv,is)+1
-                lp=(iv-1)/istep+1
-             ENDIF
-             xx=dasum(nsplpo,twns(1,1,iv,is),1)
-             IF (xx.GT.1.e-12_real_8) THEN
-                IF (tkpts%tkpnt) THEN
-                   DO ig=1,ncpw%ngw
-                      tw=curv2(hgkp(ig,ik),nsplpo,ggng(1),twns(1,1,iv,is),&
-                           twns(1,2,iv,is),0.0_real_8)
-                      twnl(ig,iv,is,ik)=ylmb(ig,lp,ikylmb)*tw*vol
-                   ENDDO
-                   DO ig=1,ncpw%ngw
-                      tw=curv2(hgkm(ig,ik),nsplpo,ggng(1),twns(1,1,iv,is),&
-                           twns(1,2,iv,is),0.0_real_8)
-                      twnl(ig+ncpw%ngw,iv,is,ik)=ylmb(ig+ncpw%nhg,lp,ikylmb)*tw*vol
-                   ENDDO
-                   CALL r_clean(twnl(1,iv,is,ik),1,ik)
-                ELSE
-                   DO ig=1,ncpw%ngw
-                      tw=curv2(hg(ig),nsplpo,ggng(1),twns(1,1,iv,is),&
-                           twns(1,2,iv,is),0.0_real_8)
-                      twnl(ig,iv,is,1)=ylmb(ig,lp,1)*tw*vol
-                   ENDDO
-                ENDIF
-             ENDIF
-          ENDDO
-       ENDDO
-    ENDDO                     ! END OF 1,NKPNT
-    ! ==--------------------------------------------------------------==
-    IF (pslo_com%tivan) THEN
-       ! YLMB is already allocated and is used in this routine.
-       IF (tkpts%tkpnt) DEALLOCATE(gkrk,STAT=ierr)
-       IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem',&
-            __LINE__,__FILE__)
-    ELSE
-       DEALLOCATE(ylmb,STAT=ierr)
-       IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem',&
-            __LINE__,__FILE__)
-       IF (tkpts%tkpnt) DEALLOCATE(gkrk,STAT=ierr)
-       IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem',&
-            __LINE__,__FILE__)
-    ENDIF
-    CALL tihalt(' CALC_TWNL',isub)
-    ! ==--------------------------------------------------------------==
-    RETURN
-  END SUBROUTINE calc_twnl
-  ! ==================================================================
-  SUBROUTINE give_scr_putwnl(lputwnl,tag)
-    ! ==--------------------------------------------------------------==
-    INTEGER                                  :: lputwnl
-    CHARACTER(len=30)                        :: tag
-
-    INTEGER                                  :: lylmb
-
-    IF (tkpts%tkpnt) THEN
-       lputwnl=3*ncpw%nhg
-    ELSE
-       lputwnl=0
-    ENDIF
-    IF (pslo_com%tivan) THEN
-       lylmb=0
-    ELSE
-       lylmb=nkpt%nhgk*maxsys%lpmax
-    ENDIF
-    lputwnl=MAX(1,lputwnl+lylmb)
-    tag='3*NHG+NHGK*maxsys%lpmax'
-    ! ==--------------------------------------------------------------==
-    RETURN
-  END SUBROUTINE give_scr_putwnl
   ! ==================================================================
   SUBROUTINE setspline
     ! ==--------------------------------------------------------------==

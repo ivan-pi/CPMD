@@ -92,7 +92,7 @@ SUBROUTINE rgmopt(c0,c1,c2,cm,sc0,pme,gde,vpp,eigv)
   USE setbsstate_utils, ONLY : setbsstate
   USE mm_dim_utils, ONLY : mm_dim
   USE bs_forces_diag_utils, ONLY : bs_forces_diag
-  USE newcell_utils, ONLY : newcell, give_scr_newcell
+  USE newcell_utils, ONLY : newcell
   USE totstr_utils, ONLY : totstr, dstre
   USE dum2_utils, ONLY : dumpr
   USE moverho_utils, ONLY : moverho,give_scr_moverho
@@ -1580,7 +1580,7 @@ SUBROUTINE give_scr_rgmopt(lrgmopt,tag)
   USE kinds, ONLY: real_4, real_8, int_1, int_2, int_4, int_8
   USE error_handling, ONLY: stopgm
   USE timer, ONLY: tiset, tihalt
-  USE newcell_utils, ONLY : newcell, give_scr_newcell
+  USE newcell_utils, ONLY : newcell
   USE parac, ONLY : paral,parai
   USE elct , ONLY:crge
   USE nlcc , ONLY:corel
@@ -1614,7 +1614,7 @@ SUBROUTINE give_scr_rgmopt(lrgmopt,tag)
   CHARACTER(len=30)                          :: tag
 
   INTEGER :: lcalc_alm, lcopot, ldeort, ldipd, lforces, lforces_diag, &
-      linitrun, lmoverho, lnewcell, lortho, lposupa, lprepv, lrbfgs, lrgdiis, &
+      linitrun, lmoverho, lortho, lposupa, lprepv, lrbfgs, lrgdiis, &
       lrhopri, lrinr, lrlbfgs, lrortv, lrprfo, lrrfo, &
       lsdion, ltddft, lupdwf, nstate
 
@@ -1631,7 +1631,6 @@ SUBROUTINE give_scr_rgmopt(lrgmopt,tag)
   lrprfo=0
   lrrfo=0
   lrinr=0
-  lnewcell=0
   ldeort=0
   lupdwf=0
   lprepv=0
@@ -1659,9 +1658,6 @@ SUBROUTINE give_scr_rgmopt(lrgmopt,tag)
      IF (paral%parent) THEN
         CALL give_scr_sdion(lsdion,tag)
      ENDIF
-     IF (cntl%tprcp) THEN
-        CALL give_scr_newcell(lnewcell,tag)
-     ENDIF
      IF (corel%tinlc) THEN
         CALL give_scr_copot(lcopot,tag)
      ENDIF
@@ -1669,9 +1665,6 @@ SUBROUTINE give_scr_rgmopt(lrgmopt,tag)
         CALL give_scr_ortho(lortho,tag,nstate)
      ENDIF
   ELSE
-     IF (cntl%tprcp) THEN
-        CALL give_scr_newcell(lnewcell,tag)
-     ENDIF
      IF (cntl%tdiag) THEN
         CALL give_scr_forces_diag(lforces_diag,tag,nstate,.TRUE.)
         IF (tmovr) THEN
@@ -1719,7 +1712,7 @@ SUBROUTINE give_scr_rgmopt(lrgmopt,tag)
   lrgmopt=MAX(linitrun,lcopot,lortho,&
        lcalc_alm,lforces_diag,lforces,&
        lsdion,lrgdiis,lrbfgs,lrrfo,lrinr,lrlbfgs,lrprfo,&
-       lnewcell,ldeort,lupdwf,lprepv,lposupa,lrortv,&
+       ldeort,lupdwf,lprepv,lposupa,lrortv,&
        ldipd,lforces_diag,lrhopri,lmoverho,ltddft)
   ! ==--------------------------------------------------------------==
   RETURN

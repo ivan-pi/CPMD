@@ -4,7 +4,6 @@ MODULE initrun_utils
   USE copot_utils,                     ONLY: give_scr_copot
   USE elct,                            ONLY: crge
   USE fint,                            ONLY: fint1
-  USE newcell_utils,                   ONLY: give_scr_newcell
   USE nlcc,                            ONLY: corel
   USE ortho_utils,                     ONLY: give_scr_ortho
   USE pslo,                            ONLY: pslo_com
@@ -30,13 +29,12 @@ CONTAINS
     CHARACTER(*), PARAMETER :: procedureN = 'give_scr_initrun'
 
     INTEGER                                  :: isub, lainitwf, lcalc_alm, &
-                                                lcopot, lnewcell, lortho, &
+                                                lcopot, lortho, &
                                                 lrinitwf, &
                                                 nstate
 
     CALL tiset(procedureN,isub)
     nstate=crge%n
-    lnewcell=0
     lcopot=0
     lortho=0
     lcalc_alm=0
@@ -45,7 +43,6 @@ CONTAINS
     lrinitwf=0
     CALL give_scr_rinitwf(lrinitwf,tag,nstate)
     IF (restart1%restart) THEN
-       IF (cntl%tprcp.OR.cntl%tpres.OR.restart1%rcell) CALL give_scr_newcell(lnewcell,tag)
        IF (corel%tinlc) CALL give_scr_copot(lcopot,tag)
        CALL give_scr_ortho(lortho,tag,nstate)
        IF (.NOT. restart1%rnon) CALL give_scr_ainitwf(lainitwf,tag,nstate)
@@ -54,7 +51,7 @@ CONTAINS
     IF (cntl%tdiag) THEN
        IF (fint1%ttrot) CALL give_scr_calc_alm(lcalc_alm,tag)
     ENDIF
-    linitrun=MAX(lrinitwf,lnewcell,lcopot,lortho,&
+    linitrun=MAX(lrinitwf,lcopot,lortho,&
          lcalc_alm)
     CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==

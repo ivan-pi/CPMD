@@ -51,8 +51,7 @@ MODULE npt_md_utils
                                              veps
   USE mm_extrap,                       ONLY: cold, nnow, numcold
   USE mp_interface,                    ONLY: mp_bcast
-  USE newcell_utils,                   ONLY: give_scr_newcell,&
-                                             newcell
+  USE newcell_utils,                   ONLY: newcell
   USE nlcc,                            ONLY: corel
   USE norm,                            ONLY: cnorm,&
                                              gemax,&
@@ -604,7 +603,7 @@ CONTAINS
     INTEGER                                  :: lnpt_md
     CHARACTER(len=30)                        :: tag
 
-    INTEGER :: lcopot, lddipo, lforcedr, linitrun, lnewcell, lortho, &
+    INTEGER :: lcopot, lddipo, lforcedr, linitrun, lortho, &
       lposupa, lquenbo, lrhopri, lrortv, nstate
 
     nstate=crge%n
@@ -620,13 +619,12 @@ CONTAINS
     IF (cntl%quenchb) CALL give_scr_quenbo(lquenbo,tag)
     CALL give_scr_forcedr(lforcedr,tag,nstate,.FALSE.,.TRUE.)
     CALL give_scr_rortv(lrortv,tag,nstate)
-    CALL give_scr_newcell(lnewcell,tag)
     CALL give_scr_posupa(lposupa,tag,nstate)
     IF (rout1%rhoout) CALL give_scr_rhopri(lrhopri,tag,nstate)
     IF (vdwl%vdwd) CALL give_scr_ddipo(lddipo,tag)
     lnpt_md=MAX(lcopot,lortho,lquenbo,lforcedr,&
          lrortv,lposupa,lrhopri,linitrun,&
-         lnewcell,lddipo)
+         lddipo)
     lnpt_md=lnpt_md+10000
     ! ==--------------------------------------------------------------==
     RETURN
