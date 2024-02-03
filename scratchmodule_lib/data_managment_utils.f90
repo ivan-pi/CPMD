@@ -381,7 +381,7 @@ CONTAINS
     IF( ierr1 /= 0 ) THEN
        WRITE( OUTPUT_UNIT ,'(A)') "Warning memory corrupted in front of segment"
        ierr = -99
-       STOP
+       EXIT_ON_ERROR
     END IF
 
     start = pos( 2 ) + ONE_INT64
@@ -398,7 +398,7 @@ CONTAINS
     IF( ierr2 /= 0 ) THEN
        WRITE( OUTPUT_UNIT , '(A)' ) "Warning memory corrupted after segment"
        ierr = -99
-       STOP
+       EXIT_ON_ERROR
     END IF
 
   END SUBROUTINE check_guard

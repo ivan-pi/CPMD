@@ -529,7 +529,7 @@ CONTAINS
     IF( right_id - 1 /= left_id )THEN
        WRITE( OUTPUT_UNIT ,'(A1X1I4X1I4)') "Cannot combine nonconsecutive segment ids", &
             left_id, right_id
-       STOP
+       EXIT_ON_ERROR
     END IF
 #endif
     !segment start remains
