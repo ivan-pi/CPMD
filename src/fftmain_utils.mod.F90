@@ -571,7 +571,7 @@ CONTAINS
        CALL mltfft_essl(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale)
 #elif defined(__HAS_FFT_HP)
        CALL mltfft_hp(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale)
-#elif defined(__HAS_FFT_FFTW3)
+#elif defined(_HAS_FFT_FFTW3)
        CALL mltfft_fftw(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale,.FALSE.)
 #else
        CALL stopgm(procedureN,"MLTFFT ROUTINE NOT AVAILABLE",&

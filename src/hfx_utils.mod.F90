@@ -2950,7 +2950,7 @@ CONTAINS
 
       INTEGER                         :: NUMROC,I, IERR
       INTEGER, ALLOCATABLE            :: IMAP(:,:)
-
+#if defined(_HAS_SCALAPACK)
 !=======================================================================
       CALL TISET('PRQR',ISUB)
 !      
@@ -3067,6 +3067,10 @@ CONTAINS
       CALL BLACS_GRIDEXIT(ICONTXT)  !BUG FIXED SAGAR | NNN
 !c
       CALL TIHALT('PRQR',ISUB)
+#else
+      CALL STOPGM('LOCALIZE_SCDM','requires -D__HAS_SCALAPACK', &
+           __LINE__,__FILE__)
+#endif
 !c----------------------------------------------------------------------!
       END SUBROUTINE PRQR 
 !c----------------------------------------------------------------------!

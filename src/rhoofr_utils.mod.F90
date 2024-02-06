@@ -940,7 +940,9 @@ CONTAINS
     !$ IF(methread.EQ.1)THEN
     !$    CALL omp_set_max_active_levels(2)
     !$    CALL omp_set_num_threads(nested_threads)
+#if defined(_HAS_FFT_FFTW3)
     !$    CALL dfftw_plan_with_nthreads(nested_threads)
+#endif
 #ifdef _INTEL_MKL
     !$    CALL mkl_set_dynamic(0)
     !$    ierr = mkl_set_num_threads_local(nested_threads)
@@ -1077,10 +1079,12 @@ CONTAINS
     !$ IF (methread.EQ.1) THEN
     !$    CALL omp_set_max_active_levels(1)
     !$    CALL omp_set_num_threads(parai%ncpus)
-    !$    CALL dfftw_plan_with_nthreads(parai%ncpus)
 #ifdef _INTEL_MKL
     !$    CALL mkl_set_dynamic(1)
     !$    ierr = mkl_set_num_threads_local(0)
+#endif
+#if defined(_HAS_FFT_FFTW3)
+    !$    CALL dfftw_plan_with_nthreads(parai%ncpus)
 #endif
     !$ END IF
 

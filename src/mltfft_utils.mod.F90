@@ -517,7 +517,7 @@ CONTAINS
     LOGICAL                                  :: tscal
 
     TYPE(C_PTR) :: plan
-#if defined(__HAS_FFT_FFTW3)
+#if defined(_HAS_FFT_FFTW3)
     tscal=(ABS(scale-1._real_8).GT.1.e-12_real_8)
     IF (isign.EQ.1) THEN
        fftw_dir=fftw_f
@@ -582,7 +582,7 @@ CONTAINS
     RETURN
   END SUBROUTINE mltfft_fftw
   ! ==================================================================
-#if defined(__HAS_FFT_FFTW3)
+#if defined(_HAS_FFT_FFTW3)
   SUBROUTINE get_fftw_plan(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,&
        isign,plan)
     CHARACTER(len=1), INTENT( IN )           :: transa, transb

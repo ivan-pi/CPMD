@@ -95,6 +95,16 @@
 #define _USE_SCRATCHLIBRARY
 #endif
 
+!tk Disable Scalapack
+#if defined(__HAS_SCALAPACK) || defined(__INTEL_MKL)
+#define _HAS_SCALAPACK
+#endif
+
+!tk Enable FFTW3 if __INTEL_MKL is defined but disable if __HAS_FFT_DEFAULT is defined
+#if defined(__INTEL_MKL) && !defined(__HAS_FFT_DEFAULT)
+#define _HAS_FFT_FFTW3
+#endif
+
 !gm elpa lib
 #if defined(__HAS_LIBELPA)
 #define _HAS_LIBELPA

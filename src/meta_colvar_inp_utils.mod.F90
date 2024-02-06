@@ -2266,7 +2266,7 @@ CONTAINS
 
     ncolvar_mtd=0
     DO I = 1, ncolvar 
-      IF(no_hill(I) .EQ. .FALSE.) ncolvar_mtd = ncolvar_mtd + 1
+      IF(.NOT.no_hill(I)) ncolvar_mtd = ncolvar_mtd + 1
     END DO
 
     ! ==--------------------------------------------------------------==

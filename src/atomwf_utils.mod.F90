@@ -185,7 +185,7 @@ CONTAINS
 #ifdef _USE_SCRATCHLIBRARY
     CALL request_scratch(il_zorkat,zorkat,procedureN//'_zorkat',ierr)
 #else    
-    ALLOCATE(zorkat(il_zorkat), stat=ierr)
+    ALLOCATE(zorkat(il_zorkat(1)), stat=ierr)
 #endif
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
          __LINE__,__FILE__)
