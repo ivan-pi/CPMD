@@ -259,7 +259,7 @@ CONTAINS
        !$      CALL omp_set_max_active_levels( 1 )
        !$omp end parallel
        mcpus=ncpus
-#if defined(__HAS_FFT_FFTW3)
+#if defined(_HAS_FFT_FFTW3)
        !$      CALL DFFTW_INIT_THREADS(IDUMMY)
        !$      CALL DFFTW_PLAN_WITH_NTHREADS(MCPUS)
 #endif
