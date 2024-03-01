@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE rinitwf_driver
   USE atomwf_utils,                    ONLY: atomwf
   USE atwf,                            ONLY: atwp,&
@@ -52,11 +54,12 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! == INITIALIZATION OF WAVEFUNCTION                               ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: c0(:,:,:), c2(*), sc0(*)
-    INTEGER                                  :: nstate
-    REAL(real_8)                             :: tau0(:,:,:), fion(:,:,:), &
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c0(:,:,:)
+    COMPLEX(real_8),INTENT(OUT)              :: c2(*), sc0(*)
+    INTEGER,INTENT(IN)                       :: nstate
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: tau0(:,:,:), fion(:,:,:), &
                                                 rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'rinitwf'
 

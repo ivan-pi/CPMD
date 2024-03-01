@@ -54,8 +54,8 @@ CONTAINS
     ! ==                        COMPUTES                              ==
     ! == POTENTIAL ENERGY CONTRIBUTIONS TO THE FORCES ON THE IONS     ==
     ! ==--------------------------------------------------------------==
-    REAL(real_8)                             :: fion(:,:,:)
-    COMPLEX(real_8)                          :: v(*), eirop(ncpw%nhg)
+    REAL(real_8), INTENT(INOUT) __CONTIGUOUS :: fion(:,:,:)
+    COMPLEX(real_8),INTENT(IN)               :: v(*), eirop(ncpw%nhg)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'potfor'
 
@@ -159,8 +159,8 @@ CONTAINS
     ! ==                        COMPUTES                              ==
     ! == POTENTIAL ENERGY CONTRIBUTIONS TO THE FORCES ON THE IONS     ==
     ! ==--------------------------------------------------------------==
-    REAL(real_8)                             :: fion(:,:,:)
-    COMPLEX(real_8)                          :: rhog(fpar%nnr1)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:)
+    COMPLEX(real_8),INTENT(IN)               :: rhog(fpar%nnr1)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'potabfor'
 

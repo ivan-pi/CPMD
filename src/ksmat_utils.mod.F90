@@ -55,10 +55,10 @@ CONTAINS
     ! ==                        COMPUTES                              ==
     ! ==  THE KOHN-SHAM MATRIX IN THE ATOMIC WAVEFUNCTION BASIS       ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: c2(:,:)
-    REAL(real_8)                             :: vpot(:,:)
-    COMPLEX(real_8)                          :: psi(:)
-    INTEGER                                  :: nstate, ikind
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c2(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: vpot(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:)
+    INTEGER,INTENT(IN)                       :: nstate, ikind
 
     COMPLEX(real_8)                          :: pab(1)
     INTEGER                                  :: ia, is, ierr, &

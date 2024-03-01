@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE quenbo_utils
   USE coor,                            ONLY: tau0
   USE elct,                            ONLY: crge
@@ -38,10 +40,13 @@ CONTAINS
   SUBROUTINE quenbo(c0,c2,sc0,taur,rhoe,psi)
     ! ==--------------------------------------------------------------==
 
-    COMPLEX(real_8)                          :: c0(:,:), c2(ncpw%ngw,crge%n), &
+    COMPLEX(real_8),INTENT(INOUT)&
+         __CONTIGUOUS                        :: c0(:,:)
+    COMPLEX(real_8),INTENT(OUT)              :: c2(ncpw%ngw,crge%n), &
                                                 sc0(ncpw%ngw,crge%n)
-    REAL(real_8)                             :: taur(:,:,:), rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: taur(:,:,:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: rhoe(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'quenbo'
 

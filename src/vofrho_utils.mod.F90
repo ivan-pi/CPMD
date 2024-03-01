@@ -49,10 +49,12 @@ CONTAINS
     ! == RHOE: in  electronic density in real space                   ==
     ! ==       out potential in real space                            ==
     ! ==--------------------------------------------------------------==
-    REAL(real_8)                             :: tau0(:,:,:), fion(:,:,:), &
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:), &
                                                 rhoe(:,:)
-    COMPLEX(real_8)                          :: v(:,:)
-    LOGICAL                                  :: tfor, tstress
+    COMPLEX(real_8),INTENT(INOUT)&
+          __CONTIGUOUS                       :: v(:,:)
+    LOGICAL,INTENT(IN)                       :: tfor, tstress
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'vofrho'
 

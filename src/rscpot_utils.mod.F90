@@ -75,12 +75,13 @@ CONTAINS
     ! ==   RHOE      ELECTRONIC POTENTIAL                             ==
     ! ==   PSI       USED FOR FFT                                     ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8) __CONTIGUOUS             :: c0(:,:)
-    REAL(real_8) __CONTIGUOUS                :: tau0(:,:,:), fion(:,:,:), &
+    COMPLEX(real_8),INTENT(IN)  __CONTIGUOUS :: c0(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:), &
                                                 rhoe(:,:)
-    COMPLEX(real_8) __CONTIGUOUS             :: psi(:,:)
-    LOGICAL                                  :: tfor, tstress
-    INTEGER                                  :: nstate, nkpoint
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
+    LOGICAL,INTENT(IN)                       :: tfor, tstress
+    INTEGER,INTENT(IN)                       :: nstate, nkpoint
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'rscpot'
 

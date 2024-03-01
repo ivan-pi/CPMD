@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE kin_energy_utils
   USE cppt,                            ONLY: hg
   USE dotp_utils,                      ONLY: dotp
@@ -31,9 +33,9 @@ CONTAINS
     ! ==  THE KINETIC ENERGY EKIN. IT IS DONE IN RECIPROCAL SPACE     ==
     ! ==  WHERE THE ASSOCIATED OPERATORS ARE DIAGONAL.                ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: c0(:,:)
-    INTEGER                                  :: nstate
-    REAL(real_8)                             :: rsum
+    COMPLEX(real_8),INTENT(IN) __CONTIGUOUS  :: c0(:,:)
+    INTEGER,INTENT(IN)                       :: nstate
+    REAL(real_8),INTENT(OUT)                 :: rsum
 
     REAL(real_8), PARAMETER                  :: deltakin = 1.e-10_real_8 
 

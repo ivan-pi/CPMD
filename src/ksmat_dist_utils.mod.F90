@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE ksmat_dist_utils
   USE atwf,                            ONLY: atwf_mod,&
                                              atwp,&
@@ -56,13 +58,13 @@ CONTAINS
     ! ==  USES: DISTRIBUTED LANCZOS WITH GS REORTHOGONALIZATION       ==
     ! ==--------------------------------------------------------------==
 
-    COMPLEX(real_8)                          :: c2(:,:)
-    REAL(real_8)                             :: vpot(:,:)
-    COMPLEX(real_8)                          :: psi(:)
-    INTEGER                                  :: nstate, ikind
-    COMPLEX(real_8)                          :: c0(:,:,:)
-    INTEGER                                  :: nn
-    LOGICAL                                  :: tlsd2, ainitwfflag
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c2(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: vpot(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:)
+    INTEGER,INTENT(IN)                       :: nstate, ikind
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c0(:,:,:)
+    INTEGER,INTENT(IN)                       :: nn
+    LOGICAL,INTENT(IN)                       :: tlsd2, ainitwfflag
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'dist_ksmat'
 

@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE forcedr_driver
   USE bsym,                            ONLY: bsclcs
   USE cnstfc_utils,                    ONLY: restfc
@@ -42,20 +44,22 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! ==             DRIVER FOR FORCE CALCULATION                     ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8), TARGET                  :: c0(:,:)
-    COMPLEX(real_8)                          :: c2(:,:)
-    REAL(real_8)                             :: rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
-    REAL(real_8)                             :: tau0(:,:,:), fion(:,:,:), &
-                                                eigv(*)
-    INTEGER                                  :: nstate
-    COMPLEX(real_8)                          :: sc0(ncpw%ngw,nstate)
-    INTEGER                                  :: nkpoint
-    LOGICAL                                  :: lproj, tfor
+    COMPLEX(real_8),INTENT(IN),TARGET&
+         __CONTIGUOUS                        :: c0(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c2(:,:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: rhoe(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: fion(:,:,:)
+    REAL(real_8),INTENT(OUT)                 :: eigv(*)
+    INTEGER,INTENT(IN)                       :: nstate
+    COMPLEX(real_8),INTENT(OUT)              :: sc0(ncpw%ngw,nstate)
+    INTEGER,INTENT(IN)                       :: nkpoint
+    LOGICAL,INTENT(IN)                       :: lproj, tfor
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'forcedr'
 
-    COMPLEX(real_8), POINTER                 :: c0_ptr(:,:,:)
+    COMPLEX(real_8), POINTER __CONTIGUOUS    :: c0_ptr(:,:,:)
     INTEGER                                  :: i, ierr, ipx, isub, numx
     LOGICAL                                  :: oldstatus, statusdummy
 

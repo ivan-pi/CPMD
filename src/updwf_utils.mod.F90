@@ -56,12 +56,13 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     COMPLEX(real_8),INTENT(INOUT) __CONTIGUOUS :: c0(:,:)
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: c2(:,:), sc0(:,:)
-    REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: tau0(:,:,:), fion(:,:,:), rhoe(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: tau0(:,:,:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS      :: fion(:,:,:), rhoe(:,:)
     REAL(real_8),INTENT(OUT)                   :: vpp(nkpt%ngwk)
     COMPLEX(real_8),INTENT(OUT)                :: pme(*), gde(*)
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: psi(:,:)
     INTEGER,INTENT(IN)                         :: nstate
-    REAL(real_8),INTENT(INOUT)                 :: eigv(nstate)
+    REAL(real_8),INTENT(OUT)                   :: eigv(nstate)
     LOGICAL,INTENT(IN)                         :: tfor, update_pot
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'updwf'

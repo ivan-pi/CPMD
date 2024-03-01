@@ -162,10 +162,12 @@ CONTAINS
     ! == WARNING: ALL WAVEFUNCTIONS C0 HAVE TO BE ORTHOGONAL          ==
     ! ==--------------------------------------------------------------==
 
-    COMPLEX(real_8)                          :: c0(:,:)
-    REAL(real_8), TARGET __CONTIGUOUS        :: rhoe(:,:)
-    COMPLEX(real_8), TARGET __CONTIGUOUS     :: psi(:)
-    INTEGER                                  :: nstate
+    COMPLEX(real_8),INTENT(IN) __CONTIGUOUS  :: c0(:,:)
+    REAL(real_8),TARGET,INTENT(OUT)&
+         __CONTIGUOUS                        :: rhoe(:,:)
+    COMPLEX(real_8),TARGET,INTENT(OUT)&
+         __CONTIGUOUS                        :: psi(:)
+    INTEGER,INTENT(IN)                       :: nstate
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'rhoofr'
     COMPLEX(real_8), PARAMETER               :: zone = (1.0_real_8,0.0_real_8)

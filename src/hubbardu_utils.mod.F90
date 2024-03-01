@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE hubbardu_utils
 
 USE atom,                           ONLY: ecpfiles
@@ -99,10 +101,16 @@ USE zeroing_utils,                  ONLY: zeroing
     !     == -------------------------------------------------------------- ==
           IMPLICIT NONE
     !
-          INTEGER, INTENT(IN)            ::  nstate,ispin0
-          COMPLEX(real_8), INTENT(IN)    ::  c0(:,:),psi(:),c2u(:,:)
+          INTEGER,INTENT(IN)             ::  nstate,ispin0
+          COMPLEX(real_8),INTENT(IN)&
+               __CONTIGUOUS              ::  c0(:,:)
+          COMPLEX(real_8),INTENT(OUT)&
+               __CONTIGUOUS              :: psi(:),c2u(:,:)
 
-          REAL(real_8) , INTENT(INOUT)   ::  tau0(:,:,:),fion(:,:,:)
+          REAL(real_8) , INTENT(IN)&
+               __CONTIGUOUS              ::  tau0(:,:,:)
+          REAL(real_8) , INTENT(INOUT)&
+               __CONTIGUOUS              ::  fion(:,:,:)
           LOGICAL ,INTENT(IN)            ::  tfor
 
           CHARACTER(*), PARAMETER        ::  procedureN = 'hubbardUcorrection'
@@ -271,9 +279,10 @@ USE zeroing_utils,                  ONLY: zeroing
 !     == -------------------------------------------------------------- ==
       IMPLICIT NONE
       INTEGER, INTENT(IN)           ::   NSTATE,ISPIN0
-      COMPLEX(real_8)               ::   C0(:,:),PSI(:)
-      REAL(real_8)                  ::   TAU0(:,:,:)
-      LOGICAL                       ::   TFOR
+      COMPLEX(real_8) __CONTIGUOUS  ::   C0(:,:),PSI(:)
+      REAL(real_8),INTENT(IN)&
+      __CONTIGUOUS                  ::   TAU0(:,:,:)
+      LOGICAL,INTENT(IN)            ::   TFOR
       CHARACTER(len=30)             ::   TAG
       CHARACTER(*), PARAMETER       ::   procedureN = 'occmat'
     
@@ -402,8 +411,10 @@ USE zeroing_utils,                  ONLY: zeroing
      IMPLICIT NONE
 !
       INTEGER, INTENT(IN)           ::  NSTATE
-      REAL(real_8), INTENT(IN)      ::  TAU0(:,:,:)
-      COMPLEX(real_8), INTENT(IN)   ::  PSI(:)
+      REAL(real_8), INTENT(IN)&
+            __CONTIGUOUS            ::  TAU0(:,:,:)
+      COMPLEX(real_8), INTENT(OUT)&
+      __CONTIGUOUS                  ::  PSI(:)
       LOGICAL                       ::  TFOR
       CHARACTER(*), PARAMETER       ::  procedureN = 'orthocatom'
 !
@@ -587,12 +598,15 @@ USE zeroing_utils,                  ONLY: zeroing
 !     == -------------------------------------------------------------- ==
       IMPLICIT NONE
       CHARACTER(*), PARAMETER   ::  procedureN = 'hubbe'
-      INTEGER                   ::  NSTATE,ISPIN0
-      LOGICAL                   ::  TFOR
-      REAL(real_8)              ::  TAU0(:,:,:),FION(:,:,:)
+      INTEGER,INTENT(IN)        ::  NSTATE,ISPIN0
+      LOGICAL,INTENT(IN)        ::  TFOR
+      REAL(real_8),INTENT(IN)&
+      __CONTIGUOUS              ::  TAU0(:,:,:)
+      REAL(real_8),INTENT(INOUT)&
+      __CONTIGUOUS              ::  FION(:,:,:)
 ! NS TODO:  Was REAL variable! check this
-      COMPLEX(real_8)           ::  PSI(:)
-      COMPLEX(real_8)           ::  C0(:,:),C2U(:,:)!ncpw%ngw,:)
+      COMPLEX(real_8)__CONTIGUOUS ::  PSI(:)
+      COMPLEX(real_8)__CONTIGUOUS ::  C0(:,:),C2U(:,:)!ncpw%ngw,:)
 !
       REAL(real_8)              ::  OMSUMM2,OM1M2,OM2M1,OM1M1,OMSUM,FUI(3),&
                                     FOM1M1(3),FOM1M2(3),FOM2M1(3),FOMSUMM2(3),&
@@ -711,11 +725,12 @@ USE zeroing_utils,                  ONLY: zeroing
 !     == -------------------------------------------------------------- ==
       IMPLICIT NONE
 !
-      COMPLEX(real_8)             ::    C0(:,:),CA(:,:),C2U(:,:)
-      REAL(real_8)                ::    TAU0(:,:,:)
+      COMPLEX(real_8) __CONTIGUOUS::    C0(:,:),CA(:,:),C2U(:,:)
+      REAL(real_8),INTENT(IN) &
+           __CONTIGUOUS           ::    TAU0(:,:,:)
       CHARACTER(*), PARAMETER     ::    procedureN = 'deudpsi2'
       
-      INTEGER                     ::    NSTATE,ISPIN0,ISUB
+      INTEGER,INTENT(IN)          ::    NSTATE,ISPIN0
 !
       COMPLEX(real_8),ALLOCATABLE ::    SCA(:,:)
       COMPLEX(real_8)             ::    PSI(:)
@@ -723,7 +738,7 @@ USE zeroing_utils,                  ONLY: zeroing
       REAL(real_8)                ::    KD,PAR,FAC,TMP,FFI
       COMPLEX(real_8)             ::    UUU,UAA,FC,PAC,IM1M2,IM2M1,IM1M1,IFAC
       INTEGER                     ::    M1,M2,M10,M20,MM1,MM2,MOFF,IG,ISTATE,&
-                                        ISPIN,IUATM,ISPIN_MIN,ISPIN_MAX
+                                        ISPIN,IUATM,ISPIN_MIN,ISPIN_MAX,ISUB
       LOGICAL                     ::    TLSD_BAK
 !
       INTEGER                     ::    FIRSTCALL,ierr
@@ -1038,9 +1053,9 @@ USE zeroing_utils,                  ONLY: zeroing
 !     == -------------------------------------------------------------- ==
       IMPLICIT NONE
 !
-      INTEGER                       ::  NSTATE
+      INTEGER,INTENT(IN)            ::  NSTATE
       CHARACTER(*), PARAMETER       ::  procedureN = 'DFTPLUSU_NUMDER'
-      COMPLEX(real_8)               ::  C0(:,:),PSI(:),C2U(:,:)
+      COMPLEX(real_8) __CONTIGUOUS  ::  C0(:,:),PSI(:),C2U(:,:)
       REAL(real_8)                  ::  TAU0(3,maxsys%nax,maxsys%nsx),&
                                         FION(3,maxsys%nax,maxsys%nsx)     
       LOGICAL                       ::  TFOR,TIVAN_BAK

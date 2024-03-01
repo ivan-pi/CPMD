@@ -81,14 +81,16 @@ CONTAINS
     ! == We tested to refine the line minimization search if ALAM is  ==
     ! == too big but there is no real improvement.                    ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: c0(:,:), c2(:,:)
-    REAL(real_8)                             :: vpp(:), rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
-    REAL(real_8)                             :: tau0(:,:,:)
-    INTEGER                                  :: nstate
-    COMPLEX(real_8)                          :: hnm1(ncpw%ngw,nstate), &
+    COMPLEX(real_8),INTENT(INOUT) &
+         __CONTIGUOUS                        :: c0(:,:), c2(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: vpp(:), rhoe(:,:)
+    COMPLEX(real_8),INTENT(INOUT) &
+         __CONTIGUOUS                        :: psi(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
+    INTEGER,INTENT(IN)                       :: nstate
+    COMPLEX(real_8),INTENT(INOUT)            :: hnm1(ncpw%ngw,nstate), &
                                                 sc0(ncpw%ngw,nstate)
-    LOGICAL                                  :: dinit
+    LOGICAL,INTENT(IN)                       :: dinit
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'pcgrad'
     INTEGER, PARAMETER                       :: maxhist = 10 

@@ -94,9 +94,10 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c0(:,:,:)
     INTEGER,INTENT(IN)                       :: nstate
-    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:), fion(:,:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:)
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'atomwf'
     COMPLEX(real_8), PARAMETER               :: zone = (1._real_8, 0._real_8),&

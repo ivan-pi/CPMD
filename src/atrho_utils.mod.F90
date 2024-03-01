@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE atrho_utils
   USE atwf,                            ONLY: &
        atchg, atrg, atwf_mod, atwfr, atwp, atwr, catom, loadc_foc_array_size, &
@@ -58,16 +60,16 @@ CONTAINS
     ! ==  THE NORMALIZED ELECTRON DENSITY RHOE IN REAL SPACE          ==
     ! ==--------------------------------------------------------------==
 
-    REAL(real_8)                             :: rhoe(*)
-    COMPLEX(real_8)                          :: psi(:)
-    INTEGER                                  :: nstate
+    REAL(real_8),INTENT(OUT)                 :: rhoe(*)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:)
+    INTEGER,INTENT(IN)                       :: nstate
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'atrho'
 
     CHARACTER(len=8)                         :: form
     COMPLEX(real_8)                          :: tsfac
     COMPLEX(real_8), ALLOCATABLE             :: rhog(:)
-    COMPLEX(real_8), POINTER                 :: pcatom(:,:)
+    COMPLEX(real_8), POINTER __CONTIGUOUS    :: pcatom(:,:)
     INTEGER                                  :: ia, iaorb, iat, ierr, iform, &
                                                 ig, ir, is, isa, isa0, isub, &
                                                 ixx, natst
