@@ -522,7 +522,7 @@ CONTAINS
        ENDIF
        CALL forcedr(c0(:,:,ipx),c2(:,:,ipx),sc0,rhoe,psi,&
             pitaup(:,:,:,ipcurr),pifion(:,:,:,ipcurr),eigv,&
-            crge%n,1,.FALSE.,.TRUE.)
+            crge%n,1,.FALSE.,.TRUE.,.TRUE.)
        CALL dscal(3*maxsys%nax*maxsys%nsx,1._real_8/rnp,pifion(1,1,1,ipcurr),1)
        CALL dcopy(3*maxsys%nax*maxsys%nsx,pifion(1,1,1,ipcurr),1,fionks(1,1,1,ipcurr),1)
        CALL fharm(pitaup,pifion(:,:,:,ipcurr),ipcurr,.TRUE.)
@@ -748,7 +748,7 @@ CONTAINS
           ropt_mod%calste=cntl%tpres.AND.MOD(iteropt%nfi-1,cnti%npres).EQ.0
           CALL forcedr(c0(:,:,ipx),c2(:,:,ipx),sc0,rhoe,psi,&
                pitaup(:,:,:,ipcurr),pifion(:,:,:,ipcurr),eigv,&
-               crge%n,1,.FALSE.,.TRUE.)
+               crge%n,1,.FALSE.,.TRUE.,.TRUE.)
           CALL dscal(3*maxsys%nax*maxsys%nsx,1._real_8/rnp,pifion(1,1,1,ipcurr),1)
           CALL dcopy(3*maxsys%nax*maxsys%nsx,pifion(1,1,1,ipcurr),1,&
                fionks(1,1,1,ipcurr),1)

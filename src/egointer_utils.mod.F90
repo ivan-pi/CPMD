@@ -306,7 +306,7 @@ CONTAINS
     ! ..Calculate gradient
     ! 
     CALL forcedr(c0,c2,sc0,rhoe,psi,tau0,fion,eigv,&
-         crge%n,1,.TRUE.,.TRUE.)
+         crge%n,1,.TRUE.,.TRUE.,.TRUE.)
     ! 
     ! 
     ! ..Calculate the dipole moment

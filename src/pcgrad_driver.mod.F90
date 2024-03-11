@@ -374,7 +374,7 @@ CONTAINS
                eigv,nstate,1,.TRUE.,.FALSE.,.FALSE.)
        ELSE
           CALL forcedr(x,c2,sc0,rhoe,psi,tau0,tscr,eigv,&
-               nstate,1,.TRUE.,(cntl%tinter.EQV..TRUE.))
+               nstate,1,.TRUE.,(cntl%tinter.EQV..TRUE.),.TRUE.)
        ENDIF
 
        IF (cntl%prec.AND.ilsr.NE.-2) THEN

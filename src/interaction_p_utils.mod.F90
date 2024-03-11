@@ -346,7 +346,7 @@ CONTAINS
     ! Total energy of the starting Wannier orbitals (W0)
     IF (dmbi%torthog_wannier) THEN
        CALL forces(c0,h1psi0,tau0,fion,rhoe,psi,&
-            nstate,1,.FALSE.,.FALSE.)
+            nstate,1,.FALSE.,.FALSE.,.TRUE.)
        IF (paral%parent) THEN
           IF (paral%io_parent)&
                WRITE(6,*)
@@ -429,7 +429,7 @@ CONTAINS
     IF (dmbi%bptscfiter.LE.1) THEN
        ! Total energy of the non-orthogonalised W0+W1 if we don t do SCF
        CALL forces(C0plusC1,h1psi0,tau0,fion,rhoe,psi,&
-            nstate,1,.FALSE.,.FALSE.)
+            nstate,1,.FALSE.,.FALSE.,.TRUE.)
        IF (paral%parent) THEN
           IF (paral%io_parent)&
                WRITE(6,*)
@@ -473,7 +473,7 @@ CONTAINS
     ! Now calculating the total energy of the orthogonalised w0+w1
 
     CALL forces(C0plusC1,h1psi0,tau0,fion,rhoe,psi,&
-         nstate,1,.TRUE.,.FALSE.)
+         nstate,1,.TRUE.,.FALSE.,.TRUE.)
     IF (paral%parent) THEN
        IF (paral%io_parent)&
             WRITE(6,*)
@@ -607,7 +607,7 @@ CONTAINS
 
           ! Now calculating the total energy of the orthogonalised w0+w1
           CALL forces(C0plusC1,h1psi0,tau0,fion,rhoe,psi,&
-               nstate,1,.TRUE.,.FALSE.)
+               nstate,1,.TRUE.,.FALSE.,.TRUE.)
           IF (paral%parent) THEN
              IF (paral%io_parent)&
                   WRITE(6,*)'TOTAL ENERGY of orthog. W0+W1 at step',&

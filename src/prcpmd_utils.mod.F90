@@ -329,7 +329,7 @@ CONTAINS
        IF (geq0) CALL zclean(c0,crge%n,ncpw%ngw)
     ENDIF
     CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-         crge%n,1,.FALSE.,.TRUE.)
+         crge%n,1,.FALSE.,.TRUE.,.TRUE.)
 
     ! INITIALIZE STRESS CONTRIBUTION DUE TO METADYNAMICS
     CALL zeroing(dstrmeta)!,6)
@@ -460,7 +460,7 @@ CONTAINS
        ENDIF
        ! CALCULATE THE FORCES
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,taup,fion,eigv,&
-            crge%n,1,.FALSE.,.TRUE.)
+            crge%n,1,.FALSE.,.TRUE.,.TRUE.)
 
        IF (lmeta%lmeta_cell) THEN
           lquench = .FALSE.

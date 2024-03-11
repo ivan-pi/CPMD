@@ -349,7 +349,7 @@ CONTAINS
     CALL state_select("S0")
     CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,&
          TAU0,FION0,EIGV,&
-         sh02%nst_s0,1,.FALSE.,.TRUE.)
+         sh02%nst_s0,1,.FALSE.,.TRUE.,.TRUE.)
     e(1)=ener_com%etot
 
     ! Check orthogonality condition for wavefunction velocities (S0)
@@ -360,7 +360,7 @@ CONTAINS
     CALL zeroing(psi)!,nnr1*clsd%nlsd)
     CALL forcedr(c0(:,ns1:ns1+sh02%nst_s1-1,1),c2(:,ns1:ns1+sh02%nst_s1-1),sc0,rhoe,psi,&
          TAU0,FION1,EIGV,&
-         sh02%nst_s1,1,.FALSE.,.TRUE.)
+         sh02%nst_s1,1,.FALSE.,.TRUE.,.TRUE.)
 
     IF (paral%parent) THEN
        IF (paral%io_parent)&
@@ -568,7 +568,7 @@ CONTAINS
        ropt_mod%calste=cntl%tpres.AND.MOD(iteropt%nfi-1,cnti%npres).EQ.0
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,&
             TAUP,FION0,EIGV,&
-            sh02%nst_s0,1,.FALSE.,.TRUE.)
+            sh02%nst_s0,1,.FALSE.,.TRUE.,.TRUE.)
        e(1)=ener_com%etot
        IF (ropt_mod%calste) CALL totstr
 
@@ -584,7 +584,7 @@ CONTAINS
        ! CALCULATE THE FORCES
        ropt_mod%calste=cntl%tpres.AND.MOD(iteropt%nfi-1,cnti%npres).EQ.0
        CALL forcedr(c0(:,ns1:ns1+sh02%nst_s1-1,1),c2(:,ns1:ns1+sh02%nst_s1-1),sc0,rhoe,psi,taup,fion1,&
-            eigv,sh02%nst_s1,1,.FALSE.,.TRUE.)
+            eigv,sh02%nst_s1,1,.FALSE.,.TRUE.,.TRUE.)
        e(2)=ener_com%etot
        e(2)=e(2)+sh02%eaddsh
 
@@ -791,13 +791,13 @@ CONTAINS
        CALL state_select("S0")
        CALL ddipo(taup,c0(:,:,1),cm,c2,sc0,sh02%nst_s0,center)
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,taup,fion,eigv,&
-            sh02%nst_s0,1,.FALSE.,.TRUE.)
+            sh02%nst_s0,1,.FALSE.,.TRUE.,.TRUE.)
        CALL wc_dos(c0,c2,sh02%nst_s0,center)
        CALL state_select("S1")
        CALL ddipo(taup,c0(:,ns1:,1),cm(:,ns1:),c2(:,ns1:),sc0,sh02%nst_s1,center)
        CALL forcedr(c0(:,ns1:ns1+sh02%nst_s1-1,1),c2(:,ns1:ns1+sh02%nst_s1-1),sc0,rhoe,psi,taup,fion,&
             eigv,&
-            sh02%nst_s1,1,.FALSE.,.TRUE.)
+            sh02%nst_s1,1,.FALSE.,.TRUE.,.TRUE.)
        CALL wc_dos(c0,c2,sh02%nst_s1,center)
        ! McB... cf. elct.inc
        ntmp=crge%n

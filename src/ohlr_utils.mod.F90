@@ -360,7 +360,7 @@ CONTAINS
     IF (lrhd%local_orb) CALL localize(tau0,c0,c2,sc0,crge%n)
     ! ..calculate KS-Matrix 
     CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-         crge%n,1,.FALSE.,.FALSE.)
+         crge%n,1,.FALSE.,.FALSE.,.TRUE.)
     time2=m_walltime()
     tcpu=(time2-time1)*0.001_real_8
     IF (paral%parent) THEN

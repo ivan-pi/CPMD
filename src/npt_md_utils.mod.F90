@@ -297,7 +297,7 @@ CONTAINS
        IF (geq0) CALL zclean(c0,nstate,ncpw%ngw)
     ENDIF
     CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-         nstate,1,.FALSE.,.TRUE.)
+         nstate,1,.FALSE.,.TRUE.,.TRUE.)
     CALL totstr
     CALL freqs(nstate,.FALSE.)
     ! Check orthogonality condition for wavefunction velocities
@@ -427,7 +427,7 @@ CONTAINS
        ENDIF
        ! CALCULATE THE FORCES
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,taup,fion,eigv,&
-            nstate,1,.FALSE.,.TRUE.)
+            nstate,1,.FALSE.,.TRUE.,.TRUE.)
        CALL totstr
        ! ==================================================================
        ! Damped Dynamics

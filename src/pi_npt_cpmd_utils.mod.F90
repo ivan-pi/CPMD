@@ -525,7 +525,7 @@ CONTAINS
        ENDIF
        CALL forcedr(c0(:,:,ipx),c2(:,:,ipx),sc0,rhoe,psi,&
             pitaup(:,:,:,ipcurr),pifion(:,:,:,ipcurr),eigv(:,ipx),&
-            crge%n,1,.FALSE.,.TRUE.)
+            crge%n,1,.FALSE.,.TRUE.,.TRUE.)
        CALL dscal(3*maxsys%nax*maxsys%nsx,1._real_8/rnp,pifion(1,1,1,ipcurr),1)
        CALL dcopy(3*maxsys%nax*maxsys%nsx,pifion(1,1,1,ipcurr),1,fionks(1,1,1,ipcurr),1)
        CALL fharm(pitaup,pifion(:,:,:,ipcurr),ipcurr,.TRUE.)
@@ -792,7 +792,7 @@ CONTAINS
           ! ..CALCULATE THE FORCES
           CALL forcedr(c0(:,:,ipx),c2(:,:,ipx),sc0,rhoe,psi,&
                pitaup(:,:,:,ipcurr),pifion(:,:,:,ipcurr),eigv(:,ipx),&
-               crge%n,1,.FALSE.,.TRUE.)
+               crge%n,1,.FALSE.,.TRUE.,.TRUE.)
           CALL dscal(3*maxsys%nax*maxsys%nsx,1._real_8/rnp,pifion(1,1,1,ipcurr),1)
           CALL dcopy(3*maxsys%nax*maxsys%nsx,pifion(1,1,1,ipcurr),1,&
                fionks(1,1,1,ipcurr),1)

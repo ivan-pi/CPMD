@@ -240,7 +240,7 @@ CONTAINS
        ENDIF
     ELSE
        CALL forcedr(c0(:,1:nstate),c2(:,1:nstate),sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.FALSE.,tfor)
+            nstate,1,.FALSE.,tfor,.TRUE.)
     ENDIF
     ! transform to canonical orbitals and get eigenvalues
     CALL canon(c0,c2,crge%f,nstate,eigv)
@@ -272,7 +272,7 @@ CONTAINS
                eigv,nstate,1,.FALSE.,.FALSE.,.TRUE.)
        ELSE
           CALL forcedr(c0(:,1:nstate),c2(:,1:nstate),sc0,rhoe,psi,tau0,fion,eigv,&
-               nstate,1,.FALSE.,.FALSE.)
+               nstate,1,.FALSE.,.FALSE.,.TRUE.)
        ENDIF
        DO is=1,nstate
           CALL dscal(2*ncpw%ngw,1._real_8/crge%f(is,1),c2(1,is),1)

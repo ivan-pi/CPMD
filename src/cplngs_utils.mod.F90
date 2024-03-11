@@ -303,13 +303,13 @@ CONTAINS
           CALL switch_st ('SET', crge%f, nstate, lspin2%tlse, lspin2%tlsets)
           CALL switch_st ('GND', crge%f, nstate, lspin2%tlse, lspin2%tlsets)
           CALL forcedr (c0, c2, sc0, rhoe, psi, tau0, fion, eigv,&
-               NSTATE, 1, .FALSE., .FALSE.)
+               NSTATE, 1, .FALSE., .FALSE., .TRUE.)
           egnd = ener_com%etot
           IF ((lprint).AND.paral%io_parent)&
                WRITE(6,110) 'ENERGY OF STATE S0:', egnd
           CALL switch_st ('EXC', crge%f, nstate, lspin2%tlse, lspin2%tlsets)
           CALL forcedr (c0, c2, sc0, rhoe, psi, tau0, fion, eigv,&
-               NSTATE, 1, .FALSE., .FALSE.)
+               NSTATE, 1, .FALSE., .FALSE., .TRUE.)
           eexc = ener_com%etot
           IF ((lprint).AND.paral%io_parent)&
                WRITE(6,110) 'ENERGY OF STATE S1:', eexc
@@ -325,7 +325,7 @@ CONTAINS
        CALL dcopy (ncpw%ngw, c0(1,nstate-1), 1, c1(1,nstate), 1)
        CALL dcopy (ncpw%ngw, c0(1,nstate), 1, c1(1,nstate-1), 1)
        CALL forcedr (c1, c2, sc0, rhoe, psi, tau0, fion, eigv,&
-            NSTATE, 1, .FALSE., .FALSE.)
+            NSTATE, 1, .FALSE., .FALSE., .TRUE.)
        IF (lprint.AND.paral%io_parent) WRITE (6,110)&
             'ENERGY OF STATE TS (SWAPPED ORBITALS):', ener_com%etot
        CALL hpsi (c1, c2, sc0, rhoe, psi(:,1), nstate,&
@@ -351,7 +351,7 @@ CONTAINS
        ENDDO
        ! Diagonal KS matrix elements, right order
        CALL forcedr (c0, c2, sc0, rhoe, psi, tau0, fion, eigv,&
-            NSTATE, 1, .FALSE., .FALSE.)
+            NSTATE, 1, .FALSE., .FALSE., .TRUE.)
        IF (lprint.AND.paral%io_parent)&
             WRITE (6,110) 'ENERGY OF STATE TS:', ener_com%etot
 
@@ -380,7 +380,7 @@ CONTAINS
     ELSE
        ! Other excitations
        CALL forcedr (c0, c2, sc0, rhoe, psi, tau0, fion, eigv,&
-            NSTATE, 1, .FALSE., .FALSE.)
+            NSTATE, 1, .FALSE., .FALSE. ,.TRUE.)
        CALL canon (c0, c2, crge%f, crge%n, eigv)
        orbtyp="CANON"
     ENDIF

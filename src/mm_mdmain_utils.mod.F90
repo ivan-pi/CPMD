@@ -1011,7 +1011,7 @@ CONTAINS
           CALL mm_dim(mm_go_qm,statusdummy)
           CALL ddipo(taup,c0(:,:,1),cm(:,:,1),c2(:,:,1),sc0,nstate,center)
           CALL forcedr(c0(:,:,1),c2(:,:,1),sc0(:,:,1),rhoe,psi,taup,fion,eigv,&
-               nstate,1,.FALSE.,.TRUE.)
+               nstate,1,.FALSE.,.TRUE.,.TRUE.)
           CALL wc_dos(c0,c2,nstate,center)
           CALL mm_dim(mm_go_mm,statusdummy)
        ENDIF

@@ -104,7 +104,7 @@ MODULE forces_driver
 CONTAINS
 
   ! ==================================================================
-  SUBROUTINE forces(c0,c2,tau0,fion,rhoe,psi,nstate,nkpoint,lproj,tfor)
+  SUBROUTINE forces(c0,c2,tau0,fion,rhoe,psi,nstate,nkpoint,lproj,tfor,tcsize)
     ! ==--------------------------------------------------------------==
     ! ==                        COMPUTES                              ==
     ! ==                     THE TOTAL ENERGY                         ==
@@ -120,7 +120,7 @@ CONTAINS
                                                 rhoe(:,:)
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
     INTEGER,INTENT(IN)                       :: nstate, nkpoint
-    LOGICAL,INTENT(IN)                       :: lproj, tfor
+    LOGICAL,INTENT(IN)                       :: lproj, tfor, tcsize
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'forces'
 
@@ -543,7 +543,7 @@ CONTAINS
           ENDIF
        END IF
 
-       CALL csize(c2,nstate,gemax,cnorm,use_cp_grps=.FALSE.,special=cntl%nonort)
+       IF(tcsize) CALL csize(c2,nstate,gemax,cnorm,use_cp_grps=.FALSE.,special=cntl%nonort)
 
        __NVTX_TIMER_STOP
        CALL tihalt(procedureN//'_b',isub3)

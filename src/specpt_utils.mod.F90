@@ -900,7 +900,7 @@ CONTAINS
                   eigv,no,1,.FALSE.,.FALSE.,.TRUE.)
           ELSE
              CALL forcedr(c0(:,:,1),c2(:,:,1),sc0,rhoe,psi,tau0,fion,eigv,&
-                  no,1,.FALSE.,.FALSE.)
+                  no,1,.FALSE.,.FALSE.,.TRUE.)
           ENDIF
           CALL canon(c0,c2,crge%f,no,eigv)
           IF (td03%treorder) THEN
@@ -1001,7 +1001,7 @@ CONTAINS
                   eigv,no,1,.FALSE.,.FALSE.,.FALSE.)
           ELSE
              CALL forcedr(c0(:,:,1),c2(:,:,1),sc0,rhoe,psi,tau0,fion,eigv,&
-                  no,1,.FALSE.,.TRUE.)
+                  no,1,.FALSE.,.TRUE.,.TRUE.)
           ENDIF
           CALL dcopy(fpar%nnr1*clsd%nlsd,rhoe,1,potr,1)
           DO is=1,no
@@ -1045,7 +1045,7 @@ CONTAINS
                eigv,no,1,.FALSE.,.FALSE.,.TRUE.)
        ELSE
           CALL forcedr(c0(:,:,1),c2(:,:,1),sc0,rhoe,psi,tau0,fion,eigv,&
-               no,1,.FALSE.,.TRUE.)
+               no,1,.FALSE.,.TRUE.,.TRUE.)
        ENDIF
        CALL canon(c0,c2,crge%f,no,eigv)
        IF (td03%treorder) THEN
@@ -1073,7 +1073,7 @@ CONTAINS
                eigv,no,1,.FALSE.,.FALSE.,.TRUE.)
        ELSE
           CALL forcedr(c0(:,:,1),c2(:,:,1),sc0,rhoe,psi,tau0,fion,eigv,&
-               no,1,.FALSE.,.TRUE.)
+               no,1,.FALSE.,.TRUE.,.TRUE.)
        ENDIF
        DO is=1,no
           CALL dscal(2*ncpw%ngw,1._real_8/crge%f(is,1),c2(1,is,1),1)

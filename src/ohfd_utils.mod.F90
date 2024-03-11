@@ -188,7 +188,7 @@ CONTAINS
     CALL zhwwf(2,irec,c0,c2,crge%n,eigv,tau0,tau0,tau0,iteropt%nfi)
     ! ..transform to canonical orbitals and get eigenvalues
     CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-         crge%n,1,.FALSE.,.FALSE.)
+         crge%n,1,.FALSE.,.FALSE.,.TRUE.)
     CALL canon(c0,c2,crge%f,crge%n,eigv)
     IF (paral%parent) THEN
        IF (paral%io_parent)&
@@ -241,7 +241,7 @@ CONTAINS
                tau0,velp,taup,fion,ifcalc,&
                irec,.FALSE.,.FALSE.)
           CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigp,&
-               crge%n,1,.FALSE.,.FALSE.)
+               crge%n,1,.FALSE.,.FALSE.,.TRUE.)
           CALL canon(c0,c2,crge%f,crge%n,eigp)
           IF (soft_com%exsoft) GOTO 100
           IF (paral%io_parent)&
@@ -257,7 +257,7 @@ CONTAINS
                tau0,velp,taup,fion,ifcalc,&
                irec,.FALSE.,.FALSE.)
           CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigm,&
-               crge%n,1,.FALSE.,.FALSE.)
+               crge%n,1,.FALSE.,.FALSE.,.TRUE.)
           CALL canon(c0,c2,crge%f,crge%n,eigm)
           crge%f(knfi,1)=crge%f(knfi,1)+cntr%fdiff
           DO i=1,crge%n

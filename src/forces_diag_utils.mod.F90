@@ -380,7 +380,7 @@ CONTAINS
              ENDIF
           ELSE
              CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-                  nstate,1,.TRUE.,tfor)
+                  nstate,1,.TRUE.,tfor,.TRUE.)
           ENDIF
           ! AK: NOTE: Restraints are already treated in FORCEDR()
        ENDIF

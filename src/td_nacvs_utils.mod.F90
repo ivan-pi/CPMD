@@ -516,7 +516,7 @@ CONTAINS
     CALL zeroing(eigt)!,nstate)
     ! EIGV ARE TAKEN FROM THE ARGUMENTS: cntl%tddft values 
     CALL forcedr(c0,c2,sc0,rhoe,psi,tau0,fion_na,eigt,&
-         nn,1,.FALSE.,.TRUE.)
+         nn,1,.FALSE.,.TRUE.,.TRUE.)
     CALL canon(c0,c2,crge%f,nn,eigt)
     orbtyp="CANON"
     ! recalculate FNL and DFNL for transformed orbitals.

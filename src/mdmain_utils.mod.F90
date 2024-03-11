@@ -531,7 +531,7 @@ CONTAINS
        CALL setbsstate
     ENDIF
     CALL forcedr(c0(:,:,1),c2(:,:,1),sc0(:,:,1),rhoe,psi,&
-         TAU0,FION,EIGV,NSTATE,1,.FALSE.,.TRUE.)
+         TAU0,FION,EIGV,NSTATE,1,.FALSE.,.TRUE.,.TRUE.)
     ! STORE THE SPIN DENSITIES FOR PRINTING
     IF (cntl%bsymm) THEN
        spd_bs=chrg%csums
@@ -546,7 +546,7 @@ CONTAINS
        bsclcs=2
        CALL setbsstate
        CALL forcedr(c0(:,:,2),c2(:,:,2),sc0(:,:,2),rhoe,psi,&
-            tau0,fion,eigv(1,2),nstate,1,.FALSE.,.TRUE.)
+            tau0,fion,eigv(1,2),nstate,1,.FALSE.,.TRUE.,.TRUE.)
        ! STORE THE SPIN DENSITIES FOR PRINTING
        spd_hs =chrg%csums
        spda_hs=chrg%csumsabs
@@ -780,7 +780,7 @@ CONTAINS
        bsclcs=1
        IF (cntl%bsymm)CALL setbsstate
        CALL forcedr(c0(:,:,1),c2(:,:,1),sc0(:,:,1),rhoe,psi,taup,fion,eigv,&
-            nstate,1,.FALSE.,.TRUE.)
+            nstate,1,.FALSE.,.TRUE.,.FALSE.)
        IF (cntl%bsymm) THEN
           spd_bs=chrg%csums
           spda_bs=chrg%csumsabs
@@ -792,7 +792,7 @@ CONTAINS
           bsclcs=2
           CALL setbsstate
           CALL forcedr(c0(:,:,2),c2(:,:,2),sc0(:,:,2),rhoe,psi,taup,&
-               fion,eigv(1,2),nstate,1,.FALSE.,.TRUE.)
+               fion,eigv(1,2),nstate,1,.FALSE.,.TRUE.,.FALSE.)
           spd_hs=chrg%csums
           spda_hs=chrg%csumsabs
           ! ENERGY AND FORCES FOR LOW SPIN STATE 
@@ -1169,7 +1169,7 @@ CONTAINS
     IF (wannl%twann) THEN
        CALL ddipo(taup,c0(:,:,1),cm(:,:,1),c2(:,:,1),sc0,nstate,center)
        CALL forcedr(c0(:,:,1),c2(:,:,1),sc0(:,:,1),rhoe,psi,taup,fion,eigv,&
-            nstate,1,.FALSE.,.TRUE.)
+            nstate,1,.FALSE.,.TRUE.,.TRUE.)
        CALL wc_dos(c0,c2,nstate,center)
     ENDIF
     DEALLOCATE(center,STAT=ierr)

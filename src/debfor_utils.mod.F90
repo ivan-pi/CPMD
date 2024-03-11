@@ -239,7 +239,7 @@ CONTAINS
     ! NUCLEAR GRADIENT
     IF (cntl%tddft) THEN
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.TRUE.,.TRUE.)
+            nstate,1,.TRUE.,.TRUE.,.TRUE.)
        CALL lr_tddft(c0(:,:,1),c1,c2,sc0,rhoe,psi,tau0,fion,eigv,&
             nstate,.TRUE.,td01%ioutput)
     ELSEIF (cntl%tdiag) THEN
@@ -249,7 +249,7 @@ CONTAINS
             nstate,.TRUE.,.TRUE.,cntl%tpres,infi,thl,nhpsi)
     ELSE
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.TRUE.,.TRUE.)
+            nstate,1,.TRUE.,.TRUE.,.TRUE.)
     ENDIF
     CALL dscal(3*maxsys%nax*maxsys%nsx,-1.0_real_8,fion(1,1,1),1)
     time2=m_walltime()

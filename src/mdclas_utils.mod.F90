@@ -259,7 +259,7 @@ CONTAINS
        CALL q_coor('PUT',tau0,velp)
        IF (geq0) CALL zclean(c0,nstate,ncpw%ngw)
        CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.FALSE.,.TRUE.)
+            nstate,1,.FALSE.,.TRUE.,.TRUE.)
        CALL freqs(crge%n,.TRUE.)
        ! Check orthogonality condition for wavefunction velocities
        CALL rortv(c0,cm,c2,sc0,gamy,nstate)
@@ -412,7 +412,7 @@ CONTAINS
           ! CALCULATE THE FORCES
           ropt_mod%calste=cntl%tpres.AND.MOD(iteropt%nfi-1,cnti%npres).EQ.0
           CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,taup,fion,eigv,&
-               nstate,1,.FALSE.,.TRUE.)
+               nstate,1,.FALSE.,.TRUE.,.TRUE.)
           IF (ropt_mod%calste) CALL totstr
        ENDIF
        ! we have to check whether the Verlet list need to be updated

@@ -259,7 +259,7 @@ CONTAINS
        CALL reshape_inplace(c2, (/SIZE(c2,1),SIZE(c2,2)/), c2_ptr)
        !CALL forcedr(c0(:,:,1),c2(:,:,1),sc0,rhoe,psi,tau0,fion,eigv,&
        CALL forcedr(c0(:,:,1),c2_ptr(:,:),sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.TRUE.,tfor)
+            nstate,1,.TRUE.,tfor,.TRUE.)
        ! ==------------------------------------------------------------==
        ! ==  STEEPEST DESCENT STEP                                     ==
        ! ==------------------------------------------------------------==

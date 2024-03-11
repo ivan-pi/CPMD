@@ -634,7 +634,7 @@ SUBROUTINE rgmopt(c0,c1,c2,cm,sc0,pme,gde,vpp,eigv)
                 eigv,nstate,0,.FALSE.,.TRUE.,.TRUE.)
         ELSE
            CALL forcedr(c0(:,:,1),c2(:,:,1),sc0(:,:,1),rhoe,psi,tau0,fion,eigv,&
-                nstate,1,.TRUE.,.TRUE.)
+                nstate,1,.TRUE.,.TRUE.,.TRUE.)
         ENDIF
         IF (ropt_mod%calste) THEN
            CALL totstr

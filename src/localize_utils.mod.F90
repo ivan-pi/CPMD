@@ -357,7 +357,7 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
             __LINE__,__FILE__)
        CALL forcedr(c0,c2,sc0,rhoe,psi,tau0,fion,eigv,nstate,&
-            1,.FALSE.,.TRUE.)
+            1,.FALSE.,.TRUE.,.TRUE.)
     ENDIF
     ! calculate the centers and spread of the wannier functions
     CALL wannier_center(xyzmat,nstate,nstate,center,tau0)
@@ -375,7 +375,7 @@ CONTAINS
     IF (wannl%twmol) THEN
        CALL molorb(c0,c2,tau0,nstate,center)
        CALL forcedr(c0,c2,sc0,rhoe,psi,tau0,fion,eigv,nstate,&
-            1,.FALSE.,.TRUE.)
+            1,.FALSE.,.TRUE.,.TRUE.)
     ENDIF
     IF (wannl%twdos) CALL wc_dos(c0,c2,nstate,center)
 

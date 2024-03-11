@@ -368,7 +368,7 @@ CONTAINS
          __LINE__,__FILE__)
     ! NUCLEAR GRADIENT
     CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,tau0,fion,eigv,&
-         crge%n,1,.FALSE.,.TRUE.)
+         crge%n,1,.FALSE.,.TRUE.,.TRUE.)
     CALL dscal(3*maxsys%nax*maxsys%nsx,-1.0_real_8,fion(1,1,1),1)
     time2=m_walltime()
     tcpu=(time2-time1)*0.001_real_8

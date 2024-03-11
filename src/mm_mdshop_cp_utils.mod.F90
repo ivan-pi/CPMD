@@ -1161,14 +1161,14 @@ CONTAINS
           CALL ddipo(taup,c0(:,:,1),cm,c2,sc0,sh02%nst_s0,center)
           CALL forcedr(c0(:,:,1),c2,sc0,rhoe,psi,&
                TAUP,FION0,EIGV,&
-               sh02%nst_s0,1,.FALSE.,.TRUE.)
+               sh02%nst_s0,1,.FALSE.,.TRUE.,.TRUE.)
           CALL wc_dos(c0,c2,sh02%nst_s0,center)
           CALL state_select("S1")
           CALL ddipo(taup,c0(:,ns1:,1),cm(:,ns1:),c2(:,ns1:),&
                SC0,sh02%nst_s1,CENTER)
           CALL forcedr(c0(:,ns1:ns1+sh02%nst_s1-1,1),c2(:,ns1:ns1+sh02%nst_s1-1),sc0,rhoe,psi,&
                TAUP,FION1,EIGV,&
-               sh02%nst_s1,1,.FALSE.,.TRUE.)
+               sh02%nst_s1,1,.FALSE.,.TRUE.,.TRUE.)
           CALL wc_dos(c0,c2,sh02%nst_s1,center)
           ! .................................
           CALL mm_dim(mm_go_mm,statusdummy)

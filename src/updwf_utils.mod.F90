@@ -85,7 +85,7 @@ CONTAINS
        CALL mm_dim(mm_go_qm,statusdummy)
     ELSE
        CALL forcedr(c0,c2,sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.TRUE.,tfor)
+            nstate,1,.TRUE.,tfor,.TRUE.)
        IF (.NOT.tfor) THEN
           CALL zeroing(fion)!,3*maxsys%nax*maxsys%nsx)
        ENDIF

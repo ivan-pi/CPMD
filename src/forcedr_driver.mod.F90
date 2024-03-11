@@ -40,7 +40,7 @@ CONTAINS
 
   ! ==================================================================
   SUBROUTINE forcedr(c0,c2,sc0,rhoe,psi,tau0,fion,eigv,&
-       nstate,nkpoint,lproj,tfor)
+       nstate,nkpoint,lproj,tfor,tcsize)
     ! ==--------------------------------------------------------------==
     ! ==             DRIVER FOR FORCE CALCULATION                     ==
     ! ==--------------------------------------------------------------==
@@ -55,7 +55,7 @@ CONTAINS
     INTEGER,INTENT(IN)                       :: nstate
     COMPLEX(real_8),INTENT(OUT)              :: sc0(ncpw%ngw,nstate)
     INTEGER,INTENT(IN)                       :: nkpoint
-    LOGICAL,INTENT(IN)                       :: lproj, tfor
+    LOGICAL,INTENT(IN)                       :: lproj, tfor, tcsize
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'forcedr'
 
@@ -70,7 +70,7 @@ CONTAINS
     NULLIFY(c0_ptr)
     CALL reshape_inplace(c0, (/SIZE(c0,1),SIZE(c0,2),1/), c0_ptr)
     CALL forces(c0_ptr,c2,tau0,fion,rhoe,psi,&
-         nstate,nkpoint,lproj,tfor)
+         nstate,nkpoint,lproj,tfor,tcsize)
     ! Forces from restraints (may be in the MM part as well)
     IF ( tfor ) THEN
        CALL mm_dim(mm_go_mm,statusdummy)

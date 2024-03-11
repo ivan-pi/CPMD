@@ -1068,11 +1068,11 @@ CONTAINS
              IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
                   __LINE__,__FILE__)
              CALL forcedr(c0(:,:,1),c2,sc0,vpot,psi,taup,save_fion,We,&
-                  nstate,1,.FALSE.,.TRUE.)
+                  nstate,1,.FALSE.,.TRUE.,.TRUE.)
              IF (wannl%twmol) THEN
                 CALL molorb(c0,c2,taup,nstate,center)
                 CALL forcedr(c0(:,:,1),c2,sc0,vpot,psi,taup,save_fion,We,&
-                     nstate,1,.FALSE.,.TRUE.)
+                     nstate,1,.FALSE.,.TRUE.,.TRUE.)
              ENDIF
              IF (wannl%twdos) CALL wc_dos(c0,c2,nstate,center)
              DEALLOCATE(save_fion,STAT=ierr)
