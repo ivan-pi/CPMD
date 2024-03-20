@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE velupa_utils
   USE cp_grp_utils,                    ONLY: cp_grp_get_sizes
   USE harm,                            ONLY: dtan2c,&
@@ -9,6 +11,7 @@ MODULE velupa_utils
                                              cntr,&
                                              ncpw,&
                                              nkpt
+  USE reshaper,                        ONLY: reshape_inplace
   USE timer,                           ONLY: tihalt,&
                                              tiset
   USE tpar,                            ONLY: dt_elec,&
@@ -35,7 +38,7 @@ CONTAINS
     INTEGER                                  :: i, ig, isub, &
                                                 ibeg_c0, iend_c0, ngwk_local
     REAL(real_8)                             :: dtx, hfo, hgi
-
+    REAL(real_8),POINTER __CONTIGUOUS        :: c2_r(:,:),cm_r(:,:)
     CHARACTER(*), PARAMETER                  :: procedureN = 'velupa'
 
     CALL tiset(procedureN,isub)
@@ -70,28 +73,44 @@ CONTAINS
              END IF
           END DO
        END DO
+    ELSE IF (cntl%tmass) THEN
+       !$omp parallel do private(i,ig,hgi)
+       DO i=1,nstate
+          DO ig=ibeg_c0,iend_c0
+             hgi=REAL(nnlst,kind=real_8)*0.5_real_8*dt_elec/xmu(ig)
+             cm(ig,i)=cm(ig,i)+hgi*c2(ig,i)
+          END DO
+       END DO
     ELSE
-       IF (cntl%tmass) THEN
-          !$omp parallel do private(i,ig,hgi)
-          DO i=1,nstate
-             DO ig=ibeg_c0,iend_c0
-                hgi=REAL(nnlst,kind=real_8)*0.5_real_8*dt_elec/xmu(ig)
-                cm(ig,i)=cm(ig,i)+hgi*c2(ig,i)
-             END DO
-          END DO
-       ELSE
-          dtx=REAL(nnlst,kind=real_8)*dtb2me
-          !$omp parallel do private(i,ig)
-          DO i=1,nstate
-             DO ig=ibeg_c0,iend_c0
-                cm(ig,i)=cm(ig,i)+dtx*c2(ig,i)
-             END DO
-          END DO
-       END IF
+       dtx=REAL(nnlst,kind=real_8)*dtb2me
+       CALL reshape_inplace(cm,(/2*ncpw%ngw,nstate/),cm_r)
+       CALL reshape_inplace(c2,(/2*ncpw%ngw,nstate/),c2_r)
+       CALL update_cm(cm_r,c2_r,nstate,dtx,ibeg_c0*2-1,iend_c0*2)
     END IF
+
     CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==
     RETURN
   END SUBROUTINE velupa
   ! ==================================================================
+  SUBROUTINE update_cm(cm_r,c2_r,nstate,dtx,ibeg_c0,iend_c0)
+    ! ==--------------------------------------------------------------==
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: cm_r(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: c2_r(:,:)
+    REAL(real_8),INTENT(IN)                  :: dtx
+    INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
+
+    INTEGER                                  :: i,ig
+    !$omp parallel do &
+    !$omp& private(i,ig)
+    DO i=1,nstate
+       DO ig=ibeg_c0,iend_c0
+          cm_r(ig,i)=cm_r(ig,i)+dtx*c2_r(ig,i)
+       END DO
+    END DO
+
+    ! ==--------------------------------------------------------------==
+  END SUBROUTINE update_cm
+  ! ==================================================================
+
 END MODULE velupa_utils

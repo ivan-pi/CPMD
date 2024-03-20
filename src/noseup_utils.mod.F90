@@ -26,6 +26,7 @@ MODULE noseup_utils
   USE prpnosmove_utils,                ONLY: prpnosmove,&
                                              prpnosmove_iso
   USE rekine_utils,                    ONLY: rekine
+  USE reshaper,                        ONLY: reshape_inplace
   USE rmas,                            ONLY: rmass
   USE system,                          ONLY: cntl,&
                                              ncpw
@@ -55,6 +56,7 @@ CONTAINS
     INTEGER                                  :: i, isub, j, &
                                                 ig, ibeg_c0, iend_c0
     REAL(real_8)                             :: ekinc, sctot
+    REAL(real_8),POINTER __CONTIGUOUS        :: cm_r(:,:)
 #ifdef _VERBOSE_IONIC_VELOCITIES_DBG
     INTEGER                                  :: ia, is
 #endif
@@ -93,12 +95,8 @@ CONTAINS
           ENDDO
        ENDIF
        CALL mp_bcast(sctot,parai%io_source,parai%cp_grp)
-       !$omp parallel do private (i,ig)
-       DO i=1,nstate
-          DO ig=ibeg_c0,iend_c0
-             cm(ig,i)=cm(ig,i)*sctot
-          END DO
-       END DO
+       CALL reshape_inplace(cm,(/2*ncpw%ngw,nstate/),cm_r)
+       CALL update_cm(cm_r,sctot,nstate,ibeg_c0*2-1,iend_c0*2)
     ENDIF
     ! FOR BS_CPMD: IF WF IS HS, SKIP THE REST
     IF (cntl%bsymm.AND.(bsclcs.EQ.2))THEN
@@ -268,6 +266,23 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     RETURN
   END SUBROUTINE noseup
+  ! ==================================================================
+  SUBROUTINE update_cm(cm_r,sctot,nstate,ibeg_c0,iend_c0)
+    ! ==--------------------------------------------------------------==
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: cm_r(:,:)
+    INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
+    REAL(real_8),INTENT(IN)                  :: sctot
+    INTEGER                                  :: i,ig
+
+    !$omp parallel do private (i,ig)
+    DO i=1,nstate
+       DO ig=ibeg_c0,iend_c0
+          cm_r(ig,i)=cm_r(ig,i)*sctot
+       END DO
+    END DO
+
+    ! ==--------------------------------------------------------------==
+  END SUBROUTINE update_cm
   ! ==================================================================
 
 

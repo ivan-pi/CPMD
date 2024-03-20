@@ -18,6 +18,7 @@ MODULE rortv_utils
   USE ovlap_utils,                     ONLY: ovlap
   USE parac,                           ONLY: parai
   USE rotate_utils,                    ONLY: rotate
+  USE reshaper,                        ONLY: reshape_inplace
   USE spin,                            ONLY: spin_mod
   USE system,                          ONLY: cnti,&
                                              cntl,&
@@ -75,6 +76,7 @@ CONTAINS
     LOGICAL                                  :: geq0_local,cp_active
     REAL(real_8)                             :: ai, bi, pf4, s2, yi
     REAL(real_8), ALLOCATABLE                :: a1mat(:,:), a2mat(:,:)
+    REAL(real_8), POINTER __CONTIGUOUS       :: c0_r(:,:),cm_r(:,:)
 #ifdef _USE_SCRATCHLIBRARY
     REAL(real_8), POINTER __CONTIGUOUS       :: yi_n(:)
 #else
@@ -155,23 +157,11 @@ CONTAINS
 #endif
           IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
                __LINE__,__FILE__)
-          !$omp parallel private(i)
-          !$omp do
-          DO i=1,nstate
-             yi_n(i)=-dotp_c2_cp(ngw_local,cm(ibeg_c0,i),c0(ibeg_c0,i),geq0_local)
-          END DO
-          !$omp master
+          CALL reshape_inplace(c0,(/ncpw%ngw*2,nstate/),c0_r)
+          CALL reshape_inplace(cm,(/ncpw%ngw*2,nstate/),cm_r)
+          CALL calc_yi(cm_r,c0_r,yi_n,ibeg_c0*2-1,iend_c0*2,nstate,geq0_local)
           CALL mp_sum(yi_n,nstate,gid)
-          !$omp end master
-          !$omp barrier
-          !$omp do private(i,ig)
-          DO i=1,nstate
-             DO ig=ibeg_c0,iend_c0
-                cm(ig,i)=cm(ig,i)+yi_n(i)*c0(ig,i)
-             END DO
-          END DO
-          !$omp end do nowait
-          !$omp end parallel
+          CALL update_cm(cm_r,c0_r,yi_n,ibeg_c0*2-1,iend_c0*2,nstate)
 #ifdef _USE_SCRATCHLIBRARY
           CALL free_scratch(il_yi_n,yi_n,procedureN//'_yi_n',ierr)
 #else
@@ -244,6 +234,49 @@ CONTAINS
     RETURN
   END SUBROUTINE rortv
   ! ==================================================================
+  SUBROUTINE calc_yi(cm_r,c0_r,yi_n,ibeg_c0,iend_c0,nstate,geq0_local)
+    ! ==--------------------------------------------------------------==
+    REAL(real_8),INTENT(IN), CONTIGUOUS     :: c0_r(:,:), cm_r(:,:)
+    REAL(real_8),INTENT(OUT), CONTIGUOUS    :: yi_n(:)
+    INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
+    LOGICAL,INTENT(IN)                       :: geq0_local
+
+    INTEGER                                  :: i,ig
+    REAL(real_8)                             :: yi
+
+    !$omp parallel do private(i,yi)
+    DO i=1,nstate
+       IF(geq0_local)THEN
+          yi=c0_r(ibeg_c0,i)*cm_r(ibeg_c0,i)*0.5_real_8
+       ELSE
+          yi=c0_r(ibeg_c0,i)*cm_r(ibeg_c0,i)
+          yi=yi+c0_r(ibeg_c0+1,i)*cm_r(ibeg_c0+1,i)
+       END IF
+       !$omp simd reduction(+:yi)
+       do ig=ibeg_c0+2,iend_c0
+          yi=yi+c0_r(ig,i)*cm_r(ig,i)
+       END DO
+       yi_n(i)=yi*(-2.0_real_8)
+    END DO
+
+  END SUBROUTINE calc_yi
+  ! ==================================================================
+  SUBROUTINE update_cm(cm_r,c0_r,yi_n,ibeg_c0,iend_c0,nstate)
+    ! ==--------------------------------------------------------------==
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: yi_n(:), c0_r(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: cm_r(:,:)
+    INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
+
+    INTEGER                                  :: i,ig
+
+    !$omp parallel do private(i,ig)
+    DO i=1,nstate
+       DO ig=ibeg_c0,iend_c0
+          cm_r(ig,i)=cm_r(ig,i)+yi_n(i)*c0_r(ig,i)
+       END DO
+    END DO
+
+  END SUBROUTINE update_cm
 #if defined(__VECTOR) 
   ! ==================================================================
   SUBROUTINE rvharm(c0,cm,gamy,nstate)

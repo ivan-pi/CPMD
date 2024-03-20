@@ -23,6 +23,7 @@ MODULE posupa_utils
   USE rortog_utils,                    ONLY: give_scr_rortog,&
                                              rortog
   USE rotate_utils,                    ONLY: rotate
+  USE reshaper,                        ONLY: reshape_inplace
   USE spin,                            ONLY: spin_mod
   USE system,                          ONLY: cnti,&
                                              cntl,&
@@ -79,6 +80,7 @@ CONTAINS
     LOGICAL                                  :: prtev, tnon, cp_active, geq0_local
     REAL(real_8)                             :: odt, pf1, pf2, pf3, &
                                                 pf4, xi, xi_dt_elec
+    REAL(real_8),POINTER __CONTIGUOUS        :: c2_r(:,:),cm_r(:,:),c0_r(:,:)
 #ifdef _USE_SCRATCHLIBRARY
     REAL(real_8),POINTER __CONTIGUOUS        :: ai(:,:)
 #else
@@ -159,48 +161,15 @@ CONTAINS
              END IF
           ENDDO
        ELSE
-          !$omp parallel do private (i,ig)
-          DO i=1,nstate
-             DO ig=ibeg_c0,iend_c0
-                c2(ig,i)=c0(ig,i)+dt_elec*cm(ig,i)
-             ENDDO
-             IF(nort_com%scond.GT.nort_com%slimit)THEN
-                ai(:,i)=lagrange_afterrot(c0(ibeg_c0,i),c2(ibeg_c0,i),ngw_local,geq0_local)
-             ELSE
-                ai(i,1)=lagrange_norot(c2(ibeg_c0,i),ngw_local,geq0_local)
-             END IF
-          ENDDO
+          CALL reshape_inplace(c0,(/2*ncpw%ngw,nstate/),c0_r)
+          CALL reshape_inplace(cm,(/2*ncpw%ngw,nstate/),cm_r)
+          CALL reshape_inplace(c2,(/2*ncpw%ngw,nstate/),c2_r)
+          CALL calc_ai(c0_r,cm_r,c2_r,ai,nstate,dt_elec,ibeg_c0*2-1,iend_c0*2,geq0_local,&
+               nort_com%scond,nort_com%slimit)
        ENDIF
-       IF(nort_com%scond.GT.nort_com%slimit)THEN
-          CALL mp_sum(ai,3*nstate,gid)
-          !$omp parallel do private(i,ig,xi,xi_dt_elec)
-          DO i=1,nstate
-             ai(3,i)=ai(3,i)-1.0_real_8
-             xi=(-ai(2,i)+SQRT(ai(2,i)*ai(2,i)-ai(1,i)*ai(3,i)))/(ai(1,i))
-             xi_dt_elec=xi/dt_elec
-             DO ig=ibeg_c0,iend_c0
-                cm(ig,i)=cm(ig,i)+c0(ig,i)*xi_dt_elec
-                c2(ig,i)=c2(ig,i)+c0(ig,i)*xi
-             END DO
-             DO ig=ibeg_c0,iend_c0
-                c0(ig,i)=c2(ig,i)
-             END DO
-          END DO
-       ELSE
-          CALL mp_sum(ai,nstate,gid)
-          !$omp parallel do private(i,ig,xi,xi_dt_elec)
-          DO i=1,nstate
-             xi=(-1+SQRT(2._real_8-ai(i,1)))
-             xi_dt_elec=xi/dt_elec
-             DO ig=ibeg_c0,iend_c0
-                cm(ig,i)=cm(ig,i)+c0(ig,i)*xi_dt_elec
-                c2(ig,i)=c2(ig,i)+c0(ig,i)*xi
-             END DO
-             DO ig=ibeg_c0,iend_c0
-                c0(ig,i)=c2(ig,i)
-             END DO
-          END DO
-       ENDIF
+       CALL mp_sum(ai,INT(il_ai(1)*il_ai(2)),gid)
+       CALL update_cm_c0(c0_r,cm_r,c2_r,ai,nstate,dt_elec,ibeg_c0*2-1,iend_c0*2,geq0_local,&
+            nort_com%scond,nort_com%slimit)
 #ifdef _USE_SCRATCHLIBRARY
        CALL free_scratch(il_ai,ai,procedureN//'_ai',ierr)
 #else
@@ -297,6 +266,106 @@ CONTAINS
     ai=dotp_c1_cp(n,c2,geq0_l)
 
   END FUNCTION lagrange_norot
+
+  ! ==================================================================
+  SUBROUTINE calc_ai(c0_r,cm_r,c2_r,ai,nstate,dt_elec,ibeg_c0,iend_c0,geq0_local,scond,slimit)
+    ! ==--------------------------------------------------------------==
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: c0_r(:,:), cm_r(:,:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: c2_r(:,:), ai(:,:)
+    REAL(real_8),INTENT(IN)                  :: dt_elec, scond, slimit
+    INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
+    LOGICAL,INTENT(IN)                       :: geq0_local
+
+    INTEGER                                  :: i,ig
+    REAL(real_8)                             :: ai_1,ai_2,ai_3
+
+    !$omp parallel do private (i,ig,ai_1,ai_2,ai_3)
+    DO i=1,nstate
+       IF(geq0_local)THEN
+          c2_r(ibeg_c0,i)=c0_r(ibeg_c0,i)+dt_elec*cm_r(ibeg_c0,i)
+          c2_r(ibeg_c0+1,i)=0.0_real_8
+          IF(scond.GT.slimit)THEN
+             ai_1=c0_r(ibeg_c0,i)**2*0.5_real_8
+             ai_2=c0_r(ibeg_c0,i)*c2_r(ibeg_c0,i)*0.5_real_8
+             ai_3=c2_r(ibeg_c0,i)**2*0.5_real_8
+          ELSE
+             ai_1=c2_r(ibeg_c0,i)**2*0.5_real_8
+          END IF
+       ELSE
+          c2_r(ibeg_c0,i)=c0_r(ibeg_c0,i)+dt_elec*cm_r(ibeg_c0,i)
+          c2_r(ibeg_c0+1,i)=c0_r(ibeg_c0+1,i)+dt_elec*cm_r(ibeg_c0+1,i)
+          IF(scond.GT.slimit)THEN
+             ai_1=c0_r(ibeg_c0,i)**2
+             ai_2=c0_r(ibeg_c0,i)*c2_r(ibeg_c0,i)
+             ai_3=c2_r(ibeg_c0,i)**2
+             ai_1=ai_1+c0_r(ibeg_c0+1,i)**2
+             ai_2=ai_2+c0_r(ibeg_c0+1,i)*c2_r(ibeg_c0+1,i)
+             ai_3=ai_3+c2_r(ibeg_c0+1,i)**2
+          ELSE
+             ai_1=c2_r(ibeg_c0,i)**2
+             ai_1=ai_1+c2_r(ibeg_c0+1,i)**2
+          END IF
+       END IF
+       !$omp simd reduction(+:ai_1,ai_2,ai_3)
+       DO ig=ibeg_c0+2,iend_c0
+          c2_r(ig,i)=c0_r(ig,i)+dt_elec*cm_r(ig,i)
+          IF(scond.GT.slimit)THEN
+             ai_1=ai_1+c0_r(ig,i)**2
+             ai_2=ai_2+c0_r(ig,i)*c2_r(ig,i)
+             ai_3=ai_3+c2_r(ig,i)**2
+          ELSE
+             ai_1=ai_3+c2_r(ig,i)**2
+          END IF
+       END DO
+       IF(scond.GT.slimit)THEN
+          ai(1,i)=ai_1*2.0_real_8
+          ai(2,i)=ai_2*2.0_real_8
+          ai(3,i)=ai_3*2.0_real_8
+       ELSE
+          ai(i,1)=ai_1*2.0_real_8
+       END IF
+    ENDDO
+    ! ==--------------------------------------------------------------==
+  END SUBROUTINE calc_ai
+  ! ==================================================================
+  SUBROUTINE update_cm_c0(c0_r,cm_r,c2_r,ai,nstate,dt_elec,ibeg_c0,iend_c0,geq0_local,scond,slimit)
+    ! ==--------------------------------------------------------------==
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: c0_r(:,:), cm_r(:,:), ai(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: c2_r(:,:)
+    REAL(real_8),INTENT(IN)                  :: dt_elec, scond, slimit
+    INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
+    LOGICAL,INTENT(IN)                       :: geq0_local
+
+    INTEGER                                  :: i,ig
+    REAL(real_8)                             :: xi,xi_dt_elec
+    IF(scond.GT.slimit)THEN
+       !$omp parallel do &
+       !$omp& private(i,ig,xi,xi_dt_elec)
+       DO i=1,nstate
+          ai(3,i)=ai(3,i)-1.0_real_8
+          xi=(-ai(2,i)+SQRT(ai(2,i)*ai(2,i)-ai(1,i)*ai(3,i)))/(ai(1,i))
+          xi_dt_elec=xi/dt_elec
+          DO ig=ibeg_c0,iend_c0
+             cm_r(ig,i)=cm_r(ig,i)+c0_r(ig,i)*xi_dt_elec
+             c0_r(ig,i)=c2_r(ig,i)+c0_r(ig,i)*xi
+          END DO
+       END DO
+    ELSE
+       !$omp parallel do &
+       !$omp& private(i,ig,xi,xi_dt_elec)
+       DO i=1,nstate
+          xi=(-1+SQRT(2._real_8-ai(i,1)))
+          xi_dt_elec=xi/dt_elec
+          DO ig=ibeg_c0,iend_c0
+             cm_r(ig,i)=cm_r(ig,i)+c0_r(ig,i)*xi_dt_elec
+             c0_r(ig,i)=c2_r(ig,i)+c0_r(ig,i)*xi
+          END DO
+       END DO
+    ENDIF
+    ! ==--------------------------------------------------------------==
+  END SUBROUTINE update_cm_c0
+  ! ==================================================================
+
   ! ==================================================================
   SUBROUTINE give_scr_posupa(lposupa,tag,nstate)
     ! ==--------------------------------------------------------------==
