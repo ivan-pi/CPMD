@@ -1,12 +1,12 @@
 #INFO#
 #INFO# Configuration for Linux HPC cluster Equip@Meso / CPER AlsaCalcul
-##INFO# Intel Composer v.18 or oneAPI until 2023 version- OpenMPI/IntelMPI + OMP 5.0 (or later)
+#INFO# Intel LLVM-Based oneAPI Compilers (oneAPI-2024 or later) - OpenMPI/IntelMPI + OMP 5.0 (or later)
 #INFO# (IPCMS/Nagoya University, 12 March 2024)
 #INFO#
      IRAT=2
-     FC='mpiifort'
-     CC='mpiicc'
-     LD='mpiifort'
+     FC='mpiifx'
+     CC='mpiicx'
+     LD='mpiifx'
      CPP='/lib/cpp -P -traditional'
      CPPFLAGS='  -D__HAS_FFT_DEFAULT -D__ALPHALINUX -D__HPC -D__HASNT_OMP_SET_NESTED \
          -D__PARALLEL -D__HAS_SIZEOF -D__HASNT_MULTITHREAD_MPI_SUPPORT -D__HAS_BF_STREAM_IO'
@@ -18,18 +18,17 @@
      AR='xiar -r'
      RANLIB='/usr/bin/ranlib'
      if [ $debug ]; then
-       FFLAGS='-g'
-       CFLAGS='-g -Wall -m64'
+       FFLAGS='-g '
+       CFLAGS='-g  -Wno-error=int-conversion'
      else
        FFLAGS='-O2 -pc64 -funroll-loops -fpp -heap-arrays 64 -xHost'
-       CFLAGS='-O2 -Wall  '
+       CFLAGS='-O2  -Wno-error=int-conversion -Wall'
      fi
      if [ $omp ]; then
        FFLAGS=${FFLAGS}' -qopenmp'
        OMP3_DISABLED='false'
-       LIBS='-qmkl=parallel -lm'
+       LIBS='-qmkl=parallel'
      else
-       LIBS='-static-intel -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core \
-             -lm -lpthread -liomp5 '
+       LIBS='-static-intel -qmkl=sequential '
      fi
      LFLAGS=${LIBS}

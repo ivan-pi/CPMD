@@ -1,6 +1,6 @@
 #INFO#
-#INFO# Configuration for Linux HPC cluster Equip@Meso / CPER AlsaCalcul
-##INFO# Intel Composer v.18 or oneAPI until 2023 version- OpenMPI/IntelMPI + OMP 5.0 (or later)
+#INFO# Configuration for AMD Linux HPC cluster
+#INFO# Intel Composer v.18 or oneAPI until 2023 version - OpenMPI/IntelMPI + OMP 5.0 (or later)
 #INFO# (IPCMS/Nagoya University, 12 March 2024)
 #INFO#
      IRAT=2
@@ -8,11 +8,11 @@
      CC='mpiicc'
      LD='mpiifort'
      CPP='/lib/cpp -P -traditional'
-     CPPFLAGS='  -D__HAS_FFT_DEFAULT -D__ALPHALINUX -D__HPC -D__HASNT_OMP_SET_NESTED \
-         -D__PARALLEL -D__HAS_SIZEOF -D__HASNT_MULTITHREAD_MPI_SUPPORT -D__HAS_BF_STREAM_IO'
+     CPPFLAGS='-D__HAS_FFT_DEFAULT -D__ALPHALINUX -D__AMD -D__HPC -D__HASNT_OMP_SET_NESTED \
+         -D__PARALLEL -D__HAS_SIZEOF -D__HAS_BF_STREAM_IO -D__HASNT_MULTITHREAD_MPI_SUPPORT'
      CPPFLAGS_GROMOS='-DEWALD -DEWATCUT -DHAT_SHAPE -DUNPACKED_GRID \
-              -D__HAS_FFT_DEFAULT -D__ALPHALINUX -D__HPC -D__HASNT_OMP_SET_NESTED \
-             -D__PARALLEL -D__HAS_SIZEOF -D__HASNT_MULTITHREAD_MPI_SUPPORT -D__HAS_BF_STREAM_IO'
+              -D__HAS_FFT_DEFAULT -D__ALPHALINUX -D__AMD -D__HPC -D__HASNT_OMP_SET_NESTED \
+             -D__PARALLEL -D__HAS_SIZEOF -D__HAS_BF_STREAM_IO -D__HASNT_MULTITHREAD_MPI_SUPPORT'
      FFLAGS_GROMOS='-fixed $(FFLAGS)'
      FFLAGS_GROMOS_MODULES=' $(FFLAGS)'
      AR='xiar -r'
@@ -21,7 +21,7 @@
        FFLAGS='-g'
        CFLAGS='-g -Wall -m64'
      else
-       FFLAGS='-O2 -pc64 -funroll-loops -fpp -heap-arrays 64 -xHost'
+       FFLAGS='-O2 -pc64 -funroll-loops -heap-arrays 64 -align array64byte -finline-functions'
        CFLAGS='-O2 -Wall  '
      fi
      if [ $omp ]; then
