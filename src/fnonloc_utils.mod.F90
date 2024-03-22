@@ -142,9 +142,6 @@ CONTAINS
 #if defined(__ES)
              !$omp parallel do private(I,IA,JV,LSPIN,ISA,IAA)
 #endif
-#ifdef __SR8000
-             !poption parallel, tlocal(I,IA,JV,LSPIN,ISA,IAA)
-#endif 
              DO i=1,nstate
                 IF (cntl%tlsd.AND.ispin.EQ.2) THEN
                    IF (i.LE.spin_mod%nsup) THEN
@@ -185,9 +182,6 @@ CONTAINS
                         auxc,2*ncpw%ngw)
                 ENDIF
                 !$omp parallel do private(I,IG,FFI,CTM,T1,TR,TI)
-#ifdef __SR8000
-                !poption parallel, tlocal(I,IG,FFI,CTM,T1,TR,TI)
-#endif 
                 DO i=1,nstate
                    ffi=f(i)
                    IF (ffi.LT.1.e-5_real_8) ffi=1.0_real_8
@@ -230,9 +224,6 @@ CONTAINS
                 IF (l.EQ.l2.AND.li.EQ.lj) THEN
                    kj=sgpp2%lfval(jv,is)
                    !$omp parallel do private(I,IA,ISA,IAA)
-#ifdef __SR8000
-                   !poption parallel, tlocal(I,IA,ISA,IAA)
-#endif 
                    DO i=1,nstate
 #ifdef _vpp_
                       !OCL NOALIAS 
@@ -281,9 +272,6 @@ CONTAINS
                         auxc,2*ncpw%ngw)
                 ENDIF
                 !$omp parallel do private(I,IG,FFI,CTM,T1,TR,TI)
-#ifdef __SR8000
-                !poption parallel, tlocal(I,IG,FFI,CTM,T1,TR,TI)
-#endif 
                 DO i=1,nstate
                    ffi=f(i)
                    IF (ffi.LT.1.e-5_real_8) ffi=1.0_real_8
@@ -344,9 +332,6 @@ CONTAINS
                         auxc,2*ncpw%ngw)
                 ENDIF
                 !$omp parallel do private(I,IG,CTM,FFI,T)
-#ifdef __SR8000
-                !poption parallel, tlocal(I,IG,CTM,FFI,T)
-#endif 
                 DO i=1,nstate
                    ctm=(0.0_real_8,-1.0_real_8)**nghtol(iv,is)
                    ffi=f(i)

@@ -1,8 +1,3 @@
-#ifdef __SR8000
-!option MP(P(0)), LANGLVL(SAVE(0))
-#endif
-! ==================================================================
-
 MODULE dftin_utils
   USE cp_gga_correlation_utils,        ONLY: cp_gga_c_param
   USE cp_gga_exchange_utils,           ONLY: cp_gga_x_param

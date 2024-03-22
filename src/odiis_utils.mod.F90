@@ -255,9 +255,7 @@ SUBROUTINE idcopy(n,c,x,grmax,gimax)
   ! ==--------------------------------------------------------------==
   fr=grmax/127._real_8
   fi=gimax/127._real_8
-#if defined(__SR11000) || defined(__PRIMEHPC)
   !$omp parallel do private(I,J)
-#endif 
   DO i=1,n/2
      j=(i-1)*2
      c(1,j+1)=ISHFT(x(i),-24)
@@ -382,9 +380,7 @@ SUBROUTINE dicopy(n,c,x,grmax,gimax)
   ! ==--------------------------------------------------------------==
   fr=127._real_8/grmax
   fi=127._real_8/gimax
-#ifdef __SR11000
   !$omp parallel do private(I,J,I11,I21,I12,I22)
-#endif 
   DO i=1,n/2
      j=(i-1)*2
      i11=NINT(c(1,j+1)*fr)+128
@@ -618,9 +614,6 @@ SUBROUTINE odiis(c0,c2,vpp,nstate,pme,gde,svar2,reinit)
        grmax(nowv),gimax(nowv))
 
   !$omp parallel do private(K,FF,IG)
-#ifdef __SR8000
-  !poption parallel, tlocal(K,FF,IG)
-#endif
   DO k=1,nocc
      IF (cntl%prec.AND.crge%f(k,1).GT.0.1_real_8) THEN
         ff=1.0_real_8/crge%f(k,1)
@@ -688,9 +681,6 @@ SUBROUTINE odiis(c0,c2,vpp,nstate,pme,gde,svar2,reinit)
           grmax(i),gimax(i))
      ff=1.0_real_8
      !$omp parallel do private(K,FF,IG)
-#ifdef __SR8000
-     !poption parallel, tlocal(K,FF,IG)
-#endif 
      DO k=1,nocc
         IF (cntl%prec.AND.crge%f(k,1).GT.0.1_real_8) THEN
            ff=1.0_real_8/crge%f(k,1)

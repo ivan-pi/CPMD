@@ -1519,9 +1519,6 @@ CONTAINS
     CALL xstring(cipnum,i1,i2)
     filen=cflbod(n1:n2)//cipnum(i1:i2)
     !$omp parallel do private (IR)
-#ifdef __SR8000
-    !poption parallel
-#endif
     DO ir=1,fpar%nnr1
        psi(ir)=CMPLX(rhoe(ir,1),0._real_8,kind=real_8)
     ENDDO

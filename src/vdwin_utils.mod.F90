@@ -1,9 +1,5 @@
 #include "cpmd_global.h"
 
-#ifdef __SR8000
-!option MP(P(0)), LANGLVL(SAVE(0))
-#endif
-
 MODULE vdwin_utils
   USE adat,                            ONLY: covrad,&
                                              elem

@@ -562,9 +562,6 @@ CONTAINS
        IF (cntl%tlsd) THEN
           n1=idint(ynel)
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,n1
              crge%f(i,1)=1._real_8
           ENDDO
@@ -584,9 +581,6 @@ CONTAINS
                   __LINE__,__FILE__)
           ELSE
              !$omp parallel do private(I)
-#ifdef __SR11000
-             !poption parallel, tlocal(I)
-#endif
              DO i=n1+1,crge%n
                 crge%f(i,1)=0.0_real_8
              ENDDO
@@ -612,9 +606,6 @@ CONTAINS
           IF ( cntl%tshop ) crge%n=crge%nel/2+1
           ! McB
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,crge%n-2
              crge%f(i,1)=2.0_real_8
           ENDDO
@@ -628,9 +619,6 @@ CONTAINS
        ELSE
           n1=idint(ynel/2._real_8)
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,n1
              crge%f(i,1)=2._real_8
           ENDDO
@@ -645,9 +633,6 @@ CONTAINS
                      __LINE__,__FILE__)
              ELSE
                 !$omp parallel do private(I)
-#ifdef __SR11000
-                !poption parallel, tlocal(I)
-#endif
                 DO i=n1+1,crge%n
                    crge%f(i,1)=0.0_real_8
                 ENDDO
@@ -661,9 +646,6 @@ CONTAINS
     ! Add NKSSTA into N
     IF (lfnotset) THEN
        !$omp parallel do private(I)
-#ifdef __SR11000
-       !poption parallel, tlocal(I)
-#endif
        DO i=crge%n+1,crge%n+ifac*cnti%nkssta
           crge%f(i,1)=0._real_8
        ENDDO
@@ -729,16 +711,10 @@ CONTAINS
           spin_mod%nsdown=crge%n-spin_mod%nsup
           CALL zeroing(crge%f)!,n)
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,tdsp1%nupel
              crge%f(i,1)=1._real_8
           ENDDO
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,tdsp1%ndoel
              crge%f(i+spin_mod%nsup,1)=1._real_8
           ENDDO
@@ -764,16 +740,10 @@ CONTAINS
           spin_mod%nsdown=crge%n-spin_mod%nsup
           CALL zeroing(crge%f)!,n)
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,INT(tdsp1%nupel)
              crge%f(i,1)=1._real_8
           ENDDO
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=spin_mod%nsup+1,spin_mod%nsup+INT(tdsp1%ndoel)
              crge%f(i,1) = 1._real_8
           ENDDO
@@ -824,18 +794,12 @@ CONTAINS
           isin=0
           nelhalf=crge%nel/2! FIXME: AK 2005/07/19  is NEL/2.eq.real(NEL,kind=real_8)/2.0?
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,nelhalf-1
              crge%f(i,1)=2.0_real_8
           ENDDO
           crge%f(nelhalf,1)=1.0_real_8
           crge%f(nelhalf+1,1)=1.0_real_8
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=nelhalf+2,crge%n
              crge%f(i,1)=0.0_real_8
           ENDDO
@@ -879,9 +843,6 @@ CONTAINS
                __LINE__,__FILE__)
           sh02%nst_s1=crge%nel/2+1
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,sh02%nst_s0
              fs0(i)=1._real_8
           ENDDO
@@ -902,9 +863,6 @@ CONTAINS
           IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
                __LINE__,__FILE__)
           !$omp parallel do private(I)
-#ifdef __SR11000
-          !poption parallel, tlocal(I)
-#endif
           DO i=1,sh02%nst_s0
              fs0(i)=2._real_8
           ENDDO

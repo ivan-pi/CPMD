@@ -102,10 +102,6 @@ CONTAINS
     CALL zeroing(eirop)!,nhg)
     IF (cntl%bigmem) THEN
        !$omp parallel do private(IG,IS,IA,ISA)
-#ifdef __SR8000
-       !poption parallel
-       !voption indep(RHOPS,EIGRB,VPS,EIROP,EIVPS)
-#endif
        DO ig=1,ncpw%nhg
           DO isa=1,ions1%nat
              ia=iatpt(1,isa)
@@ -116,10 +112,6 @@ CONTAINS
        ENDDO
     ELSE
        !$omp parallel do private(IG,IS,IA,ISA,EI123,ER,EI)
-#ifdef __SR8000
-       !poption parallel
-       !voption indep(EI3,EI2,EI1,INYH,RHOPS,VPS,EIROP,EIVPS)
-#endif
        DO ig=1,ncpw%nhg
           DO isa=1,ions1%nat
              ia=iatpt(1,isa)

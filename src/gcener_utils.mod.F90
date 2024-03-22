@@ -529,9 +529,7 @@ CONTAINS
     CALL zeroing(v(:,1))!,nnr1)
     !CDIR NODEP
     !ocl novrec
-#if defined(__SR11000) || defined(__PRIMERGY) || defined(__PRIMEHPC)
     !$omp parallel do private(IG)
-#endif
     DO ig=1,ncpw%nhg
        v(nzh(ig),1) = vtemp(ig,1)
        v(indz(ig),1) = CONJG(vtemp(ig,1))
@@ -624,9 +622,7 @@ CONTAINS
     CALL zeroing(v(:,2))!,nnr1)
     !CDIR NODEP
     !ocl novrec
-#if defined(__SR11000) || defined(__PRIMERGY) || defined(__PRIMEHPC)
     !$omp parallel do private(IG)
-#endif
     DO ig=1,ncpw%nhg
        v(nzh(ig),2) = vtemp(ig,2)
        v(indz(ig),2) = CONJG(vtemp(ig,2))
@@ -655,13 +651,6 @@ CONTAINS
        !$omp             private(SXSR,V1XSR,V2XSR) &
        !$omp             shared(GRAD,V,VTMP,fpar,RHOE) &
        !$omp             reduction(+:SGCX,SGCC)
-#ifdef __SR8000
-       !poption parallel
-       !poption tlocal(SX,SC,V1X,V2X,V1C,V2C)
-#endif
-#if defined (__SR11000)
-       !poption psum(SGCX,SGCC)
-#endif
        DO ir=1,fpar%nnr1
           rho   = MAX(rhoe(ir),0.0_real_8)
           IF (rho.GT.0.1_real_8*cntr%gceps) THEN
@@ -761,15 +750,6 @@ CONTAINS
        !$omp       private(SXSR,V1XASR,V2XASR,V1XBSR,V2XBSR,V2XABSR) &
        !$omp       shared(GRAD,V,VTMP,fpar,RHOE) &
        !$omp       reduction(+:SGCX,SGCC)
-#ifdef __SR8000
-       !poption parallel
-       !poption tlocal(SX,SC)
-       !poption tlocal(V1XA,V2XA,V1XB,V2XB,V1CA,V2CA,V1CB,V2CB)
-       !poption tlocal(V2XAB,V2CAB)
-#endif
-#if defined (__SR11000)
-       !poption psum(SGCX,SGCC)
-#endif
        DO ir=1,fpar%nnr1
           rhoa   = MAX(rhoe(ir,1),0.0_real_8)
           rhob   = MAX(rhoe(ir,2),0.0_real_8)

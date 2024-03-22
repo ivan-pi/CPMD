@@ -312,12 +312,7 @@ CONTAINS
           ELSE
              CALL cv_read_out(cv_disp)
           ENDIF! TRESFILE
-#ifdef __SR11000
-          !poption parallel, tlocal(ICV)
-          !voption indep(HC_LAST,CV_PATH,CV_DISP)
-#else
           !$omp parallel do private(ICV)
-#endif
           DO icv = 1,ncolvar
              hc_last(icv) = cv_path(imeta%i_meta_res,icv)+cv_disp(icv)
           ENDDO
@@ -735,12 +730,7 @@ CONTAINS
 
     CALL zeroing(tscr)!,3*maxsys%nax*maxsys%nsx)
     CALL gettau(tscr,fi_harm)
-#ifdef __SR11000
-    !poption parallel, tlocal(IS,IA)
-    !voption indep(FHILLS,TSCR)
-#else
     !$omp parallel do private(IS,IA) 
-#endif
     DO is=1,ions1%nsp
        DO ia=1,ions0%na(is)
           fhills(1,ia,is) = tscr(1,ia,is)

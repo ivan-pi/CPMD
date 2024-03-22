@@ -489,9 +489,6 @@ CONTAINS
        __NVTX_TIMER_START ( procedureN//'_apply' )
        IF (cntl%tlsd.AND.ispin.EQ.2) THEN
           IF (is1.EQ.spin_mod%nsup) THEN
-#ifdef __SR8000
-             !poption parallel
-#endif
              ! EHR[
              IF (td_prop%td_extpot) THEN
                 !$omp parallel do private(IR)
@@ -512,9 +509,6 @@ CONTAINS
              !IF (is1.GT.spin_mod%nsup) lspin=leadx
              lspin=1
              IF (is1.GT.spin_mod%nsup) lspin=2
-#ifdef __SR8000
-             !poption parallel
-#endif
              !$omp parallel do private(IR)
              DO ir=1,nnrx
                 psi_p(ir)=vpotdg(ir,lspin)*psi_p(ir)
@@ -525,9 +519,6 @@ CONTAINS
              CALL cp_cuapply_potential ( nnrx, cp_cufft, cp_cuvpsi, thread_view )
           ELSE
              !$omp parallel do private(IR) shared(NNRX,PSI_p)
-#ifdef __SR8000
-             !poption parallel
-#endif
              DO ir=1,nnrx
                 psi_p(ir)=vpotdg(ir,1)*psi_p(ir)
              ENDDO
@@ -649,9 +640,6 @@ CONTAINS
           ELSE
              !$omp parallel do private(IG,FP,FM) &
              !$omp   shared(ncpw,IS1,FI,IKIND,PSI_p,C0,C2_vpsi)
-#ifdef __SR8000
-             !poption parallel
-#endif
              DO ig=1,ncpw%ngw
                 fp=psi_p(nzhs(ig))
                 fm=psi_p(indzs(ig))
@@ -676,9 +664,6 @@ CONTAINS
              !$omp parallel do private(IG,FP,FM,G2,psin,psii) shared(JGW,PSI_p) &
              !$omp   shared(XSKIN,FI,C0,C2_vpsi,IS1) &
              !$omp   shared(NOSTAT,FIP1,IS2)
-#ifdef __SR8000
-             !poption parallel
-#endif
              !dir$ concurrent
              DO ig=1,jgw
                 psin=psi_p(nzhs(ig))! access only once
@@ -695,9 +680,6 @@ CONTAINS
           ELSE
              !$omp parallel do private(IG,FP,FM,psin,psii) shared(JGW,PSI_p) &
              !$omp    shared(C2_vpsi,C0,FI,IS1,IS2,NOSTAT,FIP1)
-#ifdef __SR8000
-             !poption parallel
-#endif
              DO ig=1,jgw
                 psin=psi_p(nzhs(ig))! access only once
                 psii=psi_p(indzs(ig))! these mem locations
@@ -851,9 +833,6 @@ CONTAINS
           is2 = i+1
           IF (is2.GT.nostat) THEN
              !CDIR NODEP
-#ifdef __SR8000
-             !poption parallel
-#endif
 #if defined(__VECTOR)
              !$omp parallel do private(IG)
              DO ig=1,ncpw%ngw
@@ -871,9 +850,6 @@ CONTAINS
              IF (geq0) psi(nzhs(1)+ibb)=c0(1,is1)
           ELSE
              !CDIR NODEP
-#ifdef __SR8000
-             !poption parallel
-#endif
 #if defined(__VECTOR)
              !$omp parallel do private(IG)
              DO ig=1,ncpw%ngw
@@ -908,9 +884,6 @@ CONTAINS
        IF (cntl%tlsd.AND.ispin.EQ.2) THEN
           i=ia
           IF (i.EQ.spin_mod%nsup) THEN
-#ifdef __SR8000
-             !poption parallel
-#endif
              !$omp parallel do private(L) schedule(static)
              DO l=1,nnrx
                 psi(l)=vpot(l,1)*REAL(psi(l))&
@@ -947,11 +920,6 @@ CONTAINS
        ! == freedom, stored in array FC.                               ==
        ! == Here we also add the force from the kinetic energy.        ==
        ! ==------------------------------------------------------------==
-#ifdef __SR8000
-       !poption parallel
-       !poption tlocal(FIP1)
-       !voption indep(NZHS,INDZS,C2)
-#endif
        DO ib=1,nsta
           i=ia+2*(ib-1)
           ibb=(ib-1)*lead

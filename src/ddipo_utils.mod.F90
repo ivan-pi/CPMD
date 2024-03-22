@@ -691,9 +691,6 @@ CONTAINS
     ngg1=0
     ngg2=0
     ngg3=0
-#ifdef __SR8000
-    !poption parallel, tlocal(IG), max(NGG1,NGG2,NGG3)
-#endif
     !$omp parallel do private(IG) &
     !$omp             reduction(max:NGG1,NGG2,NGG3)
     DO ig=1,spar%ngws
@@ -707,9 +704,6 @@ CONTAINS
     ngg1=2*(ngg1+1)+1
     ngg2=2*(ngg2+1)+1
     ngg3=2*(ngg3+1)+1
-#ifdef __SR8000
-    !poption parallel, tlocal(IG,I1,I2,I3,J1,J2,J3)
-#endif
     !$omp parallel do private(IG,I1,I2,I3,J1,J2,J3)
     DO ig=1,spar%ngws
        i1=iny(1,ig)+ngg1h

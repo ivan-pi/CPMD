@@ -113,9 +113,6 @@ CONTAINS
        tfcal=.TRUE.
        IF (tfcal) THEN
           CALL zeroing(psi)!,maxfft*group%nogrp)
-#ifdef __SR8000
-          !poption parallel
-#endif
           DO ib=1,nsta
              i=id+(ib-1)
              ibb=(ib-1)*lead
@@ -169,9 +166,6 @@ CONTAINS
              ELSE
                 ispin1=0
              ENDIF
-#ifdef __SR8000
-             !poption parallel
-#endif
 #ifdef _vpp_
              !OCL NOVREC
 #endif
@@ -186,9 +180,6 @@ CONTAINS
              CALL stopgm('RHOOFR_KDP',' NOT IMPLEMENTED TLSE',& 
                   __LINE__,__FILE__)
           ELSE
-#ifdef __SR8000
-             !poption parallel
-#endif
 #ifdef _vpp_
              !OCL NOVREC
 #endif

@@ -224,9 +224,6 @@ CONTAINS
     pub = 0._real_8
     IF (geq0) THEN
        !$omp parallel do private(IS) reduction(+:PUB)
-#ifdef __SR8000
-       !poption parallel, tlocal(IS), psum(PUB)
-#endif
        DO is=1,ions1%nsp
           pub = pub + REAL(ions0%na(is),kind=real_8)*vps(is,1)
        ENDDO
@@ -240,9 +237,6 @@ CONTAINS
     ener_com%eself=0._real_8
     eself=0.0_real_8
     !$omp parallel do private(IS) reduction(+:ESELF)
-#ifdef __SR8000
-    !poption parallel, tlocal(IS), psum(ESELF)
-#endif
     DO is=1,ions1%nsp
        eself=eself+REAL(ions0%na(is),kind=real_8)*ions0%zv(is)*ions0%zv(is)/raggio(is)
     ENDDO
@@ -439,9 +433,6 @@ CONTAINS
     DO is=1,ions1%nsp
        r2max=raggio(is)*raggio(is)
        !$omp parallel do private(IG,QMAX,EMAX)
-#ifdef __SR8000
-       !poption parallel, tlocal(IG,QMAX,EMAX)
-#endif 
        DO ig=1,ncpw%nhg
           qmax=0.25_real_8*r2max*hg(ig)*parm%tpiba2
           emax=EXP(-qmax)
@@ -452,9 +443,6 @@ CONTAINS
        IF (lqmmm%qmmm) THEN
           mm_R2MAX=mm_RAGGIO(is)*mm_raggio(is)
           !$omp parallel do private(IG,QMAX,EMAX)
-#ifdef __SR8000
-          !poption parallel, tlocal(IG,QMAX,EMAX)
-#endif 
           DO ig=1,ncpw%nhg
              qmax=0.25_real_8*mm_R2MAX*hg(ig)*parm%tpiba2
              emax=EXP(-qmax)
@@ -524,9 +512,6 @@ CONTAINS
              ENDIF
              DO lp=1,maxsys%lpmax
                 !$omp parallel do private(IG)
-#ifdef __SR8000
-                !poption parallel
-#endif
                 DO ig = 1 , ncpw%nhg
                    gkrk(1,ig)=gk(1,ig)+rk(1,ikk)
                    gkrk(2,ig)=gk(2,ig)+rk(2,ikk)
@@ -536,9 +521,6 @@ CONTAINS
                 CALL ylmr2(lp,ncpw%nhg,hgkp(1,ik),gkrk,ylmb(1,lp,ikylmb))
 
                 !$omp parallel do private(IG)
-#ifdef __SR8000
-                !poption parallel
-#endif
                 DO ig = 1 , ncpw%nhg
                    gkrk(1,ig)=-gk(1,ig)+rk(1,ikk)
                    gkrk(2,ig)=-gk(2,ig)+rk(2,ikk)

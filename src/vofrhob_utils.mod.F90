@@ -197,9 +197,6 @@ CONTAINS
 #ifdef __NEC
     !CDIR NODEP
 #endif
-#ifdef __SR8000
-    !poption parallel
-#endif
 #if defined(_vpp_) || defined(__PRIMERGY) || defined(__PRIMEHPC)
     !ocl novrec(v)
 #endif
@@ -230,9 +227,6 @@ CONTAINS
     IF ((cntl%texpot.OR.textfld).AND.corel%tinlc) THEN
        CALL fwfftn(v(:,1),.FALSE.,parai%allgrp)
        !$omp parallel do private(IG) shared(V)
-#ifdef __SR8000
-       !poption parallel
-#endif
 #ifdef _vpp_
        !OCL NOALIAS
 #endif
@@ -398,9 +392,6 @@ CONTAINS
 #else
                 !$omp parallel do private(IR) reduction(+:VGC) schedule(static)
 #endif
-#ifdef __SR8000
-                !poption parallel, tlocal(IR), psum(VGC)
-#endif 
                 DO ir=1,fpar%nnr1
                    vgc=vgc+rhoval(ir,1)*REAL(dqg_1d(ir))
                 ENDDO
@@ -410,9 +401,6 @@ CONTAINS
 #else
                 !$omp parallel do private(IR) reduction(+:VGC) schedule(static)
 #endif
-#ifdef __SR8000
-                !poption parallel, tlocal(IR), psum(VGC)
-#endif 
                 DO ir=1,fpar%nnr1
                    vgc=vgc+rhoe(ir,1)*REAL(dqg_1d(ir))
                 ENDDO
@@ -422,9 +410,6 @@ CONTAINS
                 !$omp parallel do private(IR) reduction(+:VGC)
 #else
                 !$omp parallel do private(IR) reduction(+:VGC) schedule(static)
-#endif
-#ifdef __SR8000
-                !poption parallel, tlocal(IR), psum(VGC)
 #endif
                 DO ir=1,fpar%nnr1
                    vgc=vgc+tau(ir,1)*vtau(ir,1)

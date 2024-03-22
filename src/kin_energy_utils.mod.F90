@@ -43,22 +43,8 @@ CONTAINS
     REAL(real_8)                             :: arg, g2, ima, imb, ra, rb, &
                                                 sk1, sk2, xkin, xskin
 
-#if defined(__SR8000)
-    REAL(real_8), ALLOCATABLE :: g2w(:)
-
-    INTEGER, SAVE :: ifirst=0
-#endif
     ! ==--------------------------------------------------------------==
     CALL tiset('KIN_ENERGY',isub)
-    ! ==--------------------------------------------------------------==
-#if defined(__SR8000)
-    IF (ifirst.EQ.0) THEN
-       ALLOCATE(g2w(ngw),STAT=ierr)
-       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-            __LINE__,__FILE__)
-       ifirst=1
-    ENDIF
-#endif
     ! ==--------------------------------------------------------------==
     ! Accumulate the charge and kinetic energy
     rsum=0._real_8
@@ -78,30 +64,12 @@ CONTAINS
                 g2=0.5_real_8*prcp_com%gakin*(1._real_8+cp_erf(arg))
                 sk1=sk1+REAL(g2*CONJG(c0(1,i))*c0(1,i))
              ENDIF
-#if defined(__SR8000)
-             !poption parallel
-             !poption tlocal(ARG)
-             DO ig=is1,ngw
-                arg=(hg(ig)-prcp_com%gckin)*xskin
-                g2w(ig)=hg(ig)+prcp_com%gakin*(1._real_8+cp_erf(arg))
-             ENDDO
-#ifdef __SR8000
-             !poption parallel, tlocal(IG), psum(SK1)
-#endif 
-             DO ig=is1,ngw
-                sk1=sk1+REAL(g2w(ig)*CONJG(c0(ig,i))*c0(ig,i))
-             ENDDO
-#else
              DO ig=is1,ncpw%ngw
                 arg=(hg(ig)-prcp_com%gckin)*xskin
                 g2=hg(ig)+prcp_com%gakin*(1._real_8+cp_erf(arg))
                 sk1=sk1+REAL(g2*CONJG(c0(ig,i))*c0(ig,i))
              ENDDO
-#endif
           ELSE
-#ifdef __SR8000
-             !poption parallel, tlocal(IG), psum(SK1)
-#endif 
              DO ig=1,ncpw%ngw
                 sk1=sk1+REAL(hg(ig)*CONJG(c0(ig,i))*c0(ig,i))
              ENDDO

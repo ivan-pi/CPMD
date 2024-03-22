@@ -146,9 +146,6 @@ CONTAINS
     IF (alpha.EQ.zone) THEN
        !CDIR NODEP
        !ocl novrec
-#ifdef __SR8000
-       !poption parallel, tlocal(IG)
-#endif
        !$omp parallel do private(IG)
        DO ig=1,jgw
           psi(nzfs(ig))=c1(ig)
@@ -158,9 +155,6 @@ CONTAINS
     ELSE
        !CDIR NODEP
        !ocl novrec
-#ifdef __SR8000
-       !poption parallel, tlocal(IG)
-#endif
        !$omp parallel do private(IG)
        DO ig=1,jgw
           psi(nzfs(ig))=alpha*c1(ig)

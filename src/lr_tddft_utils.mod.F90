@@ -662,9 +662,6 @@ CONTAINS
           CALL dcopy(2*ncpw%ngw*tdsp1%ndoel,c0(1,spin_mod%nsup+1),1,cs(1,1),1)
           CALL dcopy(2*ncpw%ngw*tdsp1%ndoel,cs(1,1),1,c0(1,tdsp1%nupel+1),1)
           !$omp parallel do private(I)
-#ifdef __SR8000
-          !poption parallel
-#endif
 #ifdef _vpp_
           !OCL NOALIAS
 #endif
@@ -674,9 +671,6 @@ CONTAINS
           spin_mod%nsup=tdsp1%nupel
           spin_mod%nsdown=tdsp1%ndoel
           !$omp parallel do private(I)
-#ifdef __SR8000
-          !poption parallel
-#endif
 #ifdef _vpp_
           !OCL NOALIAS
 #endif
@@ -688,9 +682,6 @@ CONTAINS
           spin_mod%nsup=tdsp1%nupel+(nx+1)/2
           spin_mod%nsdown=tdsp1%ndoel+nx/2
           !$omp parallel do private(I)
-#ifdef __SR8000
-          !poption parallel
-#endif
 #ifdef _vpp_
           !OCL NOALIAS
 #endif
@@ -698,9 +689,6 @@ CONTAINS
              crge%f(i,1)=0._real_8
           ENDDO
           !$omp parallel do private(I)
-#ifdef __SR8000
-          !poption parallel
-#endif
 #ifdef _vpp_
           !OCL NOALIAS
 #endif
@@ -708,9 +696,6 @@ CONTAINS
              crge%f(i,1)=1._real_8
           ENDDO
           !$omp parallel do private(I)
-#ifdef __SR8000
-          !poption parallel
-#endif
 #ifdef _vpp_
           !OCL NOALIAS
 #endif

@@ -635,12 +635,8 @@ CONTAINS
     ! RSUM1=DASUM(NNR1,RHOE(1,1),1)
     ! --> with VDB PP RHOE might be negative in some points
     rsum1=0._real_8
-#if defined(__SR8000)
-    !poption parallel, tlocal(I), psum(RSUM1)
-#else
     !$omp parallel do private(I) shared(fpar,RHOE) &
     !$omp  reduction(+:RSUM1)
-#endif
     DO i=1,fpar%nnr1
        rsum1=rsum1+rhoe(i,1)
     ENDDO
@@ -1240,12 +1236,8 @@ CONTAINS
     ! RSUM1=DASUM(NNR1,RHOE(1,1),1)
     ! --> with VDB PP RHOE might be negative in some points
     rsum1=0._real_8
-#if defined(__SR8000)
-    !poption parallel, tlocal(I), psum(RSUM1)
-#else
     !$omp parallel do private(I) shared(fpar,RHOE) &
     !$omp  reduction(+:RSUM1)
-#endif
     DO i=1,fpar%nnr1
        rsum1=rsum1+rhoe(i,1)
     ENDDO

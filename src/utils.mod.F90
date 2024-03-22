@@ -72,13 +72,7 @@ CONTAINS
     INTEGER                                  :: i
 
     CALL zeroing(a)!,n*n)
-#if defined(__SR8000)
-    !poption parallel
-#elif defined(_vpp_)
-    !OCL NOALIAS
-#else
     !$omp parallel do private(I)
-#endif
     DO i=1,n
        a(i,i)=1._real_8
     ENDDO
@@ -692,6 +686,9 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     RETURN
   END SUBROUTINE zsctr_no_omp
+!! cmb - The following function was defined to overcome a library
+!! cmb - problem in IBM-like machines (Hitachi SR11000 inlcuded)
+!! cmb - we keep it here just for emergency
 #if defined(__SR11KIBM)
   ! ==================================================================
   FUNCTION dzamax(n,a,inc)
@@ -1076,12 +1073,7 @@ CONTAINS
 ! Variables
 ! ==--------------------------------------------------------------==
 
-#if defined(__SR8000)
-    !voption indep(B)
-    !voption prefetch
-#else
     !$omp parallel do private(I,IAX,IBX)
-#endif
     DO i=1,n
        iax=(i-1)*ia + 1
        ibx=(i-1)*ib + 1

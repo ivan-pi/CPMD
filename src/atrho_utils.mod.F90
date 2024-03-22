@@ -271,9 +271,6 @@ CONTAINS
 #else
        !$omp parallel do private(IR) schedule(static)
 #endif
-#ifdef __SR8000
-       !poption parallel, tlocal(IR)
-#endif 
        DO ir=1,mmax
           arho(ir)=arho(ir)+occu * (atwfr(ir,ish,is)/atrg(ir,is))**2
        ENDDO
@@ -291,9 +288,6 @@ CONTAINS
     ! FFT
     CALL zeroing(datom(:,1))!,nsplpo)
     !$omp parallel do private(IL,XG,TMP) shared(MUSED)
-#ifdef __SR8000
-    !poption parallel, tlocal(IL,XG,TMP)
-#endif 
     DO il=nsplpa,nsplpe
        xg=SQRT(ggnh(il))*parm%tpiba
        CALL bessov(atrg(1,is),atwr%clogat(is),mused,arho,0,xg,atrg(mused,is)&

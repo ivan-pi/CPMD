@@ -85,9 +85,6 @@ MODULE meta_colvar_inp_utils
 
 CONTAINS
 
-#ifdef __SR11000
-  !option MP(P(0)), LANGLVL(SAVE(0))
-#endif
   ! ==================================================================
   SUBROUTINE meta_colvar_inp(iunit)
     ! ==--------------------------------------------------------------==
@@ -318,10 +315,6 @@ CONTAINS
        ENDIF
 
        ! Set Default Values
-#ifdef __SR11000
-       !poption parallel, tlocal(IC)
-       !voption indep(CSCL_FAC,TAD_SCF)
-#endif
        DO ic = 1,nnvar
           cscl_fac(1,ic) = 1.0_real_8
           cscl_fac(2,ic) = 0.2_real_8
@@ -3880,9 +3873,7 @@ CONTAINS
        errx=dasum(nactive,cv_diff(1),1)
        ! cntl%diis!
        idiis=MOD(iter-1,mrdiis)+1
-#ifndef __SR11000
        !$omp parallel do private(ICOUNT)
-#endif
        DO icount = 1,nactive
           xlo(icount,idiis) = cv_f_new(ipos(icount))
        ENDDO
@@ -3931,9 +3922,7 @@ CONTAINS
        ! Update the positions
        CALL zeroing(tscr)!,3*maxsys%nax*maxsys%nsx)
        CALL gettau(tscr,dx)
-#ifndef __SR11000
        !$omp parallel do private(IS,IA,FACT)
-#endif
        DO is=1,ions1%nsp
           fact=-dt_ions*dtb2mi(is)
           DO ia=1,ions0%na(is)

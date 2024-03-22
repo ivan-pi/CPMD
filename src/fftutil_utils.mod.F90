@@ -75,9 +75,6 @@ CONTAINS
     IF (HAS_LOW_LEVEL_TIMERS) CALL tiset('     PHASE',isub)
     ijk2=parap%nrxpl(parai%mepos,2)-parap%nrxpl(parai%mepos,1)+1 ! jh-mb
     !$omp parallel do private (J,K,II,IJK1) shared(IJK2) __COLLAPSE2
-#ifdef __SR8000
-    !poption tlocal(K,J,II,IJK1)
-#endif
     DO k=1,spar%nr3s
        DO j=1,spar%nr2s
           ii=k+j+parap%nrxpl(parai%mepos,1)

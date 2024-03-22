@@ -357,9 +357,6 @@ CONTAINS
              ENDDO
              CALL difrho(c0,rhoe,psi,prop2%numorb)
              CALL zeroing(eirop)!,nhg)
-#ifdef __SR8000
-             !poption parallel
-#endif
              !$omp parallel do private(IR)
              DO ir=1,fpar%nnr1
                 psi(ir,1)=CMPLX(rhoe(ir,1),0._real_8,kind=real_8)
@@ -374,9 +371,6 @@ CONTAINS
              CALL zeroing(rhoe(:,1))!,nnr1)
              CALL zeroing(eirop)!,nhg)
              CALL rhoabofr(1,c0(:,nsdip(1,i):nsdip(1,i),1),c0(:,nsdip(2,i):nsdip(2,i),1),rhoe(:,1),psi(:,1))
-#ifdef __SR8000
-             !poption parallel
-#endif
              !$omp parallel do private(IR)
              DO ir=1,fpar%nnr1
                 psi(ir,1)=CMPLX(rhoe(ir,1),0._real_8,kind=real_8)
@@ -402,9 +396,6 @@ CONTAINS
                 CALL rsdipo(tau0,eirop,psi,rhoe)
              ENDIF
           ELSE
-#ifdef __SR8000
-             !poption parallel
-#endif
              !$omp parallel do private(IR)
              DO ir=1,fpar%nnr1
                 psi(ir,1)=CMPLX(rhoe(ir,1),0._real_8,kind=real_8)
@@ -707,16 +698,11 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem',&
             __LINE__,__FILE__)
 
-#ifdef __SR8000
-       !poption parallel
-#endif
+       !$omp parallel do private(I)
        DO i=1,fpar%nnr1
           psi(i,1)=CMPLX(rhoe(i,1),0._real_8,kind=real_8)
        ENDDO
        CALL  fwfftn(psi(:,1),.FALSE.,parai%allgrp)
-#ifdef __SR8000
-       !poption parallel
-#endif
        !$omp parallel do private(IG)
        DO ig=1,ncpw%nhg
           vtemp(ig) = psi(nzh(ig),1)
@@ -735,9 +721,6 @@ CONTAINS
           psi(nzh(1),1) = CMPLX(0._real_8,0._real_8,kind=real_8)
        ENDIF
        CALL  invfftn(psi(:,1),.FALSE.,parai%allgrp)
-#ifdef __SR8000
-       !poption parallel
-#endif
        !$omp parallel do private(I)
        DO i=1,fpar%nnr1
           rhoe(i,1)=REAL(psi(i,1))

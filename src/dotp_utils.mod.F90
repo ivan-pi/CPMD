@@ -132,12 +132,10 @@ FUNCTION dotp(n,a,b)
      dotp=2.0_real_8*(a(1)*b(1)+a(2)*b(2))
   ENDIF
   IF (n.GT.1) THEN
+!! cmb - We keep the following for platforms with no ddot
 #if defined (_vpp_) || defined (__SR8000)  || defined (__ES)
      ddo=0._real_8
      !$omp parallel do private(II) reduction(+:DDO)
-#ifdef __SR11000
-     !poption parallel, tlocal(II), psum(DDO)
-#endif
      DO ii=3,2*n
         ddo=ddo+a(ii)*b(ii)
      ENDDO

@@ -110,13 +110,9 @@ CONTAINS
     IF (ifirst.EQ.0) THEN
        ifirst=1
        length=4*(ncache/4+1)*ncpus
-#if defined(__SR8000) || defined(__SR11000)
-       ! mb     do not call MEMORY
-#else
        ALLOCATE(z(2,ncache/4+1,2,ncpus),STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
             __LINE__,__FILE__)
-#endif
     ENDIF
     isig=-isign
     tscal=(ABS(scale-1._real_8).GT.1.e-12_real_8)
@@ -142,11 +138,6 @@ CONTAINS
        ml=(icpu-1)*mm+1
        mh=MIN(icpu*mm,m)
        IF (icpu.EQ.ncpus) mh=m
-#ifdef __SR8000
-       ! mb-warning: something might be screwed up on SR11000-J1
-       !poption parallel
-       !poption tlocal(NFFT,Z)
-#endif
        DO itr=ml,mh,lot
           nfft=MIN(mh-itr+1,lot)
           IF (transa.EQ.'N'.OR.transa.EQ.'n') THEN

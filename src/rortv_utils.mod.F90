@@ -244,7 +244,7 @@ CONTAINS
     RETURN
   END SUBROUTINE rortv
   ! ==================================================================
-#if defined(__VECTOR) && (! (__SR8000))
+#if defined(__VECTOR) 
   ! ==================================================================
   SUBROUTINE rvharm(c0,cm,gamy,nstate)
     ! ==--------------------------------------------------------------==
@@ -878,10 +878,6 @@ CONTAINS
     CALL zeroing(s2)!,nstate*nstate)
     !$omp parallel do private(I,J,IG,JMAX,PF4,AI,BI,AJ,BJ) &
     !$omp  schedule(static,1)
-#ifdef __SR8000
-    !poption parallel
-    !poption tlocal(I,J,IG,JMAX,PF4,AI,BI,AJ,BJ), cyclic
-#endif
     DO i=1,nstate
        jmax=nstate
        IF (cntl%tlsd.AND.i.LE.spin_mod%nsup) jmax=spin_mod%nsup
@@ -943,9 +939,6 @@ CONTAINS
          nstate,0.0_real_8,s3,nstate)
     dgmax=0.0_real_8
     !$omp parallel do private(I,J,DGAM) reduction(max:DGMAX)
-#ifdef __SR8000
-    !poption parallel, tlocal(I,J,DGAM), max(DGMAX)
-#endif
     DO i=1,nstate
        DO j=1,nstate
           gamy(i,j)=-0.5_real_8*(s1(i,j)+s1(j,i)+s3(i,j)+s3(j,i))
@@ -959,9 +952,6 @@ CONTAINS
     ! Apply the constraint
     IF (cntl%tharm) THEN
        !$omp parallel do private(I,J,IG,GIJ,PF4)
-#ifdef __SR8000
-       !poption parallel, tlocal(I,J,IG,GIJ,PF4)
-#endif
        DO i=1,nstate
           DO j=1,nstate
              gij=gamy(i,j)
@@ -973,9 +963,6 @@ CONTAINS
        ENDDO
     ELSE
        !$omp parallel do private(I,J,IG,GIJ,PF4)
-#ifdef __SR8000
-       !poption parallel, tlocal(I,J,IG,GIJ,PF4)
-#endif
        DO i=1,nstate
           DO j=1,nstate
              gij=gamy(i,j)
