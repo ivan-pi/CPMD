@@ -1,3 +1,4 @@
+#include "cpmd_global.h"
 #if defined(__FFT_HASNT_THREADED_COPIES)
 #define HASNT_THREADED_COPIES .TRUE.
 #else
@@ -29,7 +30,8 @@ MODULE fftutil_utils
                                              real_8
   USE mp_interface,                    ONLY: mp_all2all
   USE parac,                           ONLY: parai
-  USE reshaper,                        ONLY: type_cast
+  USE reshaper,                        ONLY: type_cast,&
+                                             reshape_inplace
   USE system,                          ONLY: fpar,&
                                              parap,&
                                              spar
@@ -529,7 +531,8 @@ CONTAINS
     COMPLEX(real_8),INTENT(OUT)              :: b(kr,kr1,kr2s,*)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'putz_n'
-
+    REAL(real_8), POINTER __CONTIGUOUS       :: b_r(:,:,:,:)
+    REAL(real_8), POINTER __CONTIGUOUS       :: a_r(:,:,:,:)
     INTEGER                                  :: isub,n,n1,n2,n3,n4,is,i,j,k
 
     IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
@@ -539,28 +542,9 @@ CONTAINS
     n2=krmin-1+n
     n3=krmin+n
     n4=krmin-1
-    !$omp parallel private (i,is,k,j) proc_bind(close)
-    DO is=1,nperbatch
-       !$omp do
-       DO i=1,kr2s
-          DO k=1,kr1
-             !$omp simd
-             DO j=1,n1
-                b(j,k,i,is)=CMPLX(0.0_real_8,0.0_real_8,kind=real_8)
-             END DO
-             !$omp simd
-             DO j=krmin,n2
-                b(j,k,i,is)=a(j-n4,k,is,i)
-             END DO
-             !$omp simd
-             DO j=n3,kr
-                b(j,k,i,is)=CMPLX(0.0_real_8,0.0_real_8,kind=real_8)
-             END DO
-          END DO
-       END DO
-       !$omp end do nowait
-    END DO
-    !$omp end parallel
+    CALL reshape_inplace(a,(/(krmax-krmin+1)*2,kr1,nperbatch,nperbatch/),a_r)
+    CALL reshape_inplace(b,(/kr*2,kr1,kr2s,nperbatch/),b_r)
+    CALL putz_n_r(a_r,b_r,krmin,krmax,kr,kr1,kr2s,nperbatch)
 
     IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==
@@ -746,7 +730,8 @@ CONTAINS
     LOGICAL, INTENT(IN)                      :: tr4a2a
     INTEGER, INTENT(IN), OPTIONAL            :: count,offset_in
     INTEGER                                  :: i, ii, ip, isub1, jj, k, mxrp,is,nstate,offset
-
+    REAL(real_8), POINTER __CONTIGUOUS       :: yf_r(:),xf_r(:)
+    
     !$    INTEGER   max_threads
     !$    INTEGER, EXTERNAL :: omp_get_max_threads
     CHARACTER(*),PARAMETER :: procedureN='UNPACK_X2Y_n'
@@ -763,13 +748,32 @@ CONTAINS
     ELSE
        offset=0
     END IF
+    CALL reshape_inplace(yf,(/nstate*offset*2/),yf_r)
+    CALL reshape_inplace(xf,(/nstate*offset*2/),xf_r)
+    call unpack_x2y_n_r(xf_r,yf_r,m,lr1,lda,msp,lmsp,sp8,maxfft,mproc,&
+       offset,nstate)
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    ! ==--------------------------------------------------------------==
+  END SUBROUTINE unpack_x2y_n
+  ! ==================================================================
+  SUBROUTINE unpack_x2y_n_r(xf_r,yf_r,m,lr1,lda,msp,lmsp,sp8,maxfft,mproc,&
+       offset,nstate)
+    ! ==--------------------------------------------------------------==
+    ! include 'parac.inc'
+    real(real_8),INTENT(IN)               :: xf_r(*)
+    real(real_8),INTENT(OUT)              :: yf_r(*)
+    INTEGER, INTENT(IN)                      :: m, lr1, lda, lmsp, &
+                                                msp(lmsp,*), maxfft,&
+                                                mproc, sp8(0:mproc-1)
+    INTEGER, INTENT(IN)                    :: offset,nstate
+    INTEGER                                  :: i, ii, ip, isub1, jj, k, mxrp,is,kk
 
-    !$omp parallel private(is,ip,mxrp,i,ii,jj,k) proc_bind(close)
+    !$omp parallel private(is,ip,mxrp,i,ii,jj,k,kk) proc_bind(close)
+    !    call zero(yf_r,nstate*offset*2)
     !$omp do
-    DO i=1,nstate*offset
-       yf(i)=CMPLX(0.0_real_8,0.0_real_8,kind=real_8)
-    END DO
-
+    do is=1,nstate*offset*2
+       yf_r(is)=0._real_8
+    end do
     DO is=1,nstate
        !$omp do schedule (static)
        DO ip=0,mproc-1
@@ -778,16 +782,77 @@ CONTAINS
              ii = ip*lda*nstate + (i-1)*mxrp + (is-1)*lda
              jj = (i-1)*m + (is-1)*offset
              DO k=1,mxrp
-                yf(jj+msp(k,ip+1)) = xf(ii+k)
+                do kk=-1,0
+                   yf_r((jj+msp(k,ip+1))*2+kk) = xf_r((ii+k)*2+kk)
+                end do
              END DO
           END DO
        END DO
        !$omp end do nowait
     END DO
     !$omp end parallel
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+
+  end SUBROUTINE unpack_x2y_n_r
+  SUBROUTINE putz_n_r(a_r,b_r,krmin,krmax,kr,kr1,kr2s,nperbatch)
     ! ==--------------------------------------------------------------==
-  END SUBROUTINE unpack_x2y_n
-  ! ==================================================================
+    INTEGER,INTENT(IN)                       :: krmin, krmax, kr, kr1, kr2s, nperbatch
+    REAL(real_8),INTENT(IN)               :: a_r((krmax-krmin+1)*2,kr1,nperbatch,*)
+    REAL(real_8),INTENT(OUT)              :: b_r(kr*2,kr1,kr2s,*)
+
+    INTEGER                                  :: isub,n,n1,n2,n3,n4,is,i,j,k,krmin_loc,kr_loc
+
+    
+    n=krmax-krmin+1
+    n1=(krmin-1)*2
+    n2=(krmin-1+n)*2
+    n3=(krmin+n)*2-1
+    n4=(krmin-1)*2
+    kr_loc=kr*2
+    krmin_loc=krmin*2-1
+
+    !$omp parallel private (i,is,k,j) proc_bind(close)
+    DO is=1,nperbatch
+       !$omp do
+       DO i=1,kr2s
+          DO k=1,kr1
+             !$omp simd
+             DO j=1,n1
+                b_r(j,k,i,is)=0.0_real_8
+             END DO
+             !$omp simd
+             DO j=krmin_loc,n2
+                b_r(j,k,i,is)=a_r(j-n4,k,is,i)
+             END DO
+             !$omp simd
+             DO j=n3,kr_loc
+                b_r(j,k,i,is)=0.0_real_8
+             END DO
+          END DO
+       END DO
+       !$omp end do nowait
+    END DO
+    !$omp end parallel
+
+    ! ==--------------------------------------------------------------==
+  END SUBROUTINE putz_n_r
+
+  subroutine zero(in,len)
+    real(real_8), intent(out) __CONTIGUOUS :: in(:)
+    integer, intent(in) :: len
+    integer :: i
+    !$omp do simd
+    do i=1,len
+       in(i)=0.0_real_8
+    end do
+  end subroutine zero
+  subroutine zero_noomp(in,len)
+    real(real_8), intent(out) __CONTIGUOUS :: in(:)
+    integer, intent(in) :: len
+    integer :: i
+    !$omp simd
+    do i=1,len
+       in(i)=0.0_real_8
+    end do
+  end subroutine zero_noomp
   !TK
 END MODULE fftutil_utils
