@@ -32,7 +32,7 @@
        CFLAGS='-O2 -Wall  '
      fi
      if [ $omp ]; then
-       FFLAGS=${FFLAGS}' -openmp'
+       FFLAGS=${FFLAGS}' -qopenmp'
        OMP3_DISABLED='false'
        LIBS='-mkl=parallel'
      else
