@@ -579,9 +579,9 @@ CONTAINS
        
     IF(.NOT.cntl%fft_tune_batchsize)THEN
        DO i=3,fft_tune_max_it,cnti%fft_tune_it_per_batch
-          fft_time_total(i:i+cnti%fft_tune_it_per_batch-1)=&
-               SUM(fft_time_total(i:i+cnti%fft_tune_it_per_batch-1))/&
-               (REAL(cnti%fft_tune_it_per_batch,KIND=real_8))
+          fft_time_total(i+1:i+cnti%fft_tune_it_per_batch-1)=&
+               SUM(fft_time_total(i+1:i+cnti%fft_tune_it_per_batch-1))/&
+               (REAL(cnti%fft_tune_it_per_batch-1,KIND=real_8))
        END DO
        ind=MINLOC(fft_time_total)
        fft_batchsize=fft_batchsizes(ind(1))

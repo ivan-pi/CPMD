@@ -3751,6 +3751,7 @@ CONTAINS
                    cntl%fft_tune_batchsize=.TRUE.
                    READ(iunit,'(A)',iostat=ierr) line
                    CALL readsi(line,1,last,cnti%fft_tune_it_per_batch,erread)
+                   cnti%fft_tune_it_per_batch=cnti%fft_tune_it_per_batch+1
                    IF (erread) THEN
                       error_message        = "ERROR WHILE READING VALUE"
                       something_went_wrong = .true.
