@@ -1,8 +1,10 @@
 #include "cpmd_global.h"
 
 MODULE hfx_drivers
+  USE ace_hfx  !SM
   USE cvan,                            ONLY: deeq_fnl_hfx
   USE error_handling,                  ONLY: stopgm
+  USE func,                            ONLY: func1
   USE hfx_utils,                       ONLY: hfx_old,&
                                              hfxpsi_old,&
                                              hfxrpa_old, &
@@ -20,8 +22,8 @@ MODULE hfx_drivers
 
   USE timer,                           ONLY: tihalt,&
                                              tiset
-  USE ace_hfx  !SM
-
+  USE zeroing_utils
+  
   IMPLICIT NONE
 
   PRIVATE
@@ -106,7 +108,8 @@ CONTAINS
     INTEGER                                  :: isub, ierr
 
 ! ==--------------------------------------------------------------==
-
+    IF (func1%mhfx .EQ. 0) RETURN
+    
     CALL tiset(procedureN,isub)
     IF(pslo_com%tivan)THEN
        IF(.NOT.ALLOCATED(deeq_fnl_hfx))THEN
@@ -115,7 +118,7 @@ CONTAINS
           IF (ierr.NE.0) CALL stopgm(procedureN,'Allocation problem',& 
                __LINE__,__FILE__)
        END IF
-       deeq_fnl_hfx=0.0_real_8
+       CALL zeroing(deeq_fnl_hfx)
     END IF
 
     IF (hfxc3%use_new_hfx) THEN
