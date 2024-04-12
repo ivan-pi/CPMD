@@ -106,6 +106,9 @@ CONTAINS
        !$omp parallel do private(ISA,IA,IS,IG,EI123,RP,RHET,RHOG,RHETS,RHOGS, &
        !$omp  GX,GY,GZ,VCGS,ft1,ft2,ft3)
        DO isa=1,ions1%nat
+          ft1=0._real_8
+          ft2=0._real_8
+          ft3=0._real_8
           ia=iatpt(1,isa)
           is=iatpt(2,isa)
           DO ig=ig1,ncpw%nhg
