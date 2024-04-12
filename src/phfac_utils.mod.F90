@@ -118,22 +118,21 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     CALL tiset(procedureN,isub)
     IF (ifirst.EQ.0) THEN
-       !TK either eigrb or ei1-3
        IF (cntl%bigmem) THEN
           ALLOCATE(eigrb(ncpw%nhg,ions1%nat),STAT=ierr)
           IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
                __LINE__,__FILE__)
-       ELSE
-          ALLOCATE(ei1(natx,(2*spar%nr1s-1)),STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-               __LINE__,__FILE__)
-          ALLOCATE(ei2(natx,(2*spar%nr2s-1)),STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-               __LINE__,__FILE__)
-          ALLOCATE(ei3(natx,(2*spar%nr3s-1)),STAT=ierr)
-          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
-               __LINE__,__FILE__)
-       ENDIF
+       END IF
+       ALLOCATE(ei1(natx,(2*spar%nr1s-1)),STAT=ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
+            __LINE__,__FILE__)
+       ALLOCATE(ei2(natx,(2*spar%nr2s-1)),STAT=ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
+            __LINE__,__FILE__)
+       ALLOCATE(ei3(natx,(2*spar%nr3s-1)),STAT=ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
+            __LINE__,__FILE__)
+
        ALLOCATE(eigr(ncpw%ngw,ions1%nat,1),STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
             __LINE__,__FILE__)! FIXME deallocate missing
@@ -255,21 +254,21 @@ CONTAINS
                   *ei3t(inyh(3,ig),methread)
           END DO
        ELSE
-       !TK ei1-3 only needed if bigmem is not active
           DO ig=1,ncpw%ngw
              eigr(ig,isa,1)=ei1t(inyh(1,ig),methread)*ei2t(inyh(2,ig),methread)&
                   *ei3t(inyh(3,ig),methread)
           END DO
-          DO ig=1,2*spar%nr1s-1
-             ei1(isa,ig)=ei1t(ig,methread)
-          END DO
-          DO ig=1,2*spar%nr2s-1
-             ei2(isa,ig)=ei2t(ig,methread)
-          END DO
-          DO ig=1,2*spar%nr3s-1
-             ei3(isa,ig)=ei3t(ig,methread)
-          END DO
        END IF
+       DO ig=1,2*spar%nr1s-1
+          ei1(isa,ig)=ei1t(ig,methread)
+       END DO
+       DO ig=1,2*spar%nr2s-1
+          ei2(isa,ig)=ei2t(ig,methread)
+       END DO
+       DO ig=1,2*spar%nr3s-1
+          ei3(isa,ig)=ei3t(ig,methread)
+       END DO
+
     END DO
     !$omp end do nowait
     !$omp end parallel

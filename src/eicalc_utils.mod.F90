@@ -5,7 +5,8 @@ MODULE eicalc_utils
                                              inyh,&
                                              rhops,&
                                              vps
-  USE ions,                            ONLY: ions1
+  USE ions,                            ONLY: ions0,&
+                                             ions1
   USE kinds,                           ONLY: real_8
   USE nvtx_utils
   USE sfac,                            ONLY: ei1,&
@@ -36,127 +37,47 @@ CONTAINS
     ! == EIROP : phase factor times Gaussian charge distributions     ==
     ! ==         which replaced ionic point charges (RHOPS)           ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: eivps(:), eirop(:)
+    COMPLEX(real_8) __CONTIGUOUS             :: eivps(:), eirop(:)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'eicalc'
 
-    COMPLEX(real_8)                          :: ei123
-    INTEGER                                  :: ia, ig, is, isa, isub
-    REAL(real_8)                             :: ei, er
+    COMPLEX(real_8)                          :: ei123, eivps_s, eirop_s
+    INTEGER                                  :: ia, ig, is, isa, isub, isa0,&
+                                                ind1, ind2, ind3
+    REAL(real_8)                             :: ei, er,  vps_s, rhops_s
+
 
     CALL tiset(procedureN,isub)
     __NVTX_TIMER_START ( procedureN )
 
-#if defined(__VECTOR) || defined(__SR11KIBM) || defined(__PRIMEHPC)
-#if defined __NEC || defined __PRIMEHPC
-    CALL zeroing(eivps)!,nhg)
-    CALL zeroing(eirop)!,nhg)
-    IF (cntl%bigmem) THEN
-       !$omp parallel do private(IG,ISA,IS)
-       DO ig=1,ncpw%nhg
-          DO isa = 1, ions1%nat
-             is=iatpt(2,isa)
-             eivps(ig)=eivps(ig)+vps(is,ig)*eigrb(ig,isa)
-             eirop(ig)=eirop(ig)+rhops(is,ig)*eigrb(ig,isa)
-          ENDDO
-       ENDDO
-    ELSE
-       !$omp parallel do private(IG,ISA,IS,EI123,ER,EI)
-       DO ig=1,ncpw%nhg
-          DO isa = 1, ions1%nat
-             is=iatpt(2,isa)
-             ei123=ei1(isa,inyh(1,ig))*ei2(isa,inyh(2,ig))*&
-                  ei3(isa,inyh(3,ig))
+    !$omp parallel do private(IG,ISA,IA,IS,ER,EI,EI123,ISA0,eivps_s,eirop_s,&
+    !$omp& ind1,ind2,ind3,vps_s,rhops_s) shared(EIVPS,EIROP)
+    DO ig=1,ncpw%nhg
+       eivps_s=(0.0_real_8,0.0_real_8)
+       eirop_s=(0.0_real_8,0.0_real_8)
+       ind1=inyh(1,ig)
+       ind2=inyh(2,ig)
+       ind3=inyh(3,ig)
+       isa0=0
+       DO is=1,ions1%nsp
+          rhops_s=rhops(is,ig)
+          vps_s=vps(is,ig)
+          DO ia=1,ions0%na(is)
+             isa=isa0+ia
+             ei123=ei1(isa,ind1)*ei2(isa,ind2)*&
+                  ei3(isa,ind3)
              er=REAL(ei123)
              ei=AIMAG(ei123)
-             eivps(ig)=eivps(ig)+CMPLX(er*vps(is,ig),ei*vps(is,ig),kind=real_8)
-             eirop(ig)=eirop(ig)+&
-                  CMPLX(er*rhops(is,ig),ei*rhops(is,ig),kind=real_8)
-          ENDDO
-       ENDDO
-    ENDIF
-#elif defined(_vpp_)
-    CALL zeroing(eivps)!,nhg)
-    CALL zeroing(eirop)!,nhg)
-    IF (cntl%bigmem) THEN
-       DO ig=1,ncpw%nhg
-          DO isa=1,ions1%nat
-             is=iatpt(2,isa)
-             eivps(ig)=eivps(ig)+vps(is,ig)*eigrb(ig,isa)
-             eirop(ig)=eirop(ig)+rhops(is,ig)*eigrb(ig,isa)
-          ENDDO
-       ENDDO
-    ELSE
-       DO ig=1,ncpw%nhg
-          DO isa=1,ions1%nat
-             is=iatpt(2,isa)
-             ei123=ei1(isa,inyh(1,ig))*ei2(isa,inyh(2,ig))*&
-                  ei3(isa,inyh(3,ig))
-             eivps(ig)=eivps(ig)+vps(is,ig)*ei123
-             eirop(ig)=eirop(ig)+rhops(is,ig)*ei123
-          ENDDO
-       ENDDO
-    ENDIF
-#else
-    CALL zeroing(eivps)!,nhg)
-    CALL zeroing(eirop)!,nhg)
-    IF (cntl%bigmem) THEN
-       !$omp parallel do private(IG,IS,IA,ISA)
-       DO ig=1,ncpw%nhg
-          DO isa=1,ions1%nat
-             ia=iatpt(1,isa)
-             is=iatpt(2,isa)
-             eivps(ig)=eivps(ig)+vps(is,ig)*eigrb(ig,isa)
-             eirop(ig)=eirop(ig)+rhops(is,ig)*eigrb(ig,isa)
-          ENDDO
-       ENDDO
-    ELSE
-       !$omp parallel do private(IG,IS,IA,ISA,EI123,ER,EI)
-       DO ig=1,ncpw%nhg
-          DO isa=1,ions1%nat
-             ia=iatpt(1,isa)
-             is=iatpt(2,isa)
-             ei123=ei1(isa,inyh(1,ig))*ei2(isa,inyh(2,ig))*&
-                  ei3(isa,inyh(3,ig))
-             er=REAL(ei123)
-             ei=AIMAG(ei123)
-             eivps(ig)=eivps(ig)+CMPLX(er*vps(is,ig),ei*vps(is,ig),kind=real_8)
-             eirop(ig)=eirop(ig)+&
-                  CMPLX(er*rhops(is,ig),ei*rhops(is,ig),kind=real_8)
-          ENDDO
-       ENDDO
-    ENDIF
-#endif
-#else
-    CALL zeroing(eivps)!,nhg)
-    CALL zeroing(eirop)!,nhg)
-    IF (cntl%bigmem) THEN
-       !$omp parallel do private(IG,IS,IA,ISA) shared(EIVPS,EIROP)
-       DO ig=1,ncpw%nhg
-          DO isa=1,ions1%nat
-             ia=iatpt(1,isa)
-             is=iatpt(2,isa)
-             eivps(ig)=eivps(ig)+vps(is,ig)*eigrb(ig,isa)
-             eirop(ig)=eirop(ig)+rhops(is,ig)*eigrb(ig,isa)
-          ENDDO
-       ENDDO
-    ELSE
-       !$omp parallel do private(IG,ISA,IA,IS,ER,EI,EI123) shared(EIVPS,EIROP)
-       DO ig=1,ncpw%nhg
-          DO isa=1,ions1%nat
-             ia=iatpt(1,isa) ! acm: this is never used...
-             is=iatpt(2,isa)
-             ei123=ei1(isa,inyh(1,ig))*ei2(isa,inyh(2,ig))*&
-                  ei3(isa,inyh(3,ig))
-             er=REAL(ei123)
-             ei=AIMAG(ei123)
-             eivps(ig)=eivps(ig)+CMPLX(er*vps(is,ig),ei*vps(is,ig),kind=real_8)
-             eirop(ig)=eirop(ig)+&
-                  CMPLX(er*rhops(is,ig),ei*rhops(is,ig),kind=real_8)
-          ENDDO
-       ENDDO
-    ENDIF
-#endif
+             eivps_s=eivps_s+&
+                  CMPLX(er*vps_s,ei*vps_s,kind=real_8)
+             eirop_s=eirop_s+&
+                  CMPLX(er*rhops_s,ei*rhops_s,kind=real_8)
+          END DO
+          isa0=isa0+ions0%na(is)
+       END DO
+       eivps(ig)=eivps_s
+       eirop(ig)=eirop_s
+    END DO
 
     __NVTX_TIMER_STOP
     CALL tihalt(procedureN,isub)
