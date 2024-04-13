@@ -111,6 +111,7 @@ MODULE vdwcmod
   TYPE(vdwwfi_t) :: vdwwfi
   TYPE :: vdwwfr_t
      REAL(real_8) :: a6
+     REAL(real_8) :: rs_scfac
      REAL(real_8) :: zlevel
      REAL(real_8) :: enmonomer
      REAL(real_8) :: xmfacwf

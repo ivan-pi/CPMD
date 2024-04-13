@@ -27,6 +27,7 @@ MODULE vdw_utils
                                              np_local,&
                                              np_low
   USE sort_utils,                      ONLY: sort2
+  USE spin,                            ONLY: spin_mod
   USE strs,                            ONLY: alpha,&
                                              beta
   USE system,                          ONLY: cntl,&
@@ -344,7 +345,7 @@ CONTAINS
       dxmax, dxnorm, efac, ffac, reps = 1.0_real_8, rlp(3), seffi, seffi3, &
       seffi32, seffj, seffj3, seffj32, si3, si3d2, sj3, temp1, temp2, temp3, &
       veff1, vol1, voleffwan, vtot1, xlm, ylm, zlm, xlm_, ylm_, zlm_
-    REAL(real_8), ALLOCATABLE                :: fionwf(:,:,:), fove(:)
+    REAL(real_8), ALLOCATABLE                :: fionwf(:,:,:), fove(:), fove_lsd(:,:)
     REAL(real_8), ALLOCATABLE, SAVE          :: c6all(:,:,:)
 
 ! ==--------------------------------------------------------------==
@@ -474,20 +475,47 @@ CONTAINS
     ELSE IF (vdwwfi%iswitchvdw.EQ.1) THEN
        ! vdw-WF
        IF (vdwwfl%twannup) THEN
+          ! Compute intrafragment overlap for lsd
+          ALLOCATE(fove_lsd(nwfcx,nfragx),STAT=ierr)
+          IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
+               __LINE__,__FILE__)
+          fove_lsd(:,:)=1._real_8
+          IF(cntl%tlsd) THEN
+             DO icfr=1,nfrags(ipx)      ! scan all fragments
+                i1=icontfragw(icfr,ipx) ! fragment centers
+             !  veff1=0.0_real_8
+             !  vtot1=0.0_real_8
+                DO ib=1,i1
+                   CALL volwan_lsd(rwfc(1,1,icfr,ipx),spr(1,icfr,ipx),i1,ib,ifragw(1,icfr,ipx), &
+                        voleffwan,vol1)
+                !  veff1=veff1+voleffwan
+                !  vtot1=vtot1+vol1
+                   fove_lsd(ib,icfr)=(voleffwan/vol1)**(1._real_8/3._real_8)
+                ENDDO
+             !  fove(icfr)=(veff1/vtot1)**(1._real_8/3._real_8)
+             ENDDO
+          ENDIF
           c6fac=0.5_real_8*SQRT(REAL(vdwwfi%nelpwf,kind=real_8))/(3._real_8**1.25_real_8)
           DO icfr=1,nfrags(ipx)
              DO jcfr=icfr,nfrags(ipx)
                 DO l=1,icontfragw(icfr,ipx)
                    DO m=1,icontfragw(jcfr,ipx)
-                      si3=spr(l,icfr,ipx)*spr(l,icfr,ipx)*spr(l,icfr,ipx)
-                      sj3=spr(m,jcfr,ipx)*spr(m,jcfr,ipx)*spr(m,jcfr,ipx)
+                   !  si3=spr(l,icfr,ipx)*spr(l,icfr,ipx)*spr(l,icfr,ipx)
+                   !  sj3=spr(m,jcfr,ipx)*spr(m,jcfr,ipx)*spr(m,jcfr,ipx)
+                      seffi=spr(l,icfr,ipx)*fove_lsd(l,icfr)
+                      seffj=spr(m,jcfr,ipx)*fove_lsd(m,jcfr)
+                      si3=seffi*seffi*seffi
+                      sj3=seffj*seffj*seffj
                       si3d2=SQRT(si3)
-                      c6=c6fac*si3d2*sj3*doubles(spr(l,icfr,ipx),spr(m,jcfr,ipx))
+                      c6=c6fac*si3d2*sj3*doubles(spr(l,icfr,ipx),spr(m,jcfr,ipx),fove_lsd(l,icfr),fove_lsd(m,jcfr))
                       c6all(ifragw(m,jcfr,ipx),ifragw(l,icfr,ipx),ipx)=c6
                    ENDDO
                 ENDDO
              ENDDO
           ENDDO
+          DEALLOCATE(fove_lsd,STAT=ierr)
+          IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem',&
+               __LINE__,__FILE__)
        ELSE
           ! Keep using already computed C6ALL
        ENDIF
@@ -720,6 +748,7 @@ CONTAINS
        ELSEIF (iswitchvdw.EQ.2) THEN
           rS=1.309_real_8*(s1+s2)
        ENDIF
+       rS=rS*vdwwfr%rs_scfac
        es=EXP(-a*(r/rS-1._real_8))
        fdamp=1._real_8/(1._real_8+es)
        facpar=-6._real_8+a*r/rS*fdamp*es
@@ -789,6 +818,7 @@ CONTAINS
        ELSE IF (iswitchvdw.EQ.2) THEN
           rS=1.309_real_8*(s1+s2)
        ENDIF
+       rS=rS*vdwwfr%rs_scfac
        es=EXP(-a*(r/rS-1._real_8))
        pot59=1._real_8/(1._real_8+es)
     ELSE
@@ -821,7 +851,7 @@ CONTAINS
     RETURN
   END FUNCTION pot59
   ! ==================================================================
-  FUNCTION doubles(si,sj)
+  FUNCTION doubles(si,sj,swi,swj)
     ! ==--------------------------------------------------------------==
     ! == This routine gives an estimate of the C6 Van der Waals
     ! == coefficient using the information relative to the
@@ -831,7 +861,7 @@ CONTAINS
     ! == by using spherical coordinates and thus reducing to a
     ! == 2-D integral, which is evaluated by Simpson method.
     ! ==--------------------------------------------------------------==
-    REAL(real_8)                             :: si, sj, doubles
+    REAL(real_8)                             :: si, sj, swi, swj, doubles
 
     INTEGER, PARAMETER                       :: npoints = 51
 
@@ -850,7 +880,8 @@ CONTAINS
     ! 
     frac43=4._real_8/3._real_8
     frac23=2._real_8/3._real_8
-    beta=(si/sj)**1.5_real_8
+  ! beta=(si/sj)**1.5_real_8
+    beta=((si*swi)/(sj*swj))**1.5_real_8
     a=1._real_8/beta
     hi=xc/REAL(npoints-1,kind=real_8)
     hj=yc/REAL(npoints-1,kind=real_8)
@@ -1017,6 +1048,107 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     RETURN
   END SUBROUTINE volwan
+  ! ==================================================================
+  SUBROUTINE volwan_lsd(rw,sw,i1,iin,iw,volume,volume_s)
+    ! ==--------------------------------------------------------------==
+    ! == I1  = number of centers in the fragment with rw and sw       ==
+    ! == IIN = center number for overlap calculation                  ==
+    ! ==--------------------------------------------------------------==
+    REAL(real_8)                             :: rw(3,*), sw(*)
+    INTEGER                                  :: i1, iin, iw(*)
+    REAL(real_8)                             :: volume, volume_s
+
+    INTEGER, PARAMETER                       :: npoints = 51
+
+    INTEGER                                  :: imax, inters, la, nx, ny, nz, &
+                                                inters_s
+    REAL(real_8)                             :: dens, difac, distn, distp, &
+                                                dmax, dmez, dv, dx, dxmez, &
+                                                ff, r(3), rwr(3,i1), s12, &
+                                                swr(i1), wt1, &
+                                                rwr_s(3,i1), swr_s(i1)
+
+
+! ==--------------------------------------------------------------==
+! Inters contains information on intersections
+
+    inters=0; inters_s=0
+    ! Scan fragments to find overlap with iin and copy in reduced vectors
+    DO la=1,i1
+       IF (iin.NE.la) THEN
+          s12=sw(iin)+sw(la)     ! sum the spreads
+          distn=dist_pbc(rw(:,iin),rw(:,la),.TRUE.)! iin-la distance
+          IF (distn.LT.s12) THEN  ! intersection -> save neighbors
+             ! charge
+             inters=inters+1    ! intersection number
+             rwr(1,inters)=rw(1,la)! spread & coord of intersecting guys
+             rwr(2,inters)=rw(2,la)
+             rwr(3,inters)=rw(3,la)
+             swr(inters)=sw(la)
+             ! spin
+             IF ((iw(iin)<=spin_mod%nsup.AND.iw(la)<=spin_mod%nsup).OR.&
+                 (iw(iin)>=spin_mod%nsup+1.AND.iw(la)>=spin_mod%nsup+1)) THEN
+                inters_s=inters_s+1
+                rwr_s(1,inters_s)=rw(1,la)! spread & coord of intersecting guys
+                rwr_s(2,inters_s)=rw(2,la)
+                rwr_s(3,inters_s)=rw(3,la)
+                swr_s(inters_s)=sw(la)
+             ENDIF
+          ENDIF
+       ENDIF
+    ENDDO
+    ! Integral
+    dmez=sw(iin)      ! cube having side=2*spread centered in rwfc1
+    dmax=dmez*2.0_real_8
+    dx=dmax/REAL(npoints,kind=real_8)
+    dxmez=dx*0.5_real_8    ! half lattice size
+    dv=dx*dx*dx
+    !
+    volume=0.0_real_8
+    volume_s=0.0_real_8
+    CALL set_ptdist(npoints,1,parai%nproc,imax)
+    !$omp parallel do private(NX,NY,NZ,LA,R,DISTN,DENS,DIFAC,DISTP &
+    !$omp  ,WT1,FF) reduction(+:VOLUME,VOLUME_S)
+    !   DO nx=1,npoints
+    DO nx=npt12(parai%mepos,1),npt12(parai%mepos,2)
+       r(1)=REAL(nx-1,kind=real_8)*dx-dmez+dxmez+rw(1,iin)
+       DO ny=1,npoints
+          r(2)=REAL(ny-1,kind=real_8)*dx-dmez+dxmez+rw(2,iin)
+          DO nz=1,npoints
+             r(3)=REAL(nz-1,kind=real_8)*dx-dmez+dxmez+rw(3,iin)
+             distn=dist_pbc(rw(:,iin),r(:),.TRUE.)! distance iin-r
+             dens=EXP(-2.0_real_8*SQRT(3._real_8)*distn/dmez)
+             IF (distn.LE.vdwwfr%tolref*dmez) THEN! inside the volume wan-iin
+                ! charge
+                difac=1.0_real_8       ! weight=1 if no overlap
+                ! Account only of centers having intersection with the center under consideration
+                DO la=1,inters    ! overlap re-weighting
+                   distp=dist_pbc(rwr(:,la),r(:),.TRUE.)! distance from r
+                   IF (distp.LE.vdwwfr%tolref*swr(la)) difac=difac+1.0_real_8
+                ENDDO
+                wt1=1.0_real_8/REAL(difac,kind=real_8)! weight the volume divided among fragments
+                ! c              FF=DENS*DISTN*DISTN*DISTN !additional weight tkatchenko-overlap
+                ff=1.0_real_8
+                volume=volume+wt1*dv*ff
+                ! spin
+                difac=1.0_real_8       ! weight=1 if no overlap
+                DO la=1,inters_s
+                   distp=dist_pbc(rwr_s(:,la),r(:),.TRUE.)! distance from r
+                   IF (distp.LE.vdwwfr%tolref*swr_s(la)) difac=difac+1.0_real_8
+                ENDDO
+                wt1=1.0_real_8/REAL(difac,kind=real_8)! weight the volume divided among fragments
+                ! c              FF=DENS*DISTN*DISTN*DISTN !additional weight tkatchenko-overlap
+                ff=1.0_real_8
+                volume_s=volume_s+wt1*dv*ff
+             ENDIF
+          ENDDO
+       ENDDO
+    ENDDO
+    CALL mp_sum(volume,parai%allgrp)
+    CALL mp_sum(volume_s,parai%allgrp)
+    ! ==--------------------------------------------------------------==
+    RETURN
+  END SUBROUTINE volwan_lsd
   ! ==================================================================
   SUBROUTINE fragment_zlevel(nstate,rwann,swann,tauref,icontfragw,&
        icontfragwi,iwfcref,ifragw,wwfcref,rwfc,spr,taufrag)

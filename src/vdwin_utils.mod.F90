@@ -905,6 +905,8 @@ CONTAINS
     ! ==      covrad2 ...                                             ==
     ! ==    DAMPING [DIPOLE]                                          ==
     ! ==      a6                                                      ==
+    ! ==    RS_SCALING_FACTOR                                         ==
+    ! ==      rs_scfac                                                ==
     ! ==    RESTART WANNIER                                           ==
     ! ==    ENERGY MONOMER                                            ==
     ! ==      enmonomer                                               ==
@@ -957,6 +959,7 @@ CONTAINS
     vdwwfi%icriteri=2       ! Bond
     vdwwfr%xmfacwf=1.35_real_8
     vdwwfr%a6=20.0_real_8
+    vdwwfr%rs_scfac=1.0_real_8
     vdwwfl%trwannc=.FALSE.
     vdwwfr%enmonomer=0.0_real_8
     vdwwfl%twannup=.TRUE.
@@ -1072,6 +1075,13 @@ CONTAINS
                      'ACCORDING TO: MOL. PHYS. 107, 999 (2009)'
                 vdwwfr%a6=20.0_real_8
              ENDIF
+          ENDIF
+       ELSEIF (keyword_contains(line,'RS_SCALING_FACTOR')) THEN
+          READ(iunit,*,iostat=ierr) vdwwfr%rs_scfac
+          IF (ierr /= 0) THEN
+             error_message        = 'ERROR WHILE READING LINE'
+             something_went_wrong = .TRUE.
+             go_on_reading        = .FALSE.
           ENDIF
        ELSEIF(keyword_contains(line,'RESTART') .AND.&
             keyword_contains(line,'WANN',alias='WANNIER')) THEN
@@ -1257,6 +1267,8 @@ CONTAINS
          WRITE(output_unit,'(A,T56,F10.3)')&
               '    USE SEMIEMPIRICAL DAMPING FUNCTION WITH A6 FACTOR:',vdwwfr%a6
       ENDIF
+      WRITE(output_unit,'(A,T56,F10.3)')&
+           '       SCALING FACTOR FOR RS:',vdwwfr%rs_scfac
       WRITE(output_unit,'(A,T56,F10.3)')&
            '    TOLERANCE FOR EXTRAPOLATION OF WF CENTERS(A.U.):',vdwwfr%tolwann
       WRITE(output_unit,'(A,T56,F10.3)')&
