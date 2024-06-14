@@ -238,21 +238,22 @@ CONTAINS
     LOGICAL, INTENT(IN)                      :: do_hfx, do_dipole
 
     INTEGER                                  :: is, isa0, nhh0, offset_fnl0, nhh, num_orb, ipair, &
-                                                blocksize, blocks, last_block, ig, ierr, num_pairs
-    INTEGER(int_8)                           :: il_dia(2), il_ctmp(2), il_fnlt(3)
+                                                blocksize, blocks, last_block, ig, ierr, num_pairs, nthreads
+    INTEGER(int_8)                           :: il_dia(2), il_ctmp(2), il_fnlt(2)
 #ifdef _USE_SCRATCHLIBRARY
-    REAL(real_8), POINTER __CONTIGUOUS       :: dia(:,:), fnlt(:,:,:)
+    REAL(real_8), POINTER __CONTIGUOUS       :: dia(:,:), fnlt(:,:)
     COMPLEX(real_8), POINTER __CONTIGUOUS    :: ctmp(:,:)
 #else
-    REAL(real_8), ALLOCATABLE                :: dia(:,:), fnlt(:,:,:)
+    REAL(real_8), ALLOCATABLE                :: dia(:,:), fnlt(:,:)
     COMPLEX(real_8), ALLOCATABLE             :: ctmp(:,:)
 #endif
     CHARACTER(*), PARAMETER                  :: procedureN='prep_bigmem_rhov'
 
 
+    nthreads=parai%ncpus
     blocksize=cnti%blocksize_uspp
     blocksize=(((blocksize * 8 + 511) / 512) * 512 + 64) / 8
-    blocksize=blocksize*parai%ncpus
+    blocksize=blocksize*nthreads
     IF(blocksize.GT.nhg)blocksize=nhg
     blocks=nhg/blocksize
     last_block=MOD(nhg,blocksize)
@@ -272,17 +273,16 @@ CONTAINS
     END DO
     il_dia(2)=num_pairs
     
-    il_ctmp(1)=ceiling(real(blocksize,real_8)/real(parai%ncpus,real_8)) &
+    il_ctmp(1)=CEILING(REAL(blocksize,real_8)/REAL(nthreads,real_8)) &
          *(maxsys%nhxs*(maxsys%nhxs+1))/2 &
          *num_pairs
     il_ctmp(1)=(((il_ctmp(1) * 8 + 511) / 512) * 512 + 64) / 8
-    il_ctmp(2)=parai%ncpus
+    il_ctmp(2)=nthreads
     IF(do_hfx.OR.do_dipole)THEN
        il_fnlt=1
     ELSE
-       il_fnlt(1)=num_orb
-       il_fnlt(2)=maxsys%nhxs
-       il_fnlt(3)=parai%ncpus
+       il_fnlt(1)=num_orb*maxsys%nhxs*maxsys%nax
+       il_fnlt(2)=nthreads
     END IF
 #ifdef _USE_SCRATCHLIBRARY
     CALL request_scratch(il_dia,dia,procedureN//'_dia',ierr)
@@ -294,7 +294,7 @@ CONTAINS
 #ifdef _USE_SCRATCHLIBRARY
     CALL request_scratch(il_fnlt,fnlt,procedureN//'_fnlt',ierr)
 #else
-    ALLOCATE(fnlt(il_fnlt(1),il_fnlt(2),il_fnlt(3)),STAT=ierr)
+    ALLOCATE(fnlt(il_fnlt(1),il_fnlt(2)),STAT=ierr)
 #endif
     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate fnlt', &
          __LINE__,__FILE__)
@@ -319,7 +319,7 @@ CONTAINS
           nhh=(nlps_com%ngh(is)*(nlps_com%ngh(is)+1))/2
           CALL evaluate_bigmem_rhov(nst,isa0,ions0%na(is),na(2,is)-na(1,is)+1,nlps_com%ngh(is),&
                nhh,offset_fnl0,na(1,is)-1,num_orb,ig_start,blocksize,last_block,blocks,&
-               crge%f,dia,deltar,fnlt,fnl_p,ctmp,nhh0,do_hfx,do_dipole)
+               crge%f,dia,deltar,fnlt,fnl_p,ctmp,nhh0,do_hfx,do_dipole,nthreads)
           nhh0=nhh0+nhh
        END IF
        isa0=isa0+ions0%na(is)
@@ -352,12 +352,13 @@ CONTAINS
   ! ==================================================================
   ! ==================================================================
   SUBROUTINE evaluate_bigmem_rhov(nst,isa0,ia_sum,ia_fnl,ngh,nhh,offset_fnl0,offset_ylm,num_orb,&
-       ig_start,blocksize,last_block,blocks,f,dia,deltar,fnlt,fnl_p,ctmp,nhh0,do_hfx,do_dipole)
+       ig_start,blocksize,last_block,blocks,f,dia,deltar,fnlt,fnl_p,ctmp,nhh0,do_hfx,do_dipole,nthreads)
     INTEGER,INTENT(IN)                       :: isa0, ia_sum, ia_fnl, ngh, nhh, offset_fnl0,&
                                                 offset_ylm, num_orb, ig_start, blocksize, &
-                                                last_block, blocks, nhh0
+                                                last_block, blocks, nhh0, nthreads
     INTEGER,INTENT(IN) __CONTIGUOUS          :: nst(:,:)
-    REAL(real_8), INTENT(OUT)                :: dia(ia_sum,nhh,*), fnlt(num_orb,ngh,*)
+    REAL(real_8), INTENT(OUT)                :: dia(ia_sum,nhh,*)
+    REAL(real_8), INTENT(OUT) __CONTIGUOUS   :: fnlt(:,:)
     REAL(real_8), INTENT(IN)                 :: fnl_p(il_fnl_packed(1),*), f(*)
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: ctmp(:,:)
     COMPLEX(real_8),INTENT(INOUT)            :: deltar(*)
@@ -377,7 +378,7 @@ CONTAINS
     END IF
     methread=1
     
-    !$omp parallel private(methread)
+    !$omp parallel private(methread) num_threads(nthreads)
     !$ methread=omp_get_thread_num()+1
     IF(do_hfx.OR.do_dipole)THEN
        IF(num_pairs.EQ.1)THEN
@@ -387,14 +388,15 @@ CONTAINS
        END IF
     ELSE
        CALL calc_rho(nst(1,1),nst(2,1),ngh,ia_fnl,offset_fnl0,num_orb,offset_ylm,ia_sum,dia,&
-            fnlt(1,1,methread),f,fnl_p)
+            fnlt(:,methread),f,fnl_p,nhh)
     END IF
     !$omp end parallel
     IF(.NOT.do_hfx.AND..NOT.do_dipole) CALL mp_sum(dia,nhh*ia_sum,parai%cp_grp)
     methread=1
 
-    !$omp parallel private(loc_block,istart,qgstart,methread,iblock,my_start,my_end,my_size)
-    loc_block=ceiling(real(blocksize,real_8)/real(parai%ncpus,real_8))
+    !$omp parallel private(loc_block,istart,qgstart,methread,iblock,my_start,my_end,my_size),&
+    !$omp& num_threads(nthreads)
+    loc_block=CEILING(REAL(blocksize,real_8)/REAL(nthreads,real_8))
     istart=ig_start
     qgstart=ig_start-1
     !$ methread=omp_get_thread_num()+1
@@ -403,7 +405,7 @@ CONTAINS
        my_start=istart+loc_block*(methread-1)
        my_end=istart+loc_block*methread-1
        IF(my_end.GE.istart+blocksize-1)my_end=0
-       IF(methread.EQ.parai%ncpus)my_end=blocksize+istart-1
+       IF(methread.EQ.nthreads)my_end=blocksize+istart-1
        my_size=my_end-my_start+1
 
        IF(my_size.GT.0)THEN
@@ -413,12 +415,12 @@ CONTAINS
        qgstart=qgstart+blocksize
        istart=istart+blocksize
     END DO
-    IF(last_block.gt.0)THEN
-       loc_block=CEILING(REAL(last_block,real_8)/REAL(parai%ncpus,real_8))
+    IF(last_block.GT.0)THEN
+       loc_block=CEILING(REAL(last_block,real_8)/REAL(nthreads,real_8))
        my_start=istart+loc_block*(methread-1)
        my_end=istart+loc_block*methread-1
        IF(my_end.GE.istart+last_block-1)my_end=0
-       IF(methread.EQ.parai%ncpus)my_end=last_block+istart-1
+       IF(methread.EQ.nthreads)my_end=last_block+istart-1
        my_size=my_end-my_start+1
        IF(my_size.GT.0)THEN
           CALL rho_evaluate(my_size,my_start,ia_sum,nhh,dia,ctmp(:,methread),&
@@ -482,7 +484,7 @@ CONTAINS
           !$omp parallel private(methread)
           !$ methread=omp_get_thread_num()+1
           CALL calc_rho(nst(1,1),nst(2,1),nlps_com%ngh(is),na(2,is)-na(1,is)+1,offset_fnl0,&
-               nst(2,1)-nst(1,1)+1,na(1,is)-1,ions0%na(is),dia,fnlt(:,:,methread),crge%f,fnl_p)
+               nst(2,1)-nst(1,1)+1,na(1,is)-1,ions0%na(is),dia,fnlt(:,:,methread),crge%f,fnl_p,nhh)
           !$omp end parallel
           CALL mp_sum(dia,nhh*ions0%na(is),parai%cp_grp)
           ijv=0
@@ -524,17 +526,17 @@ CONTAINS
 
   END SUBROUTINE prep_smallmem_rhov
   ! ==================================================================
-  SUBROUTINE calc_rho(n1,n2,ngh,ia_fnl,offset_fnl0,norb,offset_ylm,ld_ylm,ylm,temp,f,fnl_p)
+  SUBROUTINE calc_rho(n1,n2,ngh,ia_fnl,offset_fnl0,norb,offset_ylm,ld_ylm,ylm,temp,f,fnl_p,nhh)
     ! ==--------------------------------------------------------------==
     INTEGER,INTENT(IN)                         :: ngh,ia_fnl,offset_fnl0,norb,offset_ylm,&
-                                                  ld_ylm,n1,n2
+                                                  ld_ylm,n1,n2,nhh
     REAL(real_8),INTENT(IN)                    :: fnl_p(il_fnl_packed(1),*),f(*)
-    REAL(real_8),INTENT(OUT)                   :: ylm(ld_ylm,*),temp(norb,*)
-    INTEGER                                    :: fnl_offset,ia,iv,i,ijv,jv,fnl_ia,ii
+    REAL(real_8),INTENT(OUT)                   :: ylm(ld_ylm,*),temp(norb,ngh,*)
+    INTEGER                                    :: ia,iv,i,ijv,jv,fnl_ia,ii,ijv_t,fnl_offset
     REAL(real_8)                               :: ftmp,tmp
 
     !$omp do
-    DO ijv=1,ngh*(ngh+1)/2
+    DO ijv=1,nhh
        DO ia=1,ld_ylm
           ylm(ia,ijv)=0.0_real_8
        END DO
@@ -546,7 +548,7 @@ CONTAINS
           fnl_ia=ia+fnl_offset
           DO i=n1,n2
              ii=i-n1+1
-             temp(ii,iv)=fnl_p(fnl_ia,i)
+             temp(ii,iv,ia)=fnl_p(fnl_ia,i)
           END DO
           fnl_offset=fnl_offset+ia_fnl
        END DO
@@ -557,7 +559,7 @@ CONTAINS
              tmp=0._real_8
              DO i=1,norb
                 ii=i-1+n1
-                tmp=tmp+f(ii)*temp(i,iv)*temp(i,jv)
+                tmp=tmp+f(ii)*temp(i,iv,ia)*temp(i,jv,ia)
              END DO
              ftmp=1.0_real_8
              IF(iv.NE.jv) ftmp=2._real_8
@@ -642,13 +644,11 @@ CONTAINS
     COMPLEX(real_8),INTENT(INOUT)              :: deltar(size(eigrb_local,1),*)
     INTEGER                                    :: ijv,nhh0,ig,ig2,irho
 
-    if(block_size.gt.0)then
-
+    IF(block_size.GT.0)THEN
        CALL cpmd_dgemm('n','n',2*block_size,nhh*num_rho,na_is &
             ,1.0_real_8,EIGRB_local(block_start,1),2*size(EIGRB_local,1) &
             ,DIA,na_is,0.0_real_8,CTMP,2*size(ctmp,1))
-
-       do irho=1,num_rho
+       DO irho=1,num_rho
           DO ijv=1,nhh
              !$omp simd
              DO ig=1, block_size
@@ -657,10 +657,8 @@ CONTAINS
              ENDDO
 
           END DO
-       end do
-
-    end if
-    RETURN
+       END DO
+    END IF
   END SUBROUTINE rho_evaluate
   ! ==================================================================
 
