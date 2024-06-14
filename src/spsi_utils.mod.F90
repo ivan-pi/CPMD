@@ -24,7 +24,8 @@ MODULE spsi_utils
                                              fnl,&
                                              il_fnl_packed
   USE system,                          ONLY: cntl,&
-                                             ncpw
+                                             ncpw,&
+                                             maxsys
   USE timer,                           ONLY: tihalt,&
                                              tiset
 #ifdef _USE_SCRATCHLIBRARY
@@ -136,8 +137,8 @@ CONTAINS
 #endif
        IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate eiscr',&
             __LINE__,__FILE__)
-       !$omp parallel private (i,offset_fnl,offset_dai,isa0,is,ia_fnl,ia_sum,fnl_start)
-       !$omp do
+       !$omp parallel do &
+       !$omp& private (i,offset_fnl,offset_dai,isa0,is,ia_fnl,ia_sum,fnl_start)
        DO i=1,nstate
           !offset for packed fnl/fnlgam
           offset_fnl=1
@@ -153,15 +154,14 @@ CONTAINS
                 CALL build_dai(dai(offset_dai:offset_dai-1+ia_sum*nlps_com%ngh(is),i,&
                      parai%cp_inter_me+1),&
                      fnl_p(offset_fnl,i),&
-                     qq(:,:,is),nlps_com%ngh(is),ia_sum,ia_fnl,fnl_start)
+                     qq(:,:,is),nlps_com%ngh(is),ia_sum,ia_fnl,fnl_start,&
+                     maxsys%nhxs)
                 offset_dai=offset_dai+nlps_com%ngh(is)*ia_sum
              END IF
              offset_fnl=offset_fnl+nlps_com%ngh(is)*ia_fnl
              isa0=isa0+ions0%na(is)
           END DO
        END DO
-       !$omp end do nowait
-       !$omp end parallel
        IF(cntl%overlapp_comm_comp)THEN
           nthreads=MIN(2,parai%ncpus)
           nested_threads=(MAX(parai%ncpus-1,1))
@@ -252,10 +252,11 @@ CONTAINS
     RETURN
   END SUBROUTINE spsi
   ! ==================================================================
-  PURE SUBROUTINE build_dai(mat,fnl_p,qq_,ngh,ia_sum,ia_fnl,fnl_start)
-    INTEGER,INTENT(IN)                       :: ngh,ia_sum,ia_fnl,fnl_start
-    REAL(real_8),INTENT(IN)                  :: fnl_p(ia_fnl,ngh,*)
-    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: qq_(:,:)
+  PURE SUBROUTINE build_dai(mat,fnl_p,qq_,ngh,ia_sum,ia_fnl,fnl_start,maxngh)
+    INTEGER,INTENT(IN)                       :: ngh,ia_sum,ia_fnl,fnl_start,&
+                                                maxngh
+    REAL(real_8),INTENT(IN)                  :: fnl_p(ia_fnl,ngh,*),&
+                                                qq_(maxngh,*)
     REAL(real_8),INTENT(OUT)                 :: mat(ia_sum,ngh,*)
     INTEGER                                  :: iv,ia,jv
 
