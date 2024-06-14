@@ -45,7 +45,8 @@ MODULE rv30_utils
                                              nnow,&
                                              numcold
   USE mp_interface,                    ONLY: mp_bcast,&
-                                             mp_sum
+                                             mp_sum,&
+                                             mp_sync
   USE mw,                              ONLY: mwi,&
                                              tmw
   USE nose,                            ONLY: &
@@ -194,6 +195,7 @@ CONTAINS
             ' RESTART INFORMATION READ ON FILE ',filnam(ia:ie)
        CLOSE(nr)
     ENDIF
+    call mp_sync(parai%cp_grp)
     ! ==--------------------------------------------------------------==
     CALL tihalt(proceduren,isub)
     ! ==--------------------------------------------------------------==
