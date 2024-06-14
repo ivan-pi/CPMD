@@ -32,7 +32,8 @@ MODULE fftutil_utils
   USE parac,                           ONLY: parai
   USE reshaper,                        ONLY: type_cast,&
                                              reshape_inplace
-  USE system,                          ONLY: fpar,&
+  USE system,                          ONLY: cntl,&
+                                             fpar,&
                                              parap,&
                                              spar
   USE timer,                           ONLY: tihalt,&
@@ -312,13 +313,19 @@ CONTAINS
     CHARACTER(*), PARAMETER                  :: procedureN = 'fft_comm'
 
     COMPLEX(real_4), POINTER                 :: xf4(:), yf4(:)
-    INTEGER                                  :: isub1
+    INTEGER                                  :: isub1, isub2
 
 ! Variables
 ! ==--------------------------------------------------------------==
 ! ..All to all communication
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
     IF (tr4a2a) THEN
        ! is that needed on P?
        CALL type_cast(xf, maxfft, xf4)
@@ -327,7 +334,13 @@ CONTAINS
     ELSE
        CALL mp_all2all( xf, yf, lda, comm )
     ENDIF
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE fft_comm
   ! ==================================================================
@@ -533,20 +546,27 @@ CONTAINS
     CHARACTER(*), PARAMETER                  :: procedureN = 'putz_n'
     REAL(real_8), POINTER __CONTIGUOUS       :: b_r(:,:,:,:)
     REAL(real_8), POINTER __CONTIGUOUS       :: a_r(:,:,:,:)
-    INTEGER                                  :: isub,n,n1,n2,n3,n4,is,i,j,k
+    INTEGER                                  :: isub1,isub2
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
-
-    n=krmax-krmin+1
-    n1=krmin-1
-    n2=krmin-1+n
-    n3=krmin+n
-    n4=krmin-1
-    CALL reshape_inplace(a,(/(krmax-krmin+1)*2,kr1,nperbatch,nperbatch/),a_r)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
+    
+    CALL reshape_inplace(a,(/(krmax-krmin+1)*2,kr1,nperbatch,kr2s/),a_r)
     CALL reshape_inplace(b,(/kr*2,kr1,kr2s,nperbatch/),b_r)
     CALL putz_n_r(a_r,b_r,krmin,krmax,kr,kr1,kr2s,nperbatch)
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE putz_n
 
@@ -558,10 +578,16 @@ CONTAINS
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'getz_n'
 
-    INTEGER                                  :: isub,n,is,i,j,k,n1
+    INTEGER                                  :: isub1,isub2,n,is,i,j,k,n1
 
 ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
 
     n=krmax-krmin+1
     n1=krmin-1
@@ -580,7 +606,13 @@ CONTAINS
     END DO
     !$omp end parallel
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE getz_n
 
@@ -595,12 +627,18 @@ CONTAINS
     LOGICAL,INTENT(IN)                       :: tr4a2a
     INTEGER,INTENT(IN),OPTIONAL              :: nperbatch,offset_in
 
-    INTEGER                                  :: i, ii, ip, isub1, jj, k, &
-                                                mxrp,is,nstate,offset
+    INTEGER                                  :: i, ii, ip, isub1, isub2, &
+                                                jj, k, mxrp, is, nstate, offset
 
     CHARACTER(*),PARAMETER :: procedureN='PACK_Y2X_n'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
 
     IF(PRESENT(nperbatch))THEN
        nstate=nperbatch
@@ -630,7 +668,13 @@ CONTAINS
     end do
     !$omp end parallel
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE pack_y2x_n
 
@@ -641,17 +685,23 @@ CONTAINS
     LOGICAL,INTENT(IN)                       :: tr4a2a
     INTEGER,INTENT(IN)                       :: m, nrays, lda, mproc, &
                                                 sp5(0:mproc-1), &
-                                                jrxpl(0:mproc-1)
+                                                jrxpl(0:mproc-1), maxfft
     INTEGER,INTENT(IN),OPTIONAL              :: count
 
-    INTEGER                                  :: ip, ipp, isub1, k, nrs, &
-                                                nrx, i,is,nstate,maxfft
+    INTEGER                                  :: ip, ipp, isub1, isub2, k, nrs, &
+                                                nrx, i,is,nstate
 
     CHARACTER(*),PARAMETER :: procedureN='UNPACK_Y2X_n'
     ! ==--------------------------------------------------------------==
     ! ==--------------------------------------------------------------==
     ! ..Pack the data for sending
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
 
     If(PRESENT(count))THEN
        nstate=count
@@ -673,7 +723,13 @@ CONTAINS
        END DO
     END DO
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE unpack_y2x_n
   ! ==================================================================
@@ -688,10 +744,17 @@ CONTAINS
     LOGICAL,INTENT(IN)                       :: tr4a2a
     INTEGER,INTENT(IN),OPTIONAL              :: count
 
-    INTEGER                                  :: ip, ipp, isub1, k, nrs, nrx, i,is,nstate
+    INTEGER                                  :: ip, ipp, isub1, isub2, &
+                                                k, nrs, nrx, i,is,nstate
     CHARACTER(*),PARAMETER :: procedureN='PACK_X2Y_n'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
 
     IF(PRESENT(count))THEN
        nstate=count
@@ -713,7 +776,13 @@ CONTAINS
        END DO
     END DO
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE pack_x2y_n
 
@@ -729,14 +798,20 @@ CONTAINS
                                                 mproc, sp8(0:mproc-1)
     LOGICAL, INTENT(IN)                      :: tr4a2a
     INTEGER, INTENT(IN), OPTIONAL            :: count,offset_in
-    INTEGER                                  :: i, ii, ip, isub1, jj, k, mxrp,is,nstate,offset
+    INTEGER                                  :: isub1, isub2, nstate, offset
     REAL(real_8), POINTER __CONTIGUOUS       :: yf_r(:),xf_r(:)
     
     !$    INTEGER   max_threads
     !$    INTEGER, EXTERNAL :: omp_get_max_threads
     CHARACTER(*),PARAMETER :: procedureN='UNPACK_X2Y_n'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
     ! ..Unpacking the data
     IF(PRESENT(count))THEN
        nstate=count
@@ -750,9 +825,15 @@ CONTAINS
     END IF
     CALL reshape_inplace(yf,(/nstate*offset*2/),yf_r)
     CALL reshape_inplace(xf,(/nstate*offset*2/),xf_r)
-    call unpack_x2y_n_r(xf_r,yf_r,m,lr1,lda,msp,lmsp,sp8,maxfft,mproc,&
+    CALL unpack_x2y_n_r(xf_r,yf_r,m,lr1,lda,msp,lmsp,sp8,maxfft,mproc,&
        offset,nstate)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tihalt(procedureN,isub2)
+       END IF
+    END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE unpack_x2y_n
   ! ==================================================================
@@ -792,7 +873,7 @@ CONTAINS
     END DO
     !$omp end parallel
 
-  end SUBROUTINE unpack_x2y_n_r
+  END SUBROUTINE unpack_x2y_n_r
   SUBROUTINE putz_n_r(a_r,b_r,krmin,krmax,kr,kr1,kr2s,nperbatch)
     ! ==--------------------------------------------------------------==
     INTEGER,INTENT(IN)                       :: krmin, krmax, kr, kr1, kr2s, nperbatch
