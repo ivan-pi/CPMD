@@ -37,7 +37,7 @@ CONTAINS
     ! == EIROP : phase factor times Gaussian charge distributions     ==
     ! ==         which replaced ionic point charges (RHOPS)           ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8) __CONTIGUOUS             :: eivps(:), eirop(:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: eivps(:), eirop(:)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'eicalc'
 
