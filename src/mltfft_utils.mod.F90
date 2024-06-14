@@ -1,3 +1,9 @@
+#if defined(__FFT_HAS_LOW_LEVEL_TIMERS)
+#define HAS_LOW_LEVEL_TIMERS .TRUE.
+#else
+#define HAS_LOW_LEVEL_TIMERS .FALSE.
+#endif
+
 #include "cpmd_global.h"
 
 MODULE mltfft_utils
@@ -18,6 +24,8 @@ MODULE mltfft_utils
                                              int_8,&
                                              real_8
   USE utils,                           ONLY: numcpus
+  USE timer,                           ONLY: tihalt,&
+                                             tiset
   USE system,                          ONLY: cntl
 
   USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_NULL_CHAR,&
@@ -504,10 +512,12 @@ CONTAINS
                                                 fftw_f = -1 , fftw_me = 0, &
                                                 fftw_pa = 32
 
-    INTEGER                                  :: fftw_dir, fftw_flags, i, j
+    INTEGER                                  :: fftw_dir, fftw_flags, i, j, &
+                                                isub1, isub2, isub3, isub4
     LOGICAL                                  :: tscal
-
-    TYPE(C_PTR) :: plan
+    INTEGER(int_8)                           :: plan
+    CHARACTER(*), PARAMETER                  :: procedureN1='dfftw_execute'
+    CHARACTER(*), PARAMETER                  :: procedureN2='fftw3 zero'
 #if defined(_HAS_FFT_FFTW3)
     tscal=(ABS(scale-1._real_8).GT.1.e-12_real_8)
     IF (isign.EQ.1) THEN
@@ -523,7 +533,23 @@ CONTAINS
 
     CALL get_fftw_plan(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,&
          isign,plan)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN1//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN1,isub2)
+       END IF
+    END IF
     CALL dfftw_execute_dft(plan,a,b)
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tihalt(procedureN1//'_tuning',isub1)
+          CALL tiset(procedureN2//'_tuning',isub3)
+       ELSE
+          CALL tihalt(procedureN1,isub2)
+          CALL tiset(procedureN2,isub4)
+       END IF
+    END IF
     IF (tscal) THEN
        IF (transb.EQ.'N'.OR.transb.EQ.'n') THEN
           !$omp parallel do private(I,J)
@@ -581,19 +607,27 @@ CONTAINS
     COMPLEX(real_8), INTENT( INOUT )         :: a(ldax,*)
     COMPLEX(real_8), INTENT( INOUT )         :: b(ldbx,*)
     INTEGER, INTENT( IN )                    :: n, m, isign
-    TYPE(C_PTR), INTENT( OUT)                :: plan
+    INTEGER(int_8), INTENT( OUT)             :: plan
 
     INTEGER, PARAMETER                       :: fftw_b = 1, fftw_f = -1
 
     INTEGER, ALLOCATABLE, SAVE               :: params(:,:)
-    TYPE(C_PTR), ALLOCATABLE, SAVE           :: plans(:)
-    INTEGER                                  :: params_req(7)
-    INTEGER                                  :: fftw_dir, ierr, num_plans, i
+    INTEGER(int_8), ALLOCATABLE, SAVE        :: plans(:)
+    INTEGER                                  :: params_req(7), fftw_dir, ierr, &
+                                                num_plans, i, isub1, isub2
     INTEGER(int_8)                           :: il_asave(2)
     complex(real_8), POINTER __CONTIGUOUS    :: asave(:,:)
     LOGICAL                                  :: first
     LOGICAL, SAVE                            :: batch_tuning = .FALSE.
     CHARACTER(*), PARAMETER                  :: procedureN = 'get_fftw_plan'
+
+    IF (HAS_LOW_LEVEL_TIMERS) THEN
+       IF(cntl%fft_tune_batchsize) THEN
+          CALL tiset(procedureN//'_tuning',isub1)
+       ELSE
+          CALL tiset(procedureN,isub2)
+       END IF
+    END IF
 
     IF( cntl%fft_tune_batchsize .AND. .NOT. batch_tuning )THEN
        batch_tuning = .TRUE.
@@ -654,7 +688,7 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
             __LINE__,__FILE__)
        CALL dcopy(ldax*lday*2, a, 1, asave,  1 )
-       CALL create_fftw_plan(plan,params(:,num_plans),a,b)
+       CALL create_fftw_plan(plan,params(:,num_plans),a,b,ldax,lday,ldbx,ldby)
        CALL dcopy(ldax*lday*2, asave, 1, a,  1 )
 #ifdef _USE_SCRATCHLIBRARY
        CALL free_scratch(il_asave,asave,procedureN//'_asave',ierr)
@@ -699,14 +733,14 @@ CONTAINS
   END SUBROUTINE get_stride
   ! ==================================================================
   SUBROUTINE grow_plan_index(plans,params)
-    TYPE(C_PTR), ALLOCATABLE, INTENT( INOUT ):: plans(:)
-    INTEGER, ALLOCATABLE, INTENT( INOUT )    :: params(:,:)
+    INTEGER(int_8),ALLOCATABLE,INTENT(INOUT) :: plans(:)
+    INTEGER,ALLOCATABLE,INTENT(INOUT)        :: params(:,:)
 
-    TYPE(C_PTR), ALLOCATABLE                 :: swap_plans(:)
-    INTEGER, ALLOCATABLE                     :: swap_params(:,:)
+    INTEGER(int_8),ALLOCATABLE               :: swap_plans(:)
+    INTEGER,ALLOCATABLE                      :: swap_params(:,:)
     INTEGER                                  :: num_plans
     INTEGER                                  :: i, ierr
-    CHARACTER(*), PARAMETER                  :: procedureN = 'grow_plan_index'
+    CHARACTER(*),PARAMETER                   :: procedureN = 'grow_plan_index'
 
     num_plans = SIZE( plans, 1 )
     ALLOCATE( swap_params( 7, num_plans + 1 ), STAT=ierr)
@@ -727,10 +761,10 @@ CONTAINS
   END SUBROUTINE grow_plan_index
   ! ==================================================================
   SUBROUTINE clean_fftw_plans(plans,params)
-    TYPE(C_PTR), ALLOCATABLE, INTENT( INOUT) :: plans(:)
-    INTEGER, ALLOCATABLE, INTENT( INOUT )    :: params(:,:)
+    INTEGER(int_8),ALLOCATABLE,INTENT(INOUT) :: plans(:)
+    INTEGER,ALLOCATABLE,INTENT(INOUT)        :: params(:,:)
     INTEGER                                  :: i, ierr
-    CHARACTER(*), PARAMETER                  :: procedureN = 'clean_plans'
+    CHARACTER(*),PARAMETER                   :: procedureN = 'clean_plans'
 
     DO i = 1, SIZE( plans, 1 )
        CALL dfftw_destroy_plan(plans(i))
@@ -743,15 +777,15 @@ CONTAINS
          __LINE__,__FILE__)
   END SUBROUTINE clean_fftw_plans
   ! ==================================================================
-  SUBROUTINE create_fftw_plan(plan,params,a,b)
-    TYPE(C_PTR)                   :: plan
-    INTEGER                       :: params(7)
-    COMPLEX(real_8)               :: a(*)
-    COMPLEX(real_8)               :: b(*)
+  SUBROUTINE create_fftw_plan(plan,params,a,b,ldax,lday,ldbx,ldby)
+    INTEGER(int_8),INTENT(OUT)      :: plan
+    INTEGER,INTENT(IN)              :: params(7),ldax,lday,ldbx,ldby
+    COMPLEX(real_8),INTENT(INOUT)   :: a(ldax,*)
+    COMPLEX(real_8),INTENT(INOUT)   :: b(ldbx,*)
 
-    INTEGER                       :: n, m, istride, idist, ostride, odist, fftw_dir, rank, size, &
-                                     howmany, inembed, onembed
-    INTEGER, PARAMETER            :: fftw_exhaustive = 8
+    INTEGER                         :: n, m, istride, idist, ostride, odist, fftw_dir, rank, size, &
+                                       howmany, inembed, onembed
+    INTEGER, PARAMETER              :: fftw_exhaustive = 8
     n        = params( 1 )
     m        = params( 2 )
     istride  = params( 3 )
