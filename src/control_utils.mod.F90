@@ -65,8 +65,7 @@ MODULE control_utils
   USE nose,                            ONLY: &
        cafesini, cafesinr, lctrng, loct, loctpin, loctt0, ncafesgrp, nosl, &
        tcafes, tnosepc
-  USE para_global,                     ONLY: para_buff_size,&
-                                             para_stack_buff_size,&
+  USE para_global,                     ONLY: il_para_buff,&
                                              para_use_mpi_in_place
   USE parac,                           ONLY: parai,&
                                              paral
@@ -463,7 +462,7 @@ CONTAINS
     INTEGER                                  :: first, last, keep_first, ierr, &
                                                 iunit, nbr_unknown_lines, &
                                                 nbr_info_lines, counter
-    INTEGER                                  :: i, iflag
+    INTEGER                                  :: i, iflag, tempi
     LOGICAL                                  :: something_went_wrong, go_on_reading, &
                                                 wait_for_qmstart, is_there
     LOGICAL                                  :: erread, mirror, test, store_or_not, &
@@ -3487,17 +3486,8 @@ CONTAINS
                 previous_line = line
                 READ(iunit,'(A)',iostat=ierr) line
                 first=1
-                CALL readsi(line,first,last,para_buff_size,erread)
-                IF(erread) THEN
-                   error_message        = "ERROR WHILE READING VALUE"
-                   something_went_wrong = .true.
-                   go_on_reading        = .false.
-                ENDIF
-             ELSEIF ( keyword_contains(line,'PARA_STACK_BUFF_SIZE') ) THEN
-                previous_line = line
-                READ(iunit,'(A)',iostat=ierr) line
-                first=1
-                CALL readsi(line,first,last,para_buff_size,erread)
+                CALL readsi(line,first,last,tempi,erread)
+                il_para_buff=tempi
                 IF(erread) THEN
                    error_message        = "ERROR WHILE READING VALUE"
                    something_went_wrong = .true.

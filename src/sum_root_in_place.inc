@@ -1,7 +1,4 @@
 subroutine mp_sum_root_in_place_int4_r1(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -10,59 +7,79 @@ subroutine mp_sum_root_in_place_int4_r1(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  integer(int_4), intent(inout) , dimension(*) :: data
+  integer(int_4), intent(inout), target , dimension(*) :: data
   ! Variables
+  integer(int_4), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_int4_r1'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  integer(int_4),dimension(:),allocatable :: buff
-  integer(int_4),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_int4_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_INTEGER,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_INTEGER,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_INTEGER,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(i),buff,m,MPI_INTEGER,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_INTEGER,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_INTEGER,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_int4_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_int4_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_INTEGER,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_int4_r1
 subroutine mp_sum_root_in_place_int4_r2(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -71,59 +88,79 @@ subroutine mp_sum_root_in_place_int4_r2(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  integer(int_4), intent(inout) , dimension(1,*) :: data
+  integer(int_4), intent(inout), target , dimension(1,*) :: data
   ! Variables
+  integer(int_4), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_int4_r2'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  integer(int_4),dimension(:),allocatable :: buff
-  integer(int_4),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_int4_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_INTEGER,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_INTEGER,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_INTEGER,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,i),buff,m,MPI_INTEGER,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_INTEGER,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_INTEGER,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_int4_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_int4_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_INTEGER,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_int4_r2
 subroutine mp_sum_root_in_place_int8_r1(data,n, root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -132,59 +169,79 @@ subroutine mp_sum_root_in_place_int8_r1(data,n, root, comm)
 #else
   integer, intent(in) :: n, root, comm
 #endif
-  integer(int_8), intent(inout) , dimension(*) :: data
+  integer(int_8), intent(inout), target , dimension(*) :: data
   ! Variables
+  integer(int_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_int8_r1'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  integer(int_8),dimension(:),allocatable :: buff
-  integer(int_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_int8_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_INTEGER8,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_INTEGER8,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_INTEGER8,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(i),buff,m,MPI_INTEGER8,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_INTEGER8,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_INTEGER8,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_int8_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_int8_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_INTEGER8,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_int8_r1
 subroutine mp_sum_root_in_place_real8_r1(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -193,59 +250,79 @@ subroutine mp_sum_root_in_place_real8_r1(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  real(real_8), intent(inout) , dimension(*) :: data
+  real(real_8), intent(inout), target , dimension(*) :: data
   ! Variables
+  real(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_real8_r1'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  real(real_8),dimension(:),allocatable :: buff
-  real(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_PRECISION,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(i),buff,m,MPI_DOUBLE_PRECISION,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_PRECISION,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_real8_r1
 subroutine mp_sum_root_in_place_real8_r2(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -254,59 +331,79 @@ subroutine mp_sum_root_in_place_real8_r2(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  real(real_8), intent(inout) , dimension(1,*) :: data
+  real(real_8), intent(inout), target , dimension(1,*) :: data
   ! Variables
+  real(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_real8_r2'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  real(real_8),dimension(:),allocatable :: buff
-  real(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_PRECISION,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,i),buff,m,MPI_DOUBLE_PRECISION,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_PRECISION,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_real8_r2
 subroutine mp_sum_root_in_place_real8_r3(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -315,59 +412,79 @@ subroutine mp_sum_root_in_place_real8_r3(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  real(real_8), intent(inout) , dimension(1,1,*) :: data
+  real(real_8), intent(inout), target , dimension(1,1,*) :: data
   ! Variables
+  real(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_real8_r3'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  real(real_8),dimension(:),allocatable :: buff
-  real(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_PRECISION,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,1,i),buff,m,MPI_DOUBLE_PRECISION,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_PRECISION,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_real8_r3
 subroutine mp_sum_root_in_place_real8_r4(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -376,59 +493,79 @@ subroutine mp_sum_root_in_place_real8_r4(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  real(real_8), intent(inout) , dimension(1,1,1,*) :: data
+  real(real_8), intent(inout), target , dimension(1,1,1,*) :: data
   ! Variables
+  real(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_real8_r4'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  real(real_8),dimension(:),allocatable :: buff
-  real(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_PRECISION,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1,1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,1,1,i),buff,m,MPI_DOUBLE_PRECISION,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,1,1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_PRECISION,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_real8_r4
 subroutine mp_sum_root_in_place_real8_r5(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -437,59 +574,79 @@ subroutine mp_sum_root_in_place_real8_r5(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  real(real_8), intent(inout) , dimension(1,1,1,1,*) :: data
+  real(real_8), intent(inout), target , dimension(1,1,1,1,*) :: data
   ! Variables
+  real(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_real8_r5'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  real(real_8),dimension(:),allocatable :: buff
-  real(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_PRECISION,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1,1,1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,1,1,1,i),buff,m,MPI_DOUBLE_PRECISION,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_PRECISION,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,1,1,1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_PRECISION,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_PRECISION,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_real8_r5
 subroutine mp_sum_root_in_place_complex8_r1(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -498,59 +655,79 @@ subroutine mp_sum_root_in_place_complex8_r1(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  complex(real_8), intent(inout) , dimension(*) :: data
+  complex(real_8), intent(inout), target , dimension(*) :: data
   ! Variables
+  complex(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_complex8_r1'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  complex(real_8),dimension(:),allocatable :: buff
-  complex(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_complex_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_COMPLEX,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(i),buff,m,MPI_DOUBLE_COMPLEX,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_complex_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_complex_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_COMPLEX,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_complex8_r1
 subroutine mp_sum_root_in_place_complex8_r2(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -559,59 +736,79 @@ subroutine mp_sum_root_in_place_complex8_r2(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  complex(real_8), intent(inout) , dimension(1,*) :: data
+  complex(real_8), intent(inout), target , dimension(1,*) :: data
   ! Variables
+  complex(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_complex8_r2'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  complex(real_8),dimension(:),allocatable :: buff
-  complex(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_complex_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_COMPLEX,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,i),buff,m,MPI_DOUBLE_COMPLEX,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_complex_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_complex_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_COMPLEX,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_complex8_r2
 subroutine mp_sum_root_in_place_complex8_r3(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -620,59 +817,79 @@ subroutine mp_sum_root_in_place_complex8_r3(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  complex(real_8), intent(inout) , dimension(1,1,*) :: data
+  complex(real_8), intent(inout), target , dimension(1,1,*) :: data
   ! Variables
+  complex(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_complex8_r3'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  complex(real_8),dimension(:),allocatable :: buff
-  complex(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_complex_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_COMPLEX,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,1,i),buff,m,MPI_DOUBLE_COMPLEX,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_complex_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_complex_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_COMPLEX,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
 end subroutine mp_sum_root_in_place_complex8_r3
 subroutine mp_sum_root_in_place_complex8_r4(data,n,  root, comm)
-  use para_global, only : para_use_mpi_in_place
-  use para_global, only : para_buff_size
-  use para_global, only : para_stack_buff_size
   implicit none
   ! Arguments
 #ifdef __PARALLEL
@@ -681,51 +898,74 @@ subroutine mp_sum_root_in_place_complex8_r4(data,n,  root, comm)
 #else
   integer, intent(in) :: n,  root, comm
 #endif
-  complex(real_8), intent(inout) , dimension(1,1,1,*) :: data
+  complex(real_8), intent(inout), target , dimension(1,1,1,*) :: data
   ! Variables
+  complex(real_8), POINTER __CONTIGUOUS :: para_buff_user(:),data_ptr(:)
+  TYPE(c_ptr) :: loc_x
+  
   character(*),parameter :: procedureN='mp_sum_in_place_complex8_r4'
-  integer :: ierr,m,i,stat,buff_size,me
+  integer :: ierr,me,i
   real(real_8) :: tim1,tim2
-  complex(real_8),dimension(:),allocatable :: buff
-  complex(real_8),dimension(para_stack_buff_size) :: stack_buff
 #ifdef __PARALLEL
   cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
   cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_double_complex_in_bytes
   tim1=m_walltime()      
-  if (n<=para_stack_buff_size) then
-    call mpi_reduce(data,stack_buff,n,MPI_DOUBLE_COMPLEX,&
-         MPI_SUM,root,comm,ierr)
-    call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    data(1,1,1,1:n)=stack_buff(1:n)
-  else
-    if (para_use_mpi_in_place) then
-      call mpi_comm_rank(comm,me, ierr)
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-      if (root.eq.me) THEN
-        call mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      else
-        call mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
-               MPI_SUM,root,comm,ierr)
-      end if
-      call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    else
-      buff_size=min(n,para_buff_size)
-      allocate(buff(buff_size),stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'allocation problem',& 
-           __LINE__,__FILE__)
-      do i=1,n,buff_size
-        m=min(buff_size,n-i+1)
-        call mpi_reduce(data(1,1,1,i),buff,m,MPI_DOUBLE_COMPLEX,&
+  CALL mpi_comm_rank(comm,me, ierr)
+  CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+
+  IF(para_use_mpi_in_place)THEN
+     IF (root.EQ.me) THEN
+        CALL mpi_reduce(MPI_IN_PLACE,data,n,MPI_DOUBLE_COMPLEX,&
              MPI_SUM,root,comm,ierr)
-        call mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-        data(1,1,1,i:i+m-1)=buff(1:m)
-      enddo
-      deallocate(buff,stat=stat)
-      if (stat.ne.0) call stopgm(procedureN,'deallocation problem',&
-           __LINE__,__FILE__)
-    endif
-  endif
+     ELSE
+        CALL mpi_reduce(data,data,n,MPI_DOUBLE_COMPLEX,&
+             MPI_SUM,root,comm,ierr)
+     END IF
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+  ELSE
+#if !defined _USE_SCRATCHLIBRARY
+     IF(.NOT.ALLOCATED(para_buff))THEN
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+     END IF
+#endif
+     IF(n*mp_double_complex_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+        il_para_buff(1)=CEILING(REAL(n*mp_double_complex_in_bytes,real_8)/&
+             buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+        DEALLOCATE(para_buff,ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+             __LINE__,__FILE__)
+        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+             __LINE__,__FILE__)
+#endif
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+     CALL mpi_reduce(data,para_buff,n,MPI_DOUBLE_COMPLEX,&
+          MPI_SUM,root,comm,ierr)
+     CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+     IF(root.EQ.me) THEN
+        loc_x = C_LOC(para_buff)
+        CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+        loc_x = C_LOC(data)
+        CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+        !$omp parallel do simd
+        do i=1,n
+           data_ptr(i)=para_buff_user(i)
+        end do
+     END IF
+#ifdef _USE_SCRATCHLIBRARY
+     CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+     IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+          __LINE__,__FILE__)
+#endif
+  END IF
   tim2=m_walltime()
   cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif

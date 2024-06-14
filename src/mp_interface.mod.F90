@@ -5,6 +5,9 @@
 ! ==================================================================
 
 MODULE mp_interface
+  USE, INTRINSIC :: iso_c_binding,     ONLY: c_loc,&
+                                             c_f_pointer,&
+                                             c_ptr
   USE error_handling,                  ONLY: stopgm
   USE kinds,                           ONLY: int_1,&
                                              int_4,&
@@ -13,12 +16,18 @@ MODULE mp_interface
                                              real_8
   USE machine,                         ONLY: m_flush,&
                                              m_walltime
-  USE para_global,                     ONLY: para_buff_size,&
-                                             para_stack_buff_size,&
-                                             para_use_mpi_in_place
+  USE para_global,                     ONLY: para_use_mpi_in_place,&
+                                             para_buff,&
+                                             il_para_buff,&
+                                             buff_size_in_bytes
   USE parac,                           ONLY: parai,&
                                              paral
   USE pstat
+  USE reshaper,                        ONLY: reshape_inplace
+#ifdef _USE_SCRATCHLIBRARY
+  USE scratch_interface,               ONLY: request_scratch,&
+                                             free_scratch
+#endif
   USE system,                          ONLY: cnti
   USE zeroing_utils,                   ONLY: zeroing
 
@@ -816,56 +825,83 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! == Wrapper to mpi_allreduce (summation)                         ==
     ! ==--------------------------------------------------------------==
-    INTEGER(int_1)                           :: DATA(*)
+    INTEGER(int_1), INTENT(INOUT), TARGET    :: DATA(*)
 #ifdef __PARALLEL
-    INTEGER                                  :: n
-    type(MPI_COMM)                           :: comm
+    INTEGER, INTENT(IN)                      :: n
+    type(MPI_COMM), INTENT(IN)               :: comm
 #else
-    INTEGER                                  :: n, comm
+    INTEGER, INTENT(IN)                      :: n, comm
 #endif
 
     CHARACTER(*), PARAMETER :: procedureN = 'mp_sum_in_place_int1_r1'
 
     ! Variables
+    INTEGER(int_1), POINTER __CONTIGUOUS :: para_buff_user(:), data_ptr(:)
+    TYPE(c_ptr) :: loc_x
 
 #ifdef __PARALLEL
-    INTEGER :: ierr,m,i,stat,buff_size
-    INTEGER(int_1),DIMENSION(:),ALLOCATABLE :: buff
-    INTEGER(int_1),DIMENSION(para_stack_buff_size) :: stack_buff
-
-    TYPE(MPI_Op) :: op_sum_i1
+    INTEGER :: ierr,stat,i
+    REAL(real_8) :: tim1,tim2
+    TYPE(MPI_Op), SAVE :: op_sum_i1
+    LOGICAL, SAVE      :: init=.FALSE.
     ! ==--------------------------------------------------------------==
     ! INT*1 not always supported, so we define an op
-    op_sum_i1 = mpi_op_null
-    CALL mpi_op_create(sum_i1,.TRUE.,op_sum_i1,ierr)
-    CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-    IF (n<=para_stack_buff_size) THEN
-       CALL mpi_allreduce(DATA,stack_buff,n,mpi_integer1,op_sum_i1,&
-            comm,ierr)
+    IF(.NOT.init)THEN
+       op_sum_i1 = mpi_op_null
+       CALL mpi_op_create(sum_i1,.TRUE.,op_sum_i1,ierr)
+       init=.TRUE.
+    END IF
+    cmcal(ipar_gsum)=cmcal(ipar_gsum)+1.0d0
+    cmlen(ipar_gsum)=cmlen(ipar_gsum)+n*mp_int1_in_bytes
+    tim1=m_walltime()
+    IF(para_use_mpi_in_place)THEN
+       CALL mpi_allreduce(MPI_IN_PLACE,data,n,mpi_integer1,&
+            op_sum_i1,comm,ierr)
        CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-       DATA(1:n)=stack_buff(1:n)
     ELSE
-       IF (para_use_mpi_in_place) THEN
-          CALL mpi_allreduce(mpi_in_place,DATA,n,mpi_integer1,&
-               op_sum_i1,comm,ierr)
-          CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-       ELSE
-          buff_size=MIN(n,para_buff_size)
-          ALLOCATE(buff(buff_size),stat=stat)
-          IF (stat.NE.0) CALL stopgm(procedureN,'Allocation problem',& 
+#if !defined _USE_SCRATCHLIBRARY
+       IF(.NOT.ALLOCATED(para_buff))THEN
+          ALLOCATE(para_buff(il_para_buff(1)),ierr)
+          IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
                __LINE__,__FILE__)
-          DO i=1,n,buff_size
-             m=MIN(buff_size,n-i+1)
-             CALL mpi_allreduce(DATA(i),buff,m,mpi_integer1,&
-                  op_sum_i1,comm,ierr)
-             CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
-             DATA(i:i+m-1)=buff(1:m)
-          ENDDO
-          DEALLOCATE(buff,stat=stat)
-          IF (stat.NE.0) CALL stopgm(procedureN,'Deallocation problem',&
+       END IF
+#endif
+       IF(n*mp_int1_in_bytes.GT.buff_size_in_bytes*il_para_buff(1))THEN
+          il_para_buff(1)=CEILING(REAL(n*mp_int1_in_bytes,real_8)/&
+               buff_size_in_bytes)
+#if !defined _USE_SCRATCHLIBRARY
+          DEALLOCATE(para_buff,ierr)
+          IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
                __LINE__,__FILE__)
-       ENDIF
-    ENDIF
+          ALLOCATE(para_buff(il_para_buff(1)),ierr)
+          IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+               __LINE__,__FILE__)
+#endif
+       END IF
+#ifdef _USE_SCRATCHLIBRARY
+       CALL request_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
+            __LINE__,__FILE__)
+#endif
+       CALL mpi_allreduce(data,para_buff,n,mpi_integer1,&
+            op_sum_i1,comm,ierr)
+       CALL mp_mpi_error_assert(ierr,procedureN,__LINE__,__FILE__)
+#ifdef _USE_SCRATCHLIBRARY
+       CALL free_scratch(il_para_buff,para_buff,procedureN//'_para_buff',ierr)
+       IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
+            __LINE__,__FILE__)
+#endif
+       loc_x = C_LOC(para_buff)
+       CALL C_F_POINTER(loc_x, para_buff_user, (/n/))
+       loc_x = C_LOC(data)
+       CALL C_F_POINTER(loc_x, data_ptr, (/n/))
+       !$omp parallel do simd
+       do i=1,n
+          data_ptr(i)=para_buff_user(i)
+       end do
+    END IF
+    tim2=m_walltime()
+    cmtim(ipar_gsum)=cmtim(ipar_gsum)+tim2-tim1
 #endif
   END SUBROUTINE mp_sum_in_place_int1_r1
 

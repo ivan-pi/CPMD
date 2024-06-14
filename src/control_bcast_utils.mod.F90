@@ -43,8 +43,7 @@ MODULE control_bcast_utils
                                              nosl,&
                                              tcafes,&
                                              tnosepc
-  USE para_global,                     ONLY: para_buff_size,&
-                                             para_stack_buff_size,&
+  USE para_global,                     ONLY: il_para_buff,&
                                              para_use_mpi_in_place
   USE parac,                           ONLY: parai,&
                                              paral
@@ -290,8 +289,7 @@ CONTAINS
     CALL mp_bcast(tnosepc,parai%io_source,parai%cp_grp)
     ! PARA_*
     CALL mp_bcast(para_use_mpi_in_place,parai%io_source,parai%cp_grp)
-    CALL mp_bcast(para_stack_buff_size,parai%io_source,parai%cp_grp)
-    CALL mp_bcast(para_buff_size,parai%io_source,parai%cp_grp)
+    CALL mp_bcast(il_para_buff,SIZE(il_para_buff),parai%io_source,parai%cp_grp)
     ![EXACT FACTORIZATION
     CALL mp_bcast(tshl%txfmqc,parai%io_source,parai%cp_grp)
     IF (tshl%txfmqc) THEN
