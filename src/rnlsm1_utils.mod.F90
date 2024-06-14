@@ -90,7 +90,8 @@ CONTAINS
     INTEGER                                  :: isub, isub2, isub3, ierr, buffcount, buff, igeq0,&
                                                 methread, nthreads, nested_threads, &
                                                 tot_work, start_dai, ld_dai, end_dai, &
-                                                ld_buffer(maxbuff), start_buffer(maxbuff)
+                                                ld_buffer(maxbuff), start_buffer(maxbuff), &
+                                                isub4, isub5
     INTEGER(int_8)                           :: il_eiscr(2), il_dai(1)
     INTEGER,ALLOCATABLE                      :: na_buff(:,:,:), na_grp(:,:,:)
 
@@ -218,9 +219,11 @@ CONTAINS
           start_dai=start_buffer(buff)
           end_dai=start_dai-1+ld_dai*nstate
           IF(ld_dai.GT.0)THEN
+             CALL tiset(procedureN//'_proj',isub4)
              CALL proj_beta(na_buff(:,:,buff),igeq0,nstate,c0,nkpt%ngwk,eigkr(:,:,ikind),&
                   eiscr,nkpt%ngwk,1,dai(start_dai:end_dai),ld_dai/imagp,&
                   .FALSE.,tkpts%tkpnt,geq0,twnl_nghtol=twnl_nghtol(:,:,:,ikind))
+             CALL tihalt(procedureN//'_proj',isub4)
           END IF
           !$ locks(buff) = .FALSE.
           !$omp flush(locks)
@@ -240,7 +243,9 @@ CONTAINS
           CALL TIHALT(procedureN//'_barrier',ISUB2)
           IF(autotune_it.GT.0.AND.autotune_it.LE.cnti%rnlsm_autotune_maxit) temp=m_walltime()
           IF(ld_dai.GT.0)THEN
-             CALL mp_sum(dai(start_dai:end_dai),end_dai-start_dai+1,parai%allgrp)
+             CALL tiset(procedureN//'_reduce',isub5)
+             CALL mp_sum(dai(start_dai:),end_dai-start_dai+1,parai%allgrp)
+             CALL tihalt(procedureN//'_reduce',isub5)
           END IF
           IF(autotune_it.GT.0.AND.autotune_it.LE.cnti%rnlsm_autotune_maxit)&
                timings(2)=timings(2)+m_walltime()-temp
