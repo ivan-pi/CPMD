@@ -114,11 +114,11 @@ CONTAINS
   ! ==================================================================
   SUBROUTINE zclean(a,n,ngw)
     ! ==--------------------------------------------------------------==
-    INTEGER                                  :: n, ngw
-    COMPLEX(real_8), TARGET                  :: a(ngw,n)
+    INTEGER, INTENT(IN)                      :: n, ngw
+    COMPLEX(real_8), TARGET, INTENT(INOUT)   :: a(ngw,n)
 
     INTEGER                                  :: i
-    REAL(real_8), POINTER                    :: pa(:,:,:)
+    REAL(real_8), POINTER __CONTIGUOUS       :: pa(:,:,:)
 
     CALL reshape_inplace(a, (/2, ngw, n/), pa)
 
