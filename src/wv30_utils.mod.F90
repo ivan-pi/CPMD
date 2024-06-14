@@ -47,7 +47,8 @@ MODULE wv30_utils
                                              scold,&
                                              nnow,&
                                              numcold
-  USE mp_interface,                    ONLY: mp_sum
+  USE mp_interface,                    ONLY: mp_sum,&
+                                             mp_sync
   USE mw,                              ONLY: mwi,&
                                              tmw
   USE nose,                            ONLY: &
@@ -227,6 +228,7 @@ CONTAINS
     IF (paral%parent)THEN
        IF (cntl%cdft)CALL wcdft_restart()
     ENDIF
+    CALL mp_sync(parai%cp_grp)
     ! ==--------------------------------------------------------------==
     CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==
