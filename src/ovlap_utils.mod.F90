@@ -145,7 +145,7 @@ CONTAINS
           ! ==--------------------------------------------------------------==
           ! ..Beta spin
           IF (symmetric) THEN
-             CALL dsyrk('U','T',spin_mod%nsdown,2*NGW_local,2._real_8,C1(ibeg_c0,spin_mod%nsup+1),&
+             CALL cpmd_dsyrk('U','T',spin_mod%nsdown,2*NGW_local,2._real_8,C1(ibeg_c0,spin_mod%nsup+1),&
                   2*NCPW%NGW,0._real_8,a(spin_mod%nsup+1,spin_mod%nsup+1),nstate)
              IF(need_full)CALL dmatc('U',spin_mod%nsdown,a(spin_mod%nsup+1,spin_mod%nsup+1),nstate)
           ELSE
@@ -180,7 +180,7 @@ CONTAINS
           ! ==--------------------------------------------------------------==
           ! ..LDA
           IF (symmetric) THEN
-             CALL dsyrk('U','T',nstate,2*NGW_local,2._real_8,C1(ibeg_c0,1),&
+             CALL cpmd_dsyrk('U','T',nstate,2*NGW_local,2._real_8,C1(ibeg_c0,1),&
                   2*NCPW%NGW,0._real_8,a(1,1),nstate)
              IF(need_full)CALL dmatc('U',nstate,a,nstate)
           ELSE
