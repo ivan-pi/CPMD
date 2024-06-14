@@ -53,14 +53,14 @@ CONTAINS
                                                 ia_sum, tot_work, ns(2), nmin(2), &
                                                 off_i, off_mat, off_fnl, ia_fnl, &
                                                 start_fnl, end_fnl, fnl_start, start_mat, &
-                                                end_mat, isub, ierr
-    INTEGER(int_8)                           :: il_fnlat(3), il_fnlatj(3)
+                                                end_mat, isub, ierr, n
+    INTEGER(int_8)                           :: il_fnlat(2), il_fnlatj(2)
     REAL(real_8)                             :: fractions(parai%nproc),selem, temp
     CHARACTER(*), PARAMETER                  :: procedureN = 'csmat'
 #ifdef _USE_SCRATCHLIBRARY
-    REAL(real_8),POINTER __CONTIGUOUS        :: fnlat(:,:,:), fnlatj(:,:,:)
+    REAL(real_8),POINTER __CONTIGUOUS        :: fnlat(:,:), fnlatj(:,:)
 #else
-    REAL(real_8),ALLOCATABLE                 :: fnlat(:,:,:), fnlatj(:,:,:)
+    REAL(real_8),ALLOCATABLE                 :: fnlat(:,:), fnlatj(:,:)
 #endif
     INTEGER,ALLOCATABLE,SAVE                 :: na_buff(:,:,:)
     INTEGER,ALLOCATABLE                      :: na(:,:), na_fnl(:,:), na_grp(:,:,:)
@@ -113,35 +113,32 @@ CONTAINS
 
        il_fnlat(1)=tot_work
        il_fnlat(2)=MAXVAL(ns)
-       il_fnlat(3)=nspin
-
        il_fnlatj(1)=tot_work
        il_fnlatj(2)=MAXVAL(ns)
-       il_fnlatj(3)=nspin
        IF(tot_work.GT.0)THEN
 #ifdef _USE_SCRATCHLIBRARY
           CALL request_scratch(il_fnlat,fnlat,procedureN//'_fnlat',ierr)
 #else
-          ALLOCATE(fnlat(il_fnlat(1),il_fnlat(2),il_fnlat(3)), stat=ierr)
+          ALLOCATE(fnlat(il_fnlat(1),il_fnlat(2)), stat=ierr)
 #endif
           IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate fnlat',&
                __LINE__,__FILE__)
 #ifdef _USE_SCRATCHLIBRARY
           CALL request_scratch(il_fnlatj,fnlatj,procedureN//'_fnlatj',ierr)
 #else
-          ALLOCATE(fnlatj(il_fnlatj(1),il_fnlatj(2),il_fnlatj(3)), stat=ierr)
+          ALLOCATE(fnlatj(il_fnlatj(1),il_fnlatj(2)), stat=ierr)
 #endif
           IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate fnlatj',&
                __LINE__,__FILE__)
-          !$omp parallel private(ispin,off_i,i,off_mat,off_fnl,is,ia_fnl,ia_sum,&
-          !$omp start_fnl,end_fnl,fnl_start,start_mat,end_mat)
+
           DO ispin=1,nspin
              off_i=0
              IF(ispin.EQ.2) off_i=spin_mod%nsup
-             !$omp do schedule(static)
-             DO i=1,ns(ispin)
-                off_mat=0
-                off_fnl=0
+             n=ns(ispin)
+             !$omp parallel do private(i,off_mat,off_fnl,is,ia_fnl,ia_sum,fnl_start)
+             DO i=1,n
+                off_mat=1
+                off_fnl=1
                 DO is=1,ions1%nsp
                    ia_fnl=na_fnl(2,is)-na_fnl(1,is)+1
                    ia_sum=na(2,is)-na(1,is)+1
@@ -149,31 +146,22 @@ CONTAINS
                    IF(ia_sum.GT.0)THEN
                       !starting index fnl_packed
                       fnl_start=na(1,is)-na_fnl(1,is)
-                      !fnl_range
-                      start_fnl=off_fnl+1
-                      end_fnl=off_fnl+ia_fnl*nlps_com%ngh(is)
-                      !mat_range
-                      start_mat=off_mat+1
-                      end_mat=off_mat+ia_sum*nlps_com%ngh(is)
-                      CALL prepare_matrix(fnl_packed(start_fnl:end_fnl,i+off_i),&
-                           fnlat(start_mat:end_mat,i,ispin),&
-                           fnlatj(start_mat:end_mat,i,ispin),qq(:,:,is),nlps_com%ngh(is),&
-                           ia_sum,ia_fnl,fnl_start)
+                      CALL prepare_matrix(fnl_packed(off_fnl:,i+off_i),&
+                           fnlat(off_mat:,i),&
+                           fnlatj(off_mat:,i),qq(:,:,is),nlps_com%ngh(is),&
+                           ia_sum,ia_fnl,fnl_start,maxsys%nhxs)
                       off_mat=off_mat+ia_sum*nlps_com%ngh(is)
                    END IF
                    off_fnl=off_fnl+ia_fnl*nlps_com%ngh(is)
                 END DO
              END DO
-          END DO
-          !$omp end parallel
-          DO ispin=1,nspin
 #ifdef _HAS_DGEMMT
-             CALL cpmd_dgemmt('U','T','N',ns(ispin),tot_work,1.0_real_8,&
-                  fnlat(1,1,ispin),tot_work,fnlatj(1,1,ispin),tot_work,1.0_real_8,&
+             CALL cpmd_dgemmt('U','T','N',n,tot_work,1.0_real_8,&
+                  fnlat(1,1),tot_work,fnlatj(1,1),tot_work,1.0_real_8,&
                   a(nmin(ispin),nmin(ispin)),nstate)
 #else
-             CALL cpmd_dgemm('T','N',ns(ispin),ns(ispin),tot_work,1.0_real_8,&
-                  fnlat(1,1,ispin),tot_work,fnlatj(1,1,ispin),tot_work,1.0_real_8,&
+             CALL cpmd_dgemm('T','N',n,n,tot_work,1.0_real_8,&
+                  fnlat(1,1),tot_work,fnlatj(1,1),tot_work,1.0_real_8,&
                   a(nmin(ispin),nmin(ispin)),nstate)
 #endif
           END DO
@@ -291,10 +279,9 @@ CONTAINS
     RETURN
   END SUBROUTINE store_ovlap
   ! ==================================================================
-  PURE SUBROUTINE prepare_matrix(fnl_p,fnli,fnlj,qq_,ngh,ia_sum,ia_fnl,fnl_start)
-    INTEGER,INTENT(IN)                       :: ngh,ia_sum,ia_fnl,fnl_start
-    REAL(real_8),INTENT(IN)                  :: fnl_p(ia_fnl,ngh,*)
-    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: qq_(:,:)
+  PURE SUBROUTINE prepare_matrix(fnl_p,fnli,fnlj,qq_,ngh,ia_sum,ia_fnl,fnl_start,maxngh)
+    INTEGER,INTENT(IN)                       :: ngh,ia_sum,ia_fnl,fnl_start,maxngh
+    REAL(real_8),INTENT(IN)                  :: fnl_p(ia_fnl,ngh,*), qq_(maxngh,*)
     REAL(real_8),INTENT(OUT)                 :: fnli(ia_sum,ngh,*),fnlj(ia_sum,ngh,*)
     INTEGER                                  :: iv,ia,jv
 
