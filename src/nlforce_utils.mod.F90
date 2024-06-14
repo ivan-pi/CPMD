@@ -171,9 +171,9 @@ CONTAINS
 #endif
        IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate eiscr',&
             __LINE__,__FILE__)
-       !$omp parallel private (i,ffi,ispin,offset_fnl,offset_dai,isa0,is,ia_fnl,ia_sum,&
-       !$omp start_isa)
-       !$omp do
+       !$omp parallel do &
+       !$omp& private (i,ffi,ispin,offset_fnl,offset_dai,isa0,is,ia_fnl,ia_sum,&
+       !$omp& start_isa)
        DO i=1,nstate
           !setup spin settings
           ffi=f(i)
@@ -192,19 +192,18 @@ CONTAINS
              ia_sum=na(2,is)-na(1,is)+1
              start_isa=isa0+na(1,is)-1
              IF(ia_sum.GT.0)THEN
-                CALL build_dai(dai(offset_dai:offset_dai-1+ia_sum*nlps_com%ngh(is),i,&
+                CALL build_dai(dai(offset_dai:,i,&
                      parai%cp_inter_me+1),&
                      fnl_p(offset_fnl,i),&
                      fnlgam_p(offset_fnl,i),&
-                     ia_sum,ffi,is,start_isa,ispin)
+                     ia_sum,ffi,start_isa,nlps_com%ngh(is),qq(:,:,is),dvan(:,:,is),&
+                     deeq(:,:,:,ispin),maxsys%nhxs,ions1%nat)
                 offset_dai=offset_dai+nlps_com%ngh(is)*ia_sum
              END IF
              offset_fnl=offset_fnl+nlps_com%ngh(is)*ia_fnl
              isa0=isa0+ions0%na(is)
           END DO
        END DO
-       !$omp end do nowait
-       !$omp end parallel
        IF(cntl%overlapp_comm_comp)THEN
           nthreads=MIN(2,parai%ncpus)
           nested_threads=(MAX(parai%ncpus-1,1))
@@ -302,31 +301,30 @@ CONTAINS
     RETURN
   END SUBROUTINE nlforce
   ! ==================================================================
-  PURE SUBROUTINE build_dai(dai,fnl_,fnlgam_,ia_,ffi,is,start_isa,ispin)
-    INTEGER,INTENT(IN)                       :: ia_,is,start_isa,ispin
+  PURE SUBROUTINE build_dai(dai,fnl_,fnlgam_,ia_,ffi,start_isa,ngh_is,qq_,dvan_,deeq_,maxnhg,nat)
+    INTEGER,INTENT(IN)                       :: ia_,start_isa,ngh_is,maxnhg,nat
     REAL(real_8),INTENT(IN)                  :: ffi
-    REAL(real_8),INTENT(OUT)                 :: dai(ia_,nlps_com%ngh(is),*)
-    REAL(real_8),INTENT(IN)                  :: fnl_(ia_,nlps_com%ngh(is),*)
-    REAL(real_8),INTENT(IN)                  :: fnlgam_(ia_,nlps_com%ngh(is),*)
+    REAL(real_8),INTENT(OUT)                 :: dai(ia_,ngh_is,*)
+    REAL(real_8),INTENT(IN)                  :: fnl_(ia_,ngh_is,*),&
+                                                fnlgam_(ia_,ngh_is,*),&
+                                                qq_(maxnhg,*),dvan_(maxnhg,*),deeq_(nat,maxnhg,*)
     REAL(real_8)                             :: t1, fac1
     INTEGER                                  :: iv,jv,ia,isa
 
-    DO iv=1,nlps_com%ngh(is)
+    DO iv=1,ngh_is
        DO ia=1,ia_
           dai(ia,iv,1)=0.0_real_8
        END DO
-       fac1=qq(iv,iv,is)
-       t1=dvan(iv,iv,is)
-       DO jv=1,nlps_com%ngh(is)
-          fac1=qq(jv,iv,is)
-          t1=dvan(jv,iv,is)
+       DO jv=1,ngh_is
+          fac1=qq_(jv,iv)
+          t1=dvan_(jv,iv)
           isa=start_isa
           IF (ABS(fac1).GT.1.e-5_real_8) THEN
              DO ia=1,ia_
                 isa=isa+1
                 dai(ia,iv,1)=dai(ia,iv,1)-&
                      fnl_(ia,jv,1)*ffi*&
-                     (deeq(isa,jv,iv,ispin)+t1)-&
+                     (deeq_(isa,jv,iv)+t1)-&
                      fac1*fnlgam_(ia,jv,1)
              END DO
           ELSE
@@ -334,7 +332,7 @@ CONTAINS
                 isa=isa+1
                 dai(ia,iv,1)=dai(ia,iv,1)-&
                      fnl_(ia,jv,1)*ffi*&
-                     (deeq(isa,jv,iv,ispin)+t1)
+                     (deeq_(isa,jv,iv)+t1)
              END DO
           END IF
        END DO
