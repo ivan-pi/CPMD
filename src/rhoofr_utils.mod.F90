@@ -62,9 +62,7 @@ MODULE rhoofr_utils
                                              locks_inv
   USE fftmain_utils,                   ONLY: fwfftn,&
                                              invfftn,&
-                                             fwfftn_batch,&
-                                             invfftn_batch,&
-                                             invfftn_batch_com
+                                             invfftn_batch
   USE fftnew_utils,                    ONLY: setfftn
   USE geq0mod,                         ONLY: geq0
   USE ions,                            ONLY: ions0,&
@@ -976,7 +974,7 @@ CONTAINS
                 ! ==  to swap                                                     ==
                 ! ==--------------------------------------------------------------==
                 swap=mod(ibatch,int_mod)+1
-                CALL invfftn_batch(wfn_g,bsize,swap,1,ibatch)
+                CALL invfftn_batch(wfn_g,size(wfn_g),bsize,swap,1,ibatch)
                 i_start1=i_start1+bsize*2
              END IF
           END IF
@@ -992,7 +990,7 @@ CONTAINS
              END IF
              IF(bsize.NE.0)THEN
                 swap=mod(ibatch,int_mod)+1
-                CALL invfftn_batch(wfn_r,bsize,swap,2,ibatch)
+                CALL invfftn_batch(wfn_r,int(il_wfnr(1)),bsize,swap,2,ibatch)
              END IF
           END IF
        END IF
@@ -1007,7 +1005,7 @@ CONTAINS
              IF(bsize.NE.0)THEN
                 swap=mod(ibatch-start_loop,int_mod)+1
                 IF(rsactive) wfn_r1=>wfn_r(:,ibatch-start_loop)
-                CALL invfftn_batch(wfn_r1,bsize,swap,3,ibatch-start_loop)
+                CALL invfftn_batch(wfn_r1,int(il_wfnr(1)),bsize,swap,3,ibatch-start_loop)
                 ! Compute the charge density from the wave functions
                 ! in real space
                 ! Decode fft batch, setup (lsd) spin settings                     

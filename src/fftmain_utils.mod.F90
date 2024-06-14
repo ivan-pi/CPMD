@@ -1,3 +1,9 @@
+#if defined(__FFT_HAS_LOW_LEVEL_TIMERS)
+#define HAS_LOW_LEVEL_TIMERS .TRUE.
+#else
+#define HAS_LOW_LEVEL_TIMERS .FALSE.
+#endif
+
 #include "cpmd_global.h"
 
 MODULE fftmain_utils
@@ -76,8 +82,6 @@ MODULE fftmain_utils
   PUBLIC :: invfftn
   PUBLIC :: fwfftn
   PUBLIC :: invfftn_batch
-  PUBLIC :: invfftn_batch_com
-  PUBLIC :: fwfftn_batch_com
   PUBLIC :: fwfftn_batch
   !public :: fftnew
 
@@ -92,7 +96,8 @@ CONTAINS
     USE mpi_f08
 #endif
     INTEGER, INTENT(IN)                      :: isign
-    COMPLEX(real_8)                          :: f(:)
+    COMPLEX(real_8), INTENT(INOUT) &
+                               __CONTIGUOUS  :: f(:)
     LOGICAL, INTENT(IN)                      :: sparse
 #ifdef __PARALLEL
     type(MPI_COMM), INTENT(IN)               :: comm
@@ -103,10 +108,10 @@ CONTAINS
 
     COMPLEX(real_8), DIMENSION(:), &
       POINTER __CONTIGUOUS                   :: xf_ptr, yf_ptr
-    INTEGER                                  :: lda, m, mm, n1o, n1u, ierr
+    INTEGER                                  :: lda, m, mm, n1o, n1u, ierr,isub
     INTEGER(int_8)                           :: il_xf(2)
     REAL(real_8)                             :: scale
-
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN//'get_scratch',isub)
 #ifdef _USE_SCRATCHLIBRARY
     il_xf(1)=maxfft
     il_xf(2)=1
@@ -117,6 +122,8 @@ CONTAINS
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
          __LINE__,__FILE__)
 #endif
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN//'get_scratch',isub)
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
     xf_ptr => xf(:,1)
     yf_ptr => yf(:,1)
 
@@ -188,6 +195,8 @@ CONTAINS
           CALL mltfft('T','N',xf_ptr,m,qr1s,f,qr1s,m,lr1s,m,isign,scale )
        ENDIF
     ENDIF
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN//'release_scratch',isub)
 #ifdef _USE_SCRATCHLIBRARY
     CALL free_scratch(il_xf,yf,procedureN//'_yf',ierr)
     IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
@@ -196,6 +205,7 @@ CONTAINS
     IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
          __LINE__,__FILE__)
 #endif
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN//'release_scratch',isub)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE fftnew
 
@@ -223,7 +233,8 @@ CONTAINS
 #endif
     IMPLICIT NONE
     INTEGER, INTENT(IN)                      :: isign, n, swap, step, ibatch
-    COMPLEX(real_8),INTENT(INOUT)            :: f(:)
+    COMPLEX(real_8),INTENT(INOUT) &
+                __CONTIGUOUS                 :: f(:)
 #ifdef __PARALLEL
     type(MPI_COMM), INTENT(IN)               :: comm
 #else
@@ -493,9 +504,9 @@ CONTAINS
   SUBROUTINE mltfft(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale,thread_view)
     ! ==--------------------------------------------------------------==
     CHARACTER(len=1)                         :: transa, transb
-    COMPLEX(real_8)                          :: a(:)
+    COMPLEX(real_8),INTENT(IN) __CONTIGUOUS  :: a(:)
     INTEGER                                  :: ldax, lday
-    COMPLEX(real_8)                          :: b(:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: b(:)
     INTEGER                                  :: ldbx, ldby, n, m, isign
     REAL(real_8)                             :: scale
     TYPE(thread_view_t), INTENT(IN), &
@@ -504,7 +515,7 @@ CONTAINS
     CHARACTER(*), PARAMETER                  :: procedureN = 'mltfft'
 
     INTEGER                                  :: device_idx, host_buff_ptr, &
-                                                stream_idx
+                                                stream_idx, isub
     TYPE(cp_cufft_plans_t), POINTER          :: plans_d
     TYPE(cublas_handle_t), POINTER           :: blas_handle_p
     TYPE(cuda_memory_t), POINTER             :: t1_d, t2_d
@@ -514,7 +525,7 @@ CONTAINS
 ! ==--------------------------------------------------------------==
 !vw for the moment we use CPU FFT 
 !IF( cp_cuda_env%use_fft ) THEN
-
+    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
     IF( .FALSE. ) THEN
 
        PRINT *,'START DEBUG ----------------------------------------'
@@ -592,10 +603,11 @@ CONTAINS
 #ifdef __PARALLEL
     USE mpi_f08
 #endif
-    COMPLEX(real_8)                          :: f(:)
+    COMPLEX(real_8),INTENT(INOUT) &
+                                __CONTIGUOUS :: f(:)
     LOGICAL                                  :: sparse
 #ifdef __PARALLEL
-    type(MPI_COMM), INTENT(IN)                      :: comm
+    type(MPI_COMM), INTENT(IN)               :: comm
 #else
     INTEGER, INTENT(IN)                      :: comm
 #endif
@@ -629,7 +641,8 @@ CONTAINS
 #ifdef __PARALLEL
     USE mpi_f08
 #endif
-    COMPLEX(real_8)                          :: f(:)
+    COMPLEX(real_8),INTENT(INOUT) &
+     __CONTIGUOUS                            :: f(:)
     LOGICAL                                  :: sparse
 #ifdef __PARALLEL
     type(MPI_COMM), INTENT(IN)                      :: comm
@@ -658,14 +671,14 @@ CONTAINS
   END SUBROUTINE fwfftn
   ! ==================================================================
 
-  SUBROUTINE fwfftn_batch(f,n,swap,step,ibatch)
+  SUBROUTINE fwfftn_batch(f,len_f,n,swap,step,ibatch)
     ! ==--------------------------------------------------------------==
     ! == COMPUTES THE FORWARD FOURIER TRANSFORM OF A COMPLEX          ==
     ! == FUNCTION F_IN. THE FOURIER TRANSFORM IS                      ==
     ! == RETURNED IN F_OUT                                            ==
     ! ==--------------------------------------------------------------==
-    INTEGER, INTENT(IN)                      :: n, swap, step, ibatch
-    COMPLEX(real_8), INTENT(INOUT)           :: f(fpar%kr1*fpar%kr2s*fpar%kr3s*fft_batchsize)
+    INTEGER, INTENT(IN)                      :: n, swap, step, ibatch, len_f
+    COMPLEX(real_8), INTENT(INOUT)           :: f(len_f)
     CHARACTER(*), PARAMETER                  :: procedureN = 'fwfftn_batch'
 
     INTEGER                                  :: isign, isub, isub1
@@ -685,14 +698,14 @@ CONTAINS
     ! ==--------------------------------------------------------------==
   END SUBROUTINE fwfftn_batch
   ! ==================================================================
-  SUBROUTINE invfftn_batch(f,n,swap,step,ibatch)
+  SUBROUTINE invfftn_batch(f,len_f,n,swap,step,ibatch)
     ! ==--------------------------------------------------------------==
     ! == COMPUTES THE INVERSE FOURIER TRANSFORM OF A COMPLEX          ==
     ! == FUNCTION F_IN. THE FOURIER TRANSFORM IS                      ==
     ! == RETURNED IN F_OUT                                            ==
     ! ==--------------------------------------------------------------==
-    INTEGER, INTENT(IN)                      :: n, swap, step, ibatch
-    COMPLEX(real_8), INTENT(INOUT)           :: f(fpar%kr1*fpar%kr2s*fpar%kr3s*fft_batchsize)
+    INTEGER, INTENT(IN)                      :: n, swap, step, ibatch, len_f
+    COMPLEX(real_8), INTENT(INOUT)           :: f(len_f)
     CHARACTER(*), PARAMETER                  :: procedureN = 'invfftn_batch'
 
     INTEGER                                  :: isign, isub, isub1
@@ -712,82 +725,5 @@ CONTAINS
     END IF
     ! ==--------------------------------------------------------------==
   END SUBROUTINE invfftn_batch
-  ! ==================================================================
-  SUBROUTINE invfftn_batch_com(int_mod)
-    ! ==--------------------------------------------------------------==
-    ! == COMPUTES THE INVERSE FOURIER TRANSFORM OF A COMPLEX          ==
-    ! == FUNCTION F_IN. THE FOURIER TRANSFORM IS                      ==
-    ! == RETURNED IN F_OUT                                            ==
-    ! ==--------------------------------------------------------------==
-    INTEGER, INTENT(IN)                      :: int_mod
-    CHARACTER(*), PARAMETER                  :: procedureN = 'invfftn_batch_com'
-
-    INTEGER                                  :: ibatch,n,lda,isub, swap
-
-    CALL tiset(procedureN,isub)
-    DO ibatch=1,fft_numbatches+1
-       IF(ibatch.LE.fft_numbatches)THEN
-          n=fft_batchsize
-       ELSE
-          n=fft_residual
-       END IF
-       IF(n.NE.0)THEN
-          lda=lsrm*lr1m*n
-          swap=mod(ibatch,int_mod)+1
-          !$omp flush(locks_inv)
-          !$ DO WHILE ( locks_inv(ibatch,1) )
-          !$omp flush(locks_inv)
-          !$ END DO
-          !$ locks_inv(ibatch,1) = .TRUE.
-          !$omp flush(locks_inv)
-          CALL fft_comm(yf(:,swap),xf(:,swap),lda,cntl%tr4a2a,parai%allgrp)
-          !$ locks_inv(ibatch,1)=.FALSE.
-          !$omp flush(locks_inv)
-          !$ locks_inv(ibatch,2)=.FALSE.
-          !$omp flush(locks_inv)
-       END IF
-    END DO
-
-    CALL tihalt(procedureN,isub)
-    ! ==--------------------------------------------------------------==
-  END SUBROUTINE invfftn_batch_com
-  ! ==================================================================
-  SUBROUTINE fwfftn_batch_com(int_mod)
-    ! ==--------------------------------------------------------------==
-    ! == COMPUTES THE INVERSE FOURIER TRANSFORM OF A COMPLEX          ==
-    ! == FUNCTION F_IN. THE FOURIER TRANSFORM IS                      ==
-    ! == RETURNED IN F_OUT                                            ==
-    ! ==--------------------------------------------------------------==
-    INTEGER, INTENT(IN)                      :: int_mod
-    CHARACTER(*), PARAMETER                  :: procedureN = 'fwfftn_batch_com'
-
-    INTEGER                                  :: ibatch,n,lda,isub, swap, isub1
-
-    CALL tiset(procedureN,isub)
-    DO ibatch=1,fft_numbatches+1
-       IF(ibatch.LE.fft_numbatches)THEN
-          n=fft_batchsize
-       ELSE
-          n=fft_residual
-       END IF
-       IF(n.NE.0)THEN
-          lda=lsrm*lr1m*n
-          swap=mod(ibatch,int_mod)+1
-          !$omp flush(locks_fw)
-          !$ DO WHILE ( locks_fw(ibatch,1) )
-          !$omp flush(locks_fw)
-          !$ END DO
-          !$ locks_fw(ibatch,1) = .TRUE.
-          !$omp flush(locks_fw)
-          CALL fft_comm(xf(:,swap),yf(:,swap),lda,cntl%tr4a2a,parai%allgrp)
-          !$ locks_fw(ibatch,1)=.FALSE.
-          !$omp flush(locks_fw)
-          !$ locks_fw(ibatch,2)=.FALSE.
-          !$omp flush(locks_fw)
-       END IF
-    END DO
-    CALL tihalt(procedureN,isub)
-    ! ==--------------------------------------------------------------==
-  END SUBROUTINE fwfftn_batch_com
 
 END MODULE fftmain_utils

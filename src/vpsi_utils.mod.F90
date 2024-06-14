@@ -59,7 +59,6 @@ MODULE vpsi_utils
   USE fftmain_utils,                   ONLY: fwfftn,&
                                              invfftn,&
                                              fwfftn_batch,&
-                                             fwfftn_batch_com,&
                                              invfftn_batch
   USE fftnew_utils,                    ONLY: setfftn
   USE geq0mod,                         ONLY: geq0
@@ -1259,7 +1258,7 @@ CONTAINS
                    ! ==  to swap                                                     ==
                    ! ==--------------------------------------------------------------==
                    swap=mod(ibatch,int_mod)+1
-                   CALL invfftn_batch(wfn_g,bsize,swap,1,ibatch)
+                   CALL invfftn_batch(wfn_g,size(wfn_g),bsize,swap,1,ibatch)
                    i_start1=i_start1+bsize*njump
                 END IF
              END IF
@@ -1275,7 +1274,7 @@ CONTAINS
                 END IF
                 IF(bsize.NE.0)THEN
                    swap=mod(ibatch,int_mod)+1
-                   CALL invfftn_batch(wfn_r,bsize,swap,2,ibatch)
+                   CALL invfftn_batch(wfn_r,int(il_wfnr(1)),bsize,swap,2,ibatch)
                 END IF
              END IF
           END IF
@@ -1291,7 +1290,7 @@ CONTAINS
                 END IF
                 IF(bsize.NE.0)THEN
                    swap=mod(ibatch-start_loop1,int_mod)+1
-                   CALL invfftn_batch(wfn_r1,bsize,swap,3,ibatch-start_loop1)
+                   CALL invfftn_batch(wfn_r1,int(il_wfnr(1)),bsize,swap,3,ibatch-start_loop1)
                 END IF
              END IF
           END IF
@@ -1356,7 +1355,7 @@ CONTAINS
              ! ==------------------------------------------------------------==
              ! == Back transform to reciprocal space the product V.PSI       ==
              ! ==------------------------------------------------------------==
-                CALL fwfftn_batch(wfn_r1,bsize,swap,1,ibatch-start_loop1)
+                CALL fwfftn_batch(wfn_r1,int(il_wfnr(1)),bsize,swap,1,ibatch-start_loop1)
                 i_start2=i_start2+bsize*njump
              END IF
           END IF
@@ -1371,7 +1370,7 @@ CONTAINS
              END IF
              IF(bsize.NE.0)THEN
                 swap=mod(ibatch-start_loop1,int_mod)+1
-                CALL fwfftn_batch(wfn_r,bsize,swap,2,ibatch-start_loop1)
+                CALL fwfftn_batch(wfn_r,int(il_wfnr(1)),bsize,swap,2,ibatch-start_loop1)
              END IF
           END IF
        END IF
@@ -1388,7 +1387,7 @@ CONTAINS
              IF(bsize.NE.0)THEN
                 IF(rsactive) wfn_r1=>wfn_r(:,ibatch-start_loop2)
                 swap=mod(ibatch-start_loop2,int_mod)+1
-                CALL fwfftn_batch(wfn_g,bsize,swap,3,ibatch-start_loop2)
+                CALL fwfftn_batch(wfn_g,size(wfn_g),bsize,swap,3,ibatch-start_loop2)
                 IF (tkpts%tkpnt) THEN
                    CALL calc_c2_kpnt(c2,c0,wfn_g,f,bsize,i_start3,ikind)
                 ELSE
@@ -1676,22 +1675,22 @@ CONTAINS
   SUBROUTINE calc_c2(c2,c0,psi,f,n,is_start,njump,nostat)
     ! ==--------------------------------------------------------------==
     INTEGER, INTENT(IN)                      :: n, is_start, njump, nostat
-    COMPLEX(real_8), INTENT(IN)              :: psi(fpar%kr1s*msrays,n), c0(:,:)
-    COMPLEX(real_8), INTENT(OUT)             :: c2(:,:)
-    REAL(real_8), INTENT(IN)                 :: f(:)
+    COMPLEX(real_8),INTENT(IN)               :: psi(fpar%kr1s*msrays,n)
+    COMPLEX(real_8),INTENT(IN) __CONTIGUOUS  :: c0(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c2(:,:)
+    REAL(real_8), INTENT(IN) __CONTIGUOUS    :: f(:)
     COMPLEX(real_8)                          :: fm, fp, psii, psin
     INTEGER                                  :: is, is1, is2, ig, offset
     REAL(real_8)                             :: fi, fip1, xskin, g2
 
-    !$omp parallel private(is,is1,is2,ig,fp,fm,psin,psii,fi,fip1,xskin,g2,offset)
-    offset=is_start
+    !$omp parallel private(is,is1,is2,ig,fp,fm,psin,psii,fi,fip1,xskin,g2)
     DO is=1,n
-       is1=offset+1
-       offset=offset+1
-       is2=nostat+1
-       IF(njump.EQ.2)THEN
-          is2=offset+1
-          offset=offset+1
+       IF(njump.EQ.1)THEN
+          is1=is_start + is
+          is2=nostat + 1
+       ELSE
+          is1=is_start + (is-1)*2 + 1
+          is2=is1+1
        END IF
        fi=f(is1)*0.5_real_8
        IF (fi.EQ.0._real_8.AND..NOT.cntl%tksham) fi=1._real_8
