@@ -82,7 +82,7 @@ CONTAINS
   ! ==================================================================
   SUBROUTINE phfac(tau0)
     ! ==--------------------------------------------------------------==
-    REAL(real_8)                             :: tau0(:,:,:)
+    REAL(real_8), INTENT(IN) __CONTIGUOUS    :: tau0(:,:,:)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'phfac'
 
@@ -91,7 +91,7 @@ CONTAINS
                                                 ei30, svtmpm, svtmpp, zsum
     INTEGER                                  :: i, ia, ierr, ig, ik, ikk, &
                                                 ikpt, is, isa, isub, j, k, &
-                                                nh1, nh2, nh3,  methread
+                                                nh1, nh2, nh3,  methread, nthreads
     INTEGER(int_8)                           :: il_ei2t(2), il_ei3t(2), il_ei1t(2)
     INTEGER, SAVE                            :: ifirst = 0
     REAL(real_8)                             :: ar1, ar2, ar3, sum, sum1, &
@@ -151,12 +151,13 @@ CONTAINS
        ENDIF
     ENDIF
     !TK temporary arrays
+    nthreads=parai%ncpus
     il_ei1t(1)=2*spar%nr1s-1
-    il_ei1t(2)=parai%ncpus
+    il_ei1t(2)=nthreads
     il_ei2t(1)=2*spar%nr2s-1
-    il_ei2t(2)=parai%ncpus
+    il_ei2t(2)=nthreads
     il_ei3t(1)=2*spar%nr3s-1
-    il_ei3t(2)=parai%ncpus
+    il_ei3t(2)=nthreads
 #ifdef _USE_SCRATCHLIBRARY
     CALL request_scratch(il_ei1t,ei1t,procedureN//'_ei1t',ierr)
 #else
@@ -275,7 +276,7 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     IF (tkpts%tkpnt) THEN
        DO ikpt=1,nkpt%nblkp
-1         DO ik=1,nkpbl(ikpt)
+         DO ik=1,nkpbl(ikpt)
              ikk=kpbeg(ikpt)+ik
              !$omp parallel do private(ISA,IA,IS,SUM1,SUM2,SUM3,SUM,ZSUM,IG)
              DO isa=1,ions1%nat
