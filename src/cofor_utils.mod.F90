@@ -54,7 +54,7 @@ CONTAINS
     COMPLEX(real_8)                          :: ei123, vxc
     INTEGER                                  :: ia, ig, is, isa, k, isa0, &
                                                 ig_start, ig_end, isub
-    REAL(real_8)                             :: omtp, vcgs, fiont(3)
+    REAL(real_8)                             :: omtp, vcgs, ft1, ft2, ft3
 #ifdef _VERBOSE_FORCE_DBG
     INTEGER                                  :: ierr
     REAL(real_8),ALLOCATABLE                 :: dbg_forces(:,:,:)
@@ -67,7 +67,7 @@ CONTAINS
        !$omp parallel do private(is,ia)
        DO is=1,ions1%nsp
           DO ia=1,ions0%na(is)
-             fion(1:3,ia,is)=0._real_8
+             fion(:3,ia,is)=0._real_8
           END DO
        END DO
     END IF
@@ -75,25 +75,27 @@ CONTAINS
     omtp=2._real_8*parm%omega*parm%tpiba
     IF(cntl%bigmem)THEN
        IF(cntl%tlsd)THEN
-          !$omp parallel private(isa0,is,ia,fiont,isa,ig,vxc,vcgs,k)
+          !$omp parallel private(isa0,is,ia,ft1,ft2,ft3,isa,ig,vxc,vcgs,k)
           isa0=0
           DO is=1,ions1%nsp
              IF(corel%tnlcc(is))THEN
                 !$omp do
                 DO ia=1,ions0%na(is)
-                   fiont=0._real_8
+                   ft1=0._real_8
+                   ft2=0._real_8
+                   ft3=0._real_8
                    isa=isa0+ia
                    DO ig=ig_start,ig_end
                       vxc=0.5_real_8*(vpot(ig,1)+vpot(ig,2)-2*vnlt(ig)-&
                            vnlcc(ig,1)-vnlcc(ig,2))
                       vcgs=-AIMAG(CONJG(vxc)*eigrb(ig,isa)*rhoc(ig,is))
-                      DO k=1,3
-                         fiont(k)=fiont(k)+gk(k,ig)*vcgs*omtp
-                      END DO
+                      ft1=ft1+gk(1,ig)*vcgs
+                      ft2=ft2+gk(2,ig)*vcgs
+                      ft3=ft3+gk(3,ig)*vcgs
                    END DO
-                   DO k=1,3
-                      fion(k,ia,is)=fion(k,ia,is)+fiont(k)
-                   END DO
+                   fion(1,ia,is)=fion(1,ia,is)+ft1*omtp
+                   fion(2,ia,is)=fion(2,ia,is)+ft2*omtp
+                   fion(3,ia,is)=fion(3,ia,is)+ft3*omtp
                 END DO
                 !$omp end do nowait
              END IF
@@ -101,24 +103,26 @@ CONTAINS
           END DO
           !$omp end parallel
        ELSE
-          !$omp parallel private(isa0,is,ia,fiont,isa,ig,vxc,vcgs,k)
+          !$omp parallel private(isa0,is,ia,ft1,ft2,ft3,isa,ig,vxc,vcgs,k)
           isa0=0
           DO is=1,ions1%nsp
              IF(corel%tnlcc(is))THEN
                 !$omp do
                 DO ia=1,ions0%na(is)
-                   fiont=0._real_8
+                   ft1=0._real_8
+                   ft2=0._real_8
+                   ft3=0._real_8
                    isa=isa0+ia
                    DO ig=ig_start,ig_end
                       vxc=vpot(ig,1)-vnlt(ig)-vnlcc(ig,1)
                       vcgs=-AIMAG(CONJG(vxc)*eigrb(ig,isa)*rhoc(ig,is))
-                      DO k=1,3
-                         fiont(k)=fiont(k)+gk(k,ig)*vcgs*omtp
-                      END DO
+                      ft1=ft1+gk(1,ig)*vcgs
+                      ft2=ft2+gk(2,ig)*vcgs
+                      ft3=ft3+gk(3,ig)*vcgs
                    END DO
-                   DO k=1,3
-                      fion(k,ia,is)=fion(k,ia,is)+fiont(k)
-                   END DO
+                   fion(1,ia,is)=fion(1,ia,is)+ft1*omtp
+                   fion(2,ia,is)=fion(2,ia,is)+ft2*omtp
+                   fion(3,ia,is)=fion(3,ia,is)+ft3*omtp
                 END DO
                 !$omp end do nowait
              END IF
