@@ -657,10 +657,10 @@ CONTAINS
     COMPLEX(real_8),POINTER __CONTIGUOUS &
                        , ASYNCHRONOUS        :: eiscr(:,:)
     REAL(real_8),POINTER __CONTIGUOUS &
-                       , ASYNCHRONOUS        :: t(:),dai(:,:)
+                       , ASYNCHRONOUS        :: dai(:,:)
 #else
     REAL(real_8), ALLOCATABLE &
-                       , ASYNCHRONOUS        :: t(:),dai(:,:)
+                       , ASYNCHRONOUS        :: dai(:,:)
     COMPLEX(real_8),ALLOCATABLE &
                        , ASYNCHRONOUS        :: eiscr(:,:)
 #endif
@@ -705,8 +705,8 @@ CONTAINS
     IF (ierr /= 0) CALL stopgm(procedureN, 'Cannot allocate eiscr',&
          __LINE__,__FILE__)
       
-    !$omp parallel private (i,weight,ispin,offset_dai,isa0,is)
-    !$omp do
+    !$omp parallel do &
+    !$omp& private(i,weight,ispin,offset_dai,isa0,is)
     DO i=1,nstate
        !setup spin settings
        weight=crge%f(i,1)
@@ -719,16 +719,15 @@ CONTAINS
        !fill local part of dai
        DO is=1,ions1%nsp
           IF(pslo_com%tvan(is))THEN
-             CALL build_dai_deeq_fnl_hfx(dai(offset_dai:offset_dai-1+ions0%na(is)*nlps_com%ngh(is),i),&
-                  isa0,is,ispin,weight,i,nstate,deeq_fnl_hfx)
+             CALL build_dai_deeq_fnl_hfx(dai(offset_dai:,i),&
+                  isa0,weight,deeq_fnl_hfx(:,:,i),ions0%na(is),nlps_com%ngh(is))
              offset_dai=offset_dai+nlps_com%ngh(is)*ions0%na(is)
           END IF
           isa0=isa0+ions0%na(is)
        END DO
     END DO
-    !$omp end do nowait
-    !$omp end parallel
-    call build_beta(na,eigr,eiscr,ncpw%ngw,1,INT(il_eiscr(1),kind=int_4),twnl_nghtol=twnl_nghtol(:,:,:,1))
+    CALL build_beta(na,eigr,eiscr,ncpw%ngw,1,INT(il_eiscr(1),kind=int_4),&
+         twnl_nghtol=twnl_nghtol(:,:,:,1))
     
     CALL cpmd_dgemm("N","N",2*ncpw%ngw,nstate,INT(il_dai(1),kind=int_4),1._real_8,&
          eiscr,2*ncpw%ngw,dai(1,1),INT(il_dai(1),kind=int_4),1._real_8,&
@@ -755,19 +754,19 @@ CONTAINS
   ! ==================================================================
 
   ! ==================================================================
-  PURE SUBROUTINE build_dai_deeq_fnl_hfx(dai,isa0,is,ispin,weight,i,nstate,deeq_fnl_hfx)
-    INTEGER,INTENT(IN)                       :: isa0,is,ispin,i,nstate
+  PURE SUBROUTINE build_dai_deeq_fnl_hfx(dai,isa0,weight,deeq_fnl_hfx,na_is,ngh_is)
+    INTEGER,INTENT(IN)                       :: isa0,na_is,ngh_is
     REAL(real_8),INTENT(IN)                  :: weight
-    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: deeq_fnl_hfx(:,:,:)
-    REAL(real_8),INTENT(OUT)                 :: dai(ions0%na(is),nlps_com%ngh(is),*)
-    INTEGER                                  :: iv,jv,ia,isa,j
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: deeq_fnl_hfx(:,:)
+    REAL(real_8),INTENT(OUT)                 :: dai(na_is,ngh_is,*)
+    INTEGER                                  :: iv,jv,ia,isa
 
-    DO iv=1,nlps_com%ngh(is)
-       do ia=1,ions0%na(is)
+    DO iv=1,ngh_is
+       DO ia=1,na_is
           isa=isa0+ia
           dai(ia,iv,1)=-&
-               weight*deeq_fnl_hfx(isa,iv,i)
-       end do
+               weight*deeq_fnl_hfx(isa,iv)
+       END DO
     END DO
 
     RETURN
