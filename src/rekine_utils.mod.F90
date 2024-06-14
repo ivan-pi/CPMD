@@ -91,7 +91,7 @@ CONTAINS
   ! ==================================================================
   SUBROUTINE calc_ekinc(cm_r,ekinc,ibeg_c0,iend_c0,nstate,geq0_local)
     ! ==--------------------------------------------------------------==
-    REAL(real_8),INTENT(IN), CONTIGUOUS      ::  cm_r(:,:)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: cm_r(:,:)
     REAL(real_8),INTENT(OUT)                 :: ekinc
     INTEGER,INTENT(IN)                       :: nstate, ibeg_c0, iend_c0
     LOGICAL,INTENT(IN)                       :: geq0_local
