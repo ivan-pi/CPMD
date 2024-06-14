@@ -11,6 +11,9 @@ MODULE rnlsm_helper
                                              cnti,&
                                              maxsys,&
                                              parm
+  USE timer,                           ONLY: tihalt,&
+                                             tiset
+
   IMPLICIT NONE
 
   PRIVATE
@@ -162,11 +165,22 @@ CONTAINS
                                                 zzero = (0._real_8,0._real_8)
     COMPLEX(real_8)                          :: zfac
     REAL(real_8)                             :: tfac
+    CHARACTER(*), PARAMETER                  :: procedureN = 'proj_beta'
+    INTEGER                                  :: isub1,isub2,isub3,isub4
 
     IF(deriv)THEN
+       CALL tiset(procedureN//'build_beta_deriv',isub1)
        CALL build_beta(na,eigkr,eiscr,ld_eiscr,startg,ld_c0,ld_dai,igeq0,geq0,tkpnt,twnl_nghtol_gk=twnl_nghtol_gk)
+       CALL tihalt(procedureN//'build_beta_deriv',isub1)
     ELSE
+       CALL tiset(procedureN//'build_beta',isub2)
        CALL build_beta(na,eigkr,eiscr,ld_eiscr,startg,ld_c0,ld_dai,igeq0,geq0,tkpnt,twnl_nghtol=twnl_nghtol)
+       CALL tihalt(procedureN//'build_beta',isub2)
+    END IF
+    IF(deriv)THEN
+       CALL tiset(procedureN//'proj_beta_deriv',isub3)
+    ELSE
+       CALL tiset(procedureN//'proj_beta',isub4)
     END IF
     IF(TKPNT) THEN       
        IF(deriv)THEN 
@@ -185,6 +199,12 @@ CONTAINS
        CALL cpmd_dgemm('T','N',ld_dai,nstate,2*ld_eiscr,tfac,eiscr,2*ld_eiscr,c0(startg,1),  &
             2*ld_c0, 0._real_8,dai,ld_dai)
     ENDIF
+    IF(deriv)THEN
+       CALL tihalt(procedureN//'proj_beta_deriv',isub3)
+    ELSE
+       CALL tihalt(procedureN//'proj_beta',isub4)
+    END IF
+
   END SUBROUTINE proj_beta
 
 END MODULE rnlsm_helper
