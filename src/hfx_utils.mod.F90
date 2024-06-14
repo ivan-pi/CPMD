@@ -235,8 +235,8 @@ CONTAINS
     COMPLEX(real_8),INTENT(INOUT) __CONTIGUOUS :: c2(:,:),c0(:,:)
     REAL(real_8),INTENT(IN) __CONTIGUOUS       :: f(:)
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: fion(:,:,:)
-    REAL(real_8),INTENT(inOUT) __CONTIGUOUS      :: deeq_fnl_hfx(:,:,:)
-    COMPLEX(real_8),INTENT(INOUT) __CONTIGUOUS :: psia(:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS      :: deeq_fnl_hfx(:,:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: psia(:)
     INTEGER,INTENT(IN)                         :: nstate
     REAL(real_8),INTENT(OUT)                   :: ehfx, vhfx
     LOGICAL,INTENT(IN)                         :: tfor
@@ -1201,7 +1201,7 @@ CONTAINS
     COMPLEX(real_8),INTENT(INOUT)            :: c2a(jgw), c2b(jgw)
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:)
     REAL(real_8),INTENT(IN) __CONTIGUOUS     :: f(:)
-    REAL(real_8),INTENT(inOUT) __CONTIGUOUS    :: deeq_fnl_hfx(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: deeq_fnl_hfx(:,:,:)
     LOGICAL,INTENT(IN)                       :: tfor
     CHARACTER(*), PARAMETER                  :: procedureN = 'hfxab'
 
@@ -1299,7 +1299,7 @@ CONTAINS
     INTEGER,INTENT(IN)                       :: ia,ib1,ib2
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:)
     REAL(real_8),INTENT(IN) __CONTIGUOUS     :: f(:)
-    REAL(real_8),INTENT(inOUT) __CONTIGUOUS    :: deeq_fnl_hfx(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: deeq_fnl_hfx(:,:,:)
     LOGICAL,INTENT(IN)                       :: tfor
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'hfxab2'
@@ -1411,7 +1411,7 @@ CONTAINS
     REAL(real_8)                             :: vpotr(*)
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:)
     REAL(real_8),INTENT(IN) __CONTIGUOUS     :: f(:)
-    REAL(real_8),INTENT(inOUT) __CONTIGUOUS    :: deeq_fnl_hfx(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: deeq_fnl_hfx(:,:,:)
     INTEGER,INTENT(IN)                       :: ia
     LOGICAL,INTENT(IN)                       :: tfor
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psic(:)
@@ -1912,7 +1912,7 @@ CONTAINS
     REAL(real_8)                             :: ehfx, vhfx
     LOGICAL                                  :: redist_c2
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:)
-    REAL(real_8),INTENT(inOUT) __CONTIGUOUS    :: deeq_fnl_hfx(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: deeq_fnl_hfx(:,:,:)
     LOGICAL,INTENT(IN)                       :: tfor
 !============================================================
 !     Variables
