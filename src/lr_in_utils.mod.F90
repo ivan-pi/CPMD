@@ -371,9 +371,9 @@ CONTAINS
           ' Optimizer for LR equations ',' AUTOMATIC'
           WRITE(output_unit,'(T20,A,T60,I6)') ' Size of ODIIS buffer ',cnti%mdiis
           WRITE(output_unit,'(T20,A,T60,I6)') ' Size of ZDIIS buffer ',lr01%mldiis
-          WRITE(output_unit,'(T20,A,T56,E10.4)')&
+          WRITE(output_unit,'(T20,A,T56,E11.4)')&
           ' SWITCH FROM PCG TO ODIIS AT ',lr02%thauto(1)
-          WRITE(output_unit,'(T20,A,T56,E10.4)')&
+          WRITE(output_unit,'(T20,A,T56,E11.4)')&
           ' Switch to full preconditioning at ',lr02%thauto(2)
        ENDIF
        IF (lr01%lopti.EQ.1)&
@@ -383,14 +383,14 @@ CONTAINS
             WRITE(output_unit,'(A,T56,A10)')&
             ' Optimizer for LR equations ','       PCG'
        IF (lr01%lopti.EQ.2.AND..NOT.lr03%txc_analytic)&
-            WRITE(output_unit,'(A,T56,E10.4)')&
+            WRITE(output_unit,'(A,T56,E11.4)')&
             ' Tolerance for quadratic search ',lr02%tol_qs
        IF (lr01%lopti.EQ.3)&
        WRITE(output_unit,'(A,T56,A10)')&
             ' Optimizer for LR equations ','      DIIS'
        WRITE(output_unit,'(A,T56,F10.4)')&
             ' Step length',lr02%dlrs
-       WRITE(output_unit,'(A,T56,E10.4)') ' Convergence criteria ',lr02%tol_lr
+       WRITE(output_unit,'(A,T56,E11.4)') ' Convergence criteria ',lr02%tol_lr
        IF (lr03%tpara_gauge) THEN
           WRITE(output_unit,*) 'Parallel-transport gauge for response functions'
        ELSE

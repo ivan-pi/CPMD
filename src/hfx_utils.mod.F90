@@ -1040,7 +1040,7 @@ CONTAINS
           WRITE(6,*) 'we have ',n_int,' intergrals (re)set'
           WRITE(6,*) 'new DWFC=',hfxc4%dwfc,' old DWFC=',old_DWFC
           DO i=1,INT(max_dab/bin_range)+1
-             WRITE(6,'(2F6.1,2E8.2,I8)') (i-1)*bin_range,&
+             WRITE(6,'(2F6.1,2E9.2,I8)') (i-1)*bin_range,&
                   i*bin_range,&
                   max_vals(i,:),bin_vals(i)
           ENDDO

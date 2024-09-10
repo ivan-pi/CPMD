@@ -771,7 +771,7 @@ CONTAINS
                   ' OVERLAP WITH VECTOR ', IVV, ': ', RLEN
              IF (paral%parent .AND. ABS(rlen).GT.1.0e-6_real_8) THEN
                 IF (paral%io_parent)&
-                     WRITE(6,'(A,I3,A,I3,A,E10.4)')&
+                     WRITE(6,'(A,I3,A,I3,A,E11.4)')&
                      ' WARNING: OVERLAP BETWEEN VECTOR ', IVV, ' AND ',&
                      IV, ': ', RLEN
              ENDIF
@@ -1218,7 +1218,7 @@ CONTAINS
              IF (paral%io_parent)&
                   WRITE(6,'(A)') ' CALCULATE NON-ADIABATIC COUPLINGS'
              IF (paral%io_parent)&
-                  WRITE(6,'(A,T56,1PE10.4)')&
+                  WRITE(6,'(A,T56,1PE11.4)')&
                   ' FINITE-DIFFERENCE DISPLACEMENT', ABS(EPS_C)
              IF ((eps_c.LT.0.0_real_8).AND.paral%io_parent)&
                   WRITE(6,'(A)')&

@@ -162,7 +162,7 @@ CONTAINS
                rhoe,psi,&
                fhist(1),de,a,alam,ilsr)
           IF (paral%io_parent) THEN
-             WRITE(6,'(A,G8.3,A,T50,G20.13)')&
+             WRITE(6,'(A,G10.3,A,T50,G20.13)')&
                   ' LINE SEARCH : LAMBDA=',alam*fhist(1),&
                   ' PREDICTED ENERGY =',dE
           ENDIF
@@ -217,7 +217,7 @@ CONTAINS
                rhoe,psi,&
                fhist(ihist),de,a,alam,ilsr)
           IF (paral%io_parent) THEN
-             WRITE(6,'(A,G8.3,A,T50,G20.13)')&
+             WRITE(6,'(A,G10.3,A,T50,G20.13)')&
                   ' LINE SEARCH : LAMBDA=',alam*fhist(ihist),&
                   ' PREDICTED ENERGY =',dE
           ENDIF

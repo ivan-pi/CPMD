@@ -3553,7 +3553,7 @@ CONTAINS
        ENDIF
     ENDDO
     IF (paral%io_parent)&
-         WRITE(6,'(A,E14.8)') ' ChkSum(COLVAR) = ',&
+         WRITE(6,'(A,E15.8)') ' ChkSum(COLVAR) = ',&
          SUM(ABS(cv_ist(1:ncolvar)))
     IF (paral%io_parent)&
          WRITE(6,*)

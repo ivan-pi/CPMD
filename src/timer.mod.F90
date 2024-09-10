@@ -122,7 +122,7 @@ CONTAINS
           ENDIF
           CALL m_flush(6)
 10        FORMAT('#tr: ',i4,' calls: ',i6,&
-               ' time: ',7x,f8.2,1x,i2,a,' >> ',2x,a)
+               ' time: ',7x,f9.2,1x,i2,a,' >> ',2x,a)
        ENDIF
     ENDIF
 
@@ -217,7 +217,7 @@ CONTAINS
           ENDIF
           CALL m_flush(6)
 10        FORMAT('#tr: ',i4,' calls: ',i6,&
-               ' time: ',f7.2,f8.2,1x,i2,a,' << ',2x,a)
+               ' time: ',f7.2,f9.2,1x,i2,a,' << ',2x,a)
        ENDIF
     ENDIF
     tname%trace_depth = tname%trace_depth - 1

@@ -673,11 +673,11 @@ CONTAINS
     IF (dxmax.GT.vdwwfr%tolwann) vdwwfl%twannup=.TRUE.
     IF (paral%io_parent.AND.vdwwfl%tpinfo) THEN
        IF (vdwwfl%twannup) THEN
-          WRITE(6,'(/,T3,A,E9.3,A,E9.3,A,/)')&
+          WRITE(6,'(/,T3,A,E10.3,A,E10.3,A,/)')&
                'DXMAX= ',dxmax,' DXNORM= ',dxnorm,&
                '; RECOMPUTE WANNIER FUNCTIONS'
        ELSE
-          WRITE(6,'(/,T3,A,E9.3,A,E9.3,A,/)')&
+          WRITE(6,'(/,T3,A,E10.3,A,E10.3,A,/)')&
                'DXMAX= ',dxmax,' DXNORM= ',dxnorm,&
                '; EXTRAPOLATE WANNIER CENTERS'
        ENDIF

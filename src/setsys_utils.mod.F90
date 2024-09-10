@@ -333,7 +333,7 @@ CONTAINS
           cntr%cmass=rmass%pmatot  ! correct mass in atomic units
           IF (cntl%tsdc.OR.cntl%tprcp)&
              ! WRITE(6,'(A,T54,F12.2)')&
-               WRITE(6,'(A,T54,E12.6)')&
+               WRITE(6,'(A,T54,E13.6)')&
                ' AUTOMATIC FICTITIOUS MD CELL MASS '&
                // 'SET TO [A.U.]:',cntr%cmass
        ENDIF

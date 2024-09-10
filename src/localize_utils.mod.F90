@@ -125,13 +125,13 @@ CONTAINS
             WRITE(6,'(A)') '         OPTIMISATION: STEEPEST DESCENT'
        IF (wanni%w_opt.EQ.2)&
             WRITE(6,'(A)') '         OPTIMISATION: JACOBI ROTATION'
-       WRITE(6,'(A,T56,1PE10.4)')&
+       WRITE(6,'(A,T56,1PE11.4)')&
             '         CONVERGENCE CRITERIA:',wannr%w_eps
        WRITE(6,'(A,T56,I10)')&
             '         MAXIMUM # OF STEPS:',wanni%w_maxs
-       WRITE(6,'(A,T56,1PE10.4)')&
+       WRITE(6,'(A,T56,1PE11.4)')&
             '         RANDOMIZATION AMPLITUDE:',wannr%w_ran
-       WRITE(6,'(A,T56,1PE10.4)')&
+       WRITE(6,'(A,T56,1PE11.4)')&
             '         STEP SIZE:',wannr%w_step
     ENDIF
     ! ..initialization

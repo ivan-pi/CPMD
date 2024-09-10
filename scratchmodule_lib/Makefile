@@ -8,7 +8,7 @@ FFLAGS =  -g -traceback -cpp -axCORE-AVX2,CORE-AVX512 -mavx -unroll -funroll-loo
 CPPFLAGS =
 
 #FC = gfortran
-FC = ifort
+FC = ifx
 
 SCRATCHMODULE_LIB = libscratch_module.a
 SRC_SCRATCHMODULE = data_managment_utils.f90 segment_managment_utils.f90 pool_managment_utils.f90 scratch_interface.f90

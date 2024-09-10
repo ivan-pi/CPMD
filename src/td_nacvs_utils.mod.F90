@@ -1076,7 +1076,7 @@ CONTAINS
                      ' OVERLAP WITH VECTOR ', IVV, ': ', RLEN
                 IF (paral%parent .AND. ABS(rlen).GT.1.0e-6_real_8) THEN
                    IF (paral%io_parent)&
-                        WRITE(6,'(A,I3,A,I3,A,E10.4)')&
+                        WRITE(6,'(A,I3,A,I3,A,E11.4)')&
                         ' WARNING: OVERLAP BETWEEN VECTOR ', IVV, ' AND ',&
                         IV, ': ', RLEN
                 ENDIF

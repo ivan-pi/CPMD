@@ -336,7 +336,7 @@ CONTAINS
             //'trans/rot elimination'
        WRITE (6,*) ' Harmonic frequencies in cm^-1:'
        WRITE (6,'(4(f12.1))') (vibe(i),i=1,3*ions1%nat)
-       WRITE (6,'(A,e11.5)') ' ChkSum(PHONON) = ',SUM(ABS(vibe))
+       WRITE (6,'(A,e12.5)') ' ChkSum(PHONON) = ',SUM(ABS(vibe))
        CALL vibeig(vibe,eigen,3*ions1%nat,.TRUE.)
        ! ---  Purification, version 2 (original phonons_p) --------
        IF (response1%projout) THEN

@@ -249,7 +249,7 @@ CONTAINS
        IF (paral%io_parent)&
             WRITE(6,*) '----- PERFORMING',dmbi%bptscfiter,'SCF iterations -----'
        IF (paral%io_parent)&
-            WRITE(6,fmt='(1X,A,E8.3,A)') '----- SCF-PT CONVERGENCE: ',&
+            WRITE(6,fmt='(1X,A,E10.3,A)') '----- SCF-PT CONVERGENCE: ',&
             dmbr%scf_tol,' -----'
        IF (paral%io_parent)&
             WRITE(6,*) '----------------------------------------'
@@ -424,7 +424,7 @@ CONTAINS
        CALL csize(h1psi0,nstate,scf_gemax,scf_cnorm)
        IF (paral%parent) THEN
           IF (paral%io_parent)&
-               WRITE(6,'(a,E10.4,a,E10.4)')&
+               WRITE(6,'(a,E11.4,a,E11.4)')&
                'INITIAL GRADIENT OF W0: Gemax = ',scf_gemax,&
                ' Cnorm = ',scf_cnorm
        ENDIF
@@ -657,7 +657,7 @@ CONTAINS
           time2 =m_walltime()
           tcpu = (time2 - time1)*0.001_real_8
           IF (paral%io_parent)&
-               WRITE(6,'(a,E10.4,a,E10.4,a,f8.2,a)')&
+               WRITE(6,'(a,E11.4,a,E11.4,a,f9.2,a)')&
                '  1: Gemax =',scf_gemax,&
                ' Cnorm =',scf_cnorm,' Time: ',tcpu,' seconds'
        ENDIF
@@ -770,7 +770,7 @@ CONTAINS
                 time2 =m_walltime()
                 tcpu = (time2 - time1)*0.001_real_8
                 IF (paral%io_parent)&
-                     WRITE(6,'(i3,a,E10.4,a,E10.4,a,f8.2,a)') ISCF_step,&
+                     WRITE(6,'(i3,a,E11.4,a,E11.4,a,f9.2,a)') ISCF_step,&
                      ': Gemax =',scf_gemax,&
                      ' Cnorm =',scf_cnorm,' Time: ',tcpu,' seconds'
                 IF (paral%io_parent)&

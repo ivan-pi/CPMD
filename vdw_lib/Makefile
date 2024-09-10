@@ -1,9 +1,9 @@
 AR     = /usr/bin/ar ruv
 RANLIB = /usr/bin/ranlib
-FFLAGS =  -g -traceback -fopenmp -axCORE-AVX2,CORE-AVX512 -mavx -unroll -funroll-loops -O2
+FFLAGS =  -g -traceback -qopenmp -axCORE-AVX2,CORE-AVX512 -mavx -unroll -funroll-loops -O2
 CPPFLAGS =
 
-FC = mpiifort 
+FC = mpiifx
 
 GRIMME_LIB = libgrimmevdw.a
 SRC_GRIMME = vdw_calculator.F90 vdw_interface.F90 vdw_param.F90

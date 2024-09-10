@@ -508,7 +508,7 @@ CONTAINS
        time2 =m_walltime()
        tcpu = (time2 - time1)*0.001_real_8
        IF (paral%io_parent)&
-            WRITE(6,'(a,t50,f8.2,a8)')&
+            WRITE(6,'(a,t50,f9.2,a8)')&
             ' cpu time for matrix elements calculation:',&
             tcpu,' seconds'
     ENDIF

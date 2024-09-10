@@ -432,7 +432,7 @@ CONTAINS
                   (REAL(i-1,kind=real_8)+0.5_real_8)*condpa%condstep,conduct(i),&
                   conduct2(i)-conduct(i)**2,normcon(i)
           ENDDO
-          WRITE(6,'(A,E12.6)') ' ChkSum(CONDUCTIVITY) = ',&
+          WRITE(6,'(A,E13.6)') ' ChkSum(CONDUCTIVITY) = ',&
                SUM(ABS(conduct(1:condpa%nconduct)))
        ENDIF! cmb
     ENDIF
