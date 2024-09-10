@@ -842,7 +842,10 @@ CONTAINS
                    ENDIF
                 ENDIF
                 IF (cntl%tmdbo.AND.keyword_contains(line,'PT')) cntl%tresponse=.TRUE.
-                IF ( keyword_contains(line,'CP')) cntl%tmdbo=.FALSE.
+                IF ( keyword_contains(line,'CP')) THEN
+                   cntl%tmdbo=.FALSE.
+                   cntl%tmdcp=.TRUE.
+                END IF
                 IF ( keyword_contains(line,'CLASSICAL')) clc%classical=.TRUE.
                 ! EHR[
                 IF ( keyword_contains(line,'EH',alias='EHRENFEST') ) THEN

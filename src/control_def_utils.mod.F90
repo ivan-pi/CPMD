@@ -101,6 +101,7 @@ CONTAINS
     cntl%use_mpi_io=.FALSE.
     cntl%md=.FALSE.
     cntl%tmdbo=.FALSE.
+    cntl%tmdcp=.FALSE.
     cntl%tmdfile=.FALSE.
     cntl%tprcp=.FALSE.
     cntl%geopt=.FALSE.

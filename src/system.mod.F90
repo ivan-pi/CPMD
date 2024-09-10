@@ -406,6 +406,7 @@ MODULE system
   ! ==--------------------------------------------------------------==
   TYPE, PUBLIC :: cntl_t
      LOGICAL :: md = .FALSE.
+     LOGICAL :: tmdcp = .FALSE.
      LOGICAL :: tmdbo = .FALSE.
      LOGICAL :: tmdfile = .FALSE.
      LOGICAL :: geopt = .FALSE.
