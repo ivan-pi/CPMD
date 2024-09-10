@@ -148,11 +148,10 @@ CONTAINS
              CALL zclean(c0,nstate,ncpw%ngw)
           ENDIF
        ELSE
-          CALL preortho(c0,nstate)
-          IF (pslo_com%tivan) THEN
-             CALL rnlsm(c0,nstate,1,1,.FALSE.)
-          ENDIF
-          CALL ortho(nstate,c0,c2)
+          IF (.NOT.pslo_com%tivan) THEN
+             CALL preortho(c0,nstate)
+             CALL ortho(nstate,c0,c2)
+          END IF
        ENDIF
     ENDIF
     ! ==--------------------------------------------------------------==

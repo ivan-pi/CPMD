@@ -168,14 +168,19 @@ CONTAINS
     IF (tkpts%tkpnt.AND.pslo_com%tivan) &
          CALL stopgm(procedureN,'K-POINTS NOT IMPLEMENTED',&
          __LINE__,__FILE__)
+    !call rnlsm1 and rnlsm2 in the kpt loop
     case1=.FALSE.
+    !call rnlsm1 for rgsvan and orthogonalization and only rnlsm2 in the kpt loop
     case2=.FALSE.
+    !call rnlsm1 in the kpt loop and rnlsm2 just before rnlfl
     case3=.FALSE.
+    !call rnlsm1 for rgsvan and orthogonalization and only
+    !rnlsm2 in the kpt loop but just before rnlfl
     case4=.FALSE.
     IF(.NOT.pslo_com%tivan)THEN
        case1=.TRUE.
     ELSEIF(pslo_com%tivan)THEN
-       IF(cntl%nonort)THEN
+       IF(cntl%nonort.OR..NOT.cntl%tmdcp)THEN
           IF(pslo_com%mixed_psp)THEN
              case2=.TRUE.
           ELSE
@@ -189,7 +194,7 @@ CONTAINS
           END IF
        END IF
     END IF
-    IF(cntl%nonort.AND.pslo_com%tivan)THEN
+    IF(case4)THEN
        IF (lspin2%tlse) CALL stopgm('NOFORCE','NO LSE ALLOWED HERE',&
             __LINE__,__FILE__)
        IF (imagp.EQ.2) CALL stopgm('NOFORCE','K-POINT NOT IMPLEMENTED',&
@@ -199,13 +204,20 @@ CONTAINS
        il_c0_ort(3)=1
        il_smat(1)=nstate
        il_smat(2)=nstate
+       !In case of CP-MD we need to preserve the non-orthogonal orbitals to propagate them properly
+       IF(cntl%tmdcp)THEN
 #ifdef _USE_SCRATCHLIBRARY
-       CALL request_scratch(il_c0_ort,c0_ort,procedureN//'_c0_ort',ierr)
+          CALL request_scratch(il_c0_ort,c0_ort,procedureN//'_c0_ort',ierr)
 #else
-       ALLOCATE(c0_ort(il_c0_ort(1),il_c0_ort(2),il_c0_ort(3)),stat=ierr)
+          ALLOCATE(c0_ort(il_c0_ort(1),il_c0_ort(2),il_c0_ort(3)),stat=ierr)
 #endif
-       IF (ierr.NE.0) CALL stopgm(procedureN,'Allocation problem',&
-            __LINE__,__FILE__)
+          IF (ierr.NE.0) CALL stopgm(procedureN,'Allocation problem',&
+               __LINE__,__FILE__)
+          CALL dcopy(2*ncpw%ngw*nstate,c0,1,c0_ort,1)
+          c0_ptr=> c0_ort
+       ELSE
+          c0_ptr=>c0
+       END IF
 #ifdef _USE_SCRATCHLIBRARY
        CALL request_scratch(il_smat,smat,procedureN//'_smat',ierr)
 #else
@@ -213,12 +225,11 @@ CONTAINS
 #endif
        IF (ierr.NE.0) CALL stopgm(procedureN,'Allocation problem',&
             __LINE__,__FILE__)
-       CALL dcopy(2*ncpw%ngw*nstate,c0,1,c0_ort,1)
-       IF(parai%cp_nogrp.GT.1) CALL cp_grp_redist_array_f(c0_ort,ncpw%ngw,nstate)
-       c0_ptr=> c0_ort
+
+       IF(parai%cp_nogrp.GT.1) CALL cp_grp_redist_array_f(c0_ptr,ncpw%ngw,nstate)
        IF(pslo_com%tivan) CALL rnlsm(c0_ptr(:,:,1),nstate,1,1,.FALSE.,&
             unpack_dfnl_fnl=.FALSE.)
-       CALL rgsvan(c0_ptr(:,:,1),nstate,smat,store_nonort=.TRUE.)
+       CALL rgsvan(c0_ptr(:,:,1),nstate,smat,store_nonort=cntl%tmdcp)
     ELSE
        c0_ptr=>c0
     END IF
@@ -526,7 +537,7 @@ CONTAINS
              ENDIF
           ENDIF
        ENDIF
-       IF(cntl%nonort.AND.pslo_com%tivan)THEN
+       IF(cntl%nonort.AND.pslo_com%tivan.AND..NOT.cntl%tmdcp)THEN
           ! ==--------------------------------------------------------------==
           ! ==   ROTATE ELECTRONIC FORCE BACK INTO NONORTHOGONAL BASIS      ==
           ! ==--------------------------------------------------------------==
@@ -565,7 +576,7 @@ CONTAINS
 #else
     DEALLOCATE(gam,STAT=ierr)
 #endif
-    IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
+    IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate gam', &
          __LINE__,__FILE__)
     IF(.NOT.pslo_com%tivan)THEN
        DEALLOCATE(fsc,STAT=ierr)
@@ -585,21 +596,23 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
             __LINE__,__FILE__)
     ENDIF
-    IF(cntl%nonort.AND.pslo_com%tivan)THEN
+    IF(case4)THEN
 #ifdef _USE_SCRATCHLIBRARY
        CALL free_scratch(il_smat,smat,procedureN//'_smat',ierr)
 #else
        DEALLOCATE(smat,stat=ierr)
 #endif
-       IF (ierr.NE.0) CALL stopgm(procedureN,'Deallocation problem',&
-            __LINE__,__FILE__)
+       IF(cntl%tmdcp)THEN
+          IF (ierr.NE.0) CALL stopgm(procedureN,'Deallocation problem',&
+               __LINE__,__FILE__)
 #ifdef _USE_SCRATCHLIBRARY
-       CALL free_scratch(il_c0_ort,c0_ort,procedureN//'_c0_ort',ierr)
+          CALL free_scratch(il_c0_ort,c0_ort,procedureN//'_c0_ort',ierr)
 #else
-       DEALLOCATE(c0_ort,stat=ierr)
+          DEALLOCATE(c0_ort,stat=ierr)
 #endif
-       IF (ierr.NE.0) CALL stopgm(procedureN,'Deallocation problem',&
-            __LINE__,__FILE__)
+          IF (ierr.NE.0) CALL stopgm(procedureN,'Deallocation problem',&
+               __LINE__,__FILE__)
+       END IF
     END IF
 
 2000 CONTINUE
