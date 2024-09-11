@@ -355,7 +355,7 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', __LINE__,__FILE__)
 #endif
     ENDIF
-#ifdef defined(_HAS_CUDA) || !defined(_USE_SCRATCHLIBRARY)
+#if defined(_HAS_CUDA) || !defined(_USE_SCRATCHLIBRARY)
     CALL zeroing(xf)!,SIZE(xf))
     CALL zeroing(yf)!,SIZE(yf))
 #endif
