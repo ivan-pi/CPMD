@@ -59,15 +59,16 @@ CONTAINS
        eigv,nstate,unused_int,lproj,update_pot, update_files)
     ! ==--------------------------------------------------------------==
     ! 
+#if defined (__GROMOS)
     REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: rhoe(:,:)
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
     REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: fion(:,:,:)
     REAL(real_8),INTENT(OUT)                 :: eigv(*)
+    COMPLEX(real_8),INTENT(INOUT)            :: c2(ncpw%ngw,nstate), &
+                                                sc0(ncpw%ngw,nstate)
     REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: tau(:,:,:)
     INTEGER,INTENT(IN)                       :: nstate
     COMPLEX(real_8),INTENT(IN),TARGET        :: c0(ncpw%ngw,nstate)
-    COMPLEX(real_8),INTENT(OUT)              :: c2(ncpw%ngw,nstate), &
-                                                sc0(ncpw%ngw,nstate)
     INTEGER,INTENT(IN)                       :: unused_int
     LOGICAL,INTENT(IN)                       :: lproj, update_files
     LOGICAL                                  :: update_pot
@@ -82,7 +83,6 @@ CONTAINS
     REAL(real_8), SAVE                       :: e_fix
     COMPLEX(real_8), ALLOCATABLE, TARGET     :: qmmm_c0_ort(:,:)
     COMPLEX(real_8), POINTER __CONTIGUOUS    :: c0_ptr(:,:)
-#if defined (__GROMOS)
     CALL tiset(procedureN,isub)
 
     CALL mp_sync(parai%qmmmgrp)
@@ -274,7 +274,20 @@ CONTAINS
     CALL mm_dim(mm_revert,status)
 
     CALL tihalt(procedureN,isub)
+#else
 
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: rhoe(:,:)
+    COMPLEX(real_8),INTENT(INOUT) __CONTIGUOUS :: psi(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: fion(:,:,:)
+    REAL(real_8),INTENT(INOUT)                 :: eigv(*)
+    COMPLEX(real_8),INTENT(INOUT)              :: c2(ncpw%ngw,nstate), &
+                                                sc0(ncpw%ngw,nstate)
+    REAL(real_8),INTENT(IN) __CONTIGUOUS  :: tau(:,:,:)
+    INTEGER,INTENT(IN)                       :: nstate
+    COMPLEX(real_8),INTENT(IN),TARGET        :: c0(ncpw%ngw,nstate)
+    INTEGER,INTENT(IN)                       :: unused_int
+    LOGICAL,INTENT(IN)                       :: lproj, update_files
+    LOGICAL                                  :: update_pot
 #endif
     RETURN
   END SUBROUTINE mm_qmmm_forcedr
