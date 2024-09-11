@@ -51,9 +51,11 @@ CONTAINS
     COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
     REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
     REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: fion(:,:,:)
-    REAL(real_8),INTENT(OUT)                 :: eigv(*)
+    !eigv not used
+    REAL(real_8),INTENT(INOUT)               :: eigv(*)
     INTEGER,INTENT(IN)                       :: nstate
-    COMPLEX(real_8),INTENT(OUT)              :: sc0(ncpw%ngw,nstate)
+    ! sc0 not used
+    COMPLEX(real_8),INTENT(INOUT)            :: sc0(ncpw%ngw,nstate)
     INTEGER,INTENT(IN)                       :: nkpoint
     LOGICAL,INTENT(IN)                       :: lproj, tfor, tcsize
 
