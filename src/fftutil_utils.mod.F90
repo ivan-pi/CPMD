@@ -17,12 +17,13 @@
 #define HAS_SPECIAL_COPY 0
 #endif
 
+#ifndef __COLLAPSE2
 #if defined(__FFT_HAS_OMP_COLLAPSE)
 #define __COLLAPSE2 collapse(2)
 #else
 #define __COLLAPSE2
 #endif
-
+#endif
 
 MODULE fftutil_utils
   USE fft_maxfft,                      ONLY: maxfft
