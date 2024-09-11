@@ -413,7 +413,8 @@ USE zeroing_utils,                  ONLY: zeroing
       INTEGER, INTENT(IN)           ::  NSTATE
       REAL(real_8), INTENT(IN)&
             __CONTIGUOUS            ::  TAU0(:,:,:)
-      COMPLEX(real_8), INTENT(OUT)&
+      ! PSI is not used
+      COMPLEX(real_8), INTENT(INOUT)&
       __CONTIGUOUS                  ::  PSI(:)
       LOGICAL                       ::  TFOR
       CHARACTER(*), PARAMETER       ::  procedureN = 'orthocatom'
