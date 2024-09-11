@@ -542,7 +542,7 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     INTEGER,INTENT(IN)                       :: krmin, krmax, kr, kr1, kr2s, nperbatch
     COMPLEX(real_8),INTENT(IN)               :: a(krmax-krmin+1,kr1,nperbatch,*)
-    COMPLEX(real_8),INTENT(OUT)              :: b(kr,kr1,kr2s,*)
+    COMPLEX(real_8),INTENT(INOUT)            :: b(kr,kr1,kr2s,*)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'putz_n'
     REAL(real_8), POINTER __CONTIGUOUS       :: b_r(:,:,:,:)
@@ -793,7 +793,7 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! include 'parac.inc'
     COMPLEX(real_8),INTENT(IN)               :: xf(*)
-    COMPLEX(real_8),INTENT(OUT)              :: yf(*)
+    COMPLEX(real_8),INTENT(INOUT)            :: yf(*)
     INTEGER, INTENT(IN)                      :: m, lr1, lda, lmsp, &
                                                 msp(lmsp,*), maxfft,&
                                                 mproc, sp8(0:mproc-1)
