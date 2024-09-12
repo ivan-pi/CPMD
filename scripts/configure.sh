@@ -626,6 +626,7 @@ fi
 if [ $vdw ]; then
     echo "include \$(MODDIR)/vdw_lib/VDWLIB_SOURCES" >&3
 fi
+echo "EXTRA_DEPS = ${EXTRA_DEPS}" >&3
 printf "Add explicit rules..." >&2
 cat << END >&3
 ################################################################################
@@ -725,14 +726,14 @@ else
 endif
 
 # create cpmd.x and independent libiffiinter.a
-\$(TARGET): \$(CPMD_LIB) \$(IFFIINTER_LIB) timetag.o cpmd.o
+\$(TARGET): \$(CPMD_LIB) \$(EXTRA_DEPS) \$(IFFIINTER_LIB) timetag.o cpmd.o
 	\$(LD) \$(FFLAGS) -o \$(TARGET) timetag.o cpmd.o \$(CPMD_LIB) \$(LFLAGS)
 	@ls -l \$(TARGET)
 	@echo "Compilation done."
 END
 else
 cat << END >&3
-\$(TARGET): \$(CPMD_LIB) timetag.o cpmd.o
+\$(TARGET): \$(CPMD_LIB) \$(EXTRA_DEPS) timetag.o cpmd.o
 	\$(LD) \$(FFLAGS) -o \$(TARGET) timetag.o cpmd.o \$(CPMD_LIB) \$(LFLAGS)
 	@ls -l \$(TARGET)
 	@echo "Compilation done."
@@ -846,7 +847,7 @@ vdw_param.mod: vdw_param.o
 	@true                                                             
 vdw_calculator.mod:                                                       
 	@true                                                             
-vdw_interface.o: vdw_param.mod vdw_calculator.mod \$(MODDIR)/vdw_lib/vdw_in
+vdw_interface.o: vdw_param.mod vdw_calculator.mod \$(MODDIR)/vdw_lib/vdw_interface.F90
 vdw_calculator.o: vdw_param.mod \$(MODDIR)/vdw_lib/vdw_calculator.F90      
                              
 \$(GRIMME_LIB): \$(OBJ_GRIMME)
