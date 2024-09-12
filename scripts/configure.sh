@@ -58,6 +58,7 @@ Description of options:
    -coverage   (-c) With GCC compiler only, allows for specific configuration files,
                     to generate the code coverage/profiling during an execution
    -qmmm            Generates a makefile for QMMM 
+   -vdw             Compile and include vdw_lib module
    -iphigenie       Support for external interface to iphigenie
    -omp             Enables the use of OMP instructions (if the config file allows that)
                     OMP3 is in general triggered by the config keyword OMP3_DISABLED,
@@ -133,6 +134,10 @@ do
     -qmmm|-q)
       qmmm=1
       echo "** Enabling QM/MM (if Gromos and MM_Interface modules will be available)" >&2
+      ;;
+    -vdw|-w)
+      vdw=1
+      echo "** Using vdw_lib **" >&2
       ;;
     -debug|-d)
       debug=1
@@ -240,7 +245,7 @@ fi
 #--------------------------------------------------------------------#
 
 CPPFLAGS_GROMOS='-DEWALD -DEWATCUT -DHAT_SHAPE -DUNPACKED_GRID'
-
+EXTRA_DEPS=''
 #QM/MM compilation setup
 if [ $qmmm ]; then
   if [ -f ${MOD_DIR}/QMMM_SOURCES ]; then
@@ -264,6 +269,14 @@ if [ $iffi ]; then
     exit 1
   fi
 fi
+if [ $vdw ]; then
+  VDWCPPFLAG="-D__HAS_LIBGRIMMEVDW "
+  VDWLIB=' $(LIBDIR)/libgrimme.a'
+  EXTRA_DEPS="$EXTRA_DEPS \$(GRIMME_LIB)"
+else
+  VDWLIB=''
+  VDWCPPFLAG=''
+fi
       
 if [ -n $DEST ]; then
     # Makefile requires DEST to be full path for correct work
@@ -277,7 +290,6 @@ fi
 OBJ_DIR=${DEST}/obj
 BIN_DIR=${DEST}/bin
 LIB_DIR=${DEST}/lib
-
 mkdir -p ${BIN_DIR} ${OBJ_DIR} ${LIB_DIR}
 #--------------------------------------------------------------------#
 #End of Configurations                                               #
@@ -338,6 +350,11 @@ IFFIINTER_LIB =  \$(LIBDIR)/libiffiinter.a
 END
 fi
 
+if [ $vdw ]; then
+cat << END >&3
+GRIMME_LIB = ${VDWLIB} 
+END
+fi
 cat << END >&3
 
 .SUFFIXES: .F90 .f90 .c .o
@@ -351,11 +368,11 @@ END
 
 cat << END >&3
 FFLAGS = ${FFLAGS} -I\${SRCDIR} -I\${OBJDIR}
-LFLAGS = ${LFLAGS} ${MINPACKLIB}
+LFLAGS = ${LFLAGS} ${MINPACKLIB} \$(GRIMME_LIB) 
 CFLAGS = ${CFLAGS} -I\${SRCDIR}
 NVCCFLAGS = ${NVCCFLAGS} -I\${SRCDIR}
 CPP = ${CPP}
-CPPFLAGS = ${CPPFLAGS} ${QMMM_FLAGS} ${CPPFLAGS_OMP3} ${MINPACKCPP}  -I\${SRCDIR} -D'__GIT_REV="\$(shell ${CPMD_ROOT}/scripts/getversion.sh ${CPMD_ROOT})"'
+CPPFLAGS = ${CPPFLAGS} ${QMMM_FLAGS} ${CPPFLAGS_OMP3} ${MINPACKCPP} ${VDWCPPFLAG} -I\${SRCDIR} -D'__GIT_REV="\$(shell ${CPMD_ROOT}/scripts/getversion.sh ${CPMD_ROOT})"'
 NOOPT_FLAG = ${NOOPT_FLAG}
 END
 
@@ -606,7 +623,9 @@ if [ $iffi ]; then
     echo "include \$(MODDIR)/IPhigenie_Interface/IFFIINTER_SOURCES" >&3
     echo "OBJECTS_IFFIINTER = \$(IFFIINTER_SRC:%.F90=%.o)"     >&3
 fi
-
+if [ $vdw ]; then
+    echo "include \$(MODDIR)/vdw_lib/VDWLIB_SOURCES" >&3
+fi
 printf "Add explicit rules..." >&2
 cat << END >&3
 ################################################################################
@@ -682,7 +701,7 @@ endif
 END
 if [ $qmmm ]; then
 cat << END >&3
-\$(TARGET): \$(CPMD_LIB) \$(GROMOS_LIB) \$(INTERFACE_LIB) timetag.o cpmd.o
+\$(TARGET): \$(CPMD_LIB) \$(EXTRA_DEPS) \$(GROMOS_LIB) \$(INTERFACE_LIB) timetag.o cpmd.o
 	\$(LD) \$(FFLAGS) -o \$(TARGET) timetag.o cpmd.o \$(CPMD_LIB) \$(GROMOS_LIB) \$(INTERFACE_LIB) \$(LFLAGS)
 	@ls -l \$(TARGET)
 	@echo "Compilation done."
@@ -815,7 +834,26 @@ cat << END >&3
 	\$(RANLIB) \$(IFFIINTER_LIB)
 END
 fi
-
+if [ $vdw ]; then
+ cat << END >&3
+OBJ_GRIMME     = \$(SRC_GRIMME:%.F90=%.o)
+\$(OBJ_GRIMME):                                                            
+	\$(FC) -I\$(MODDIR)/vdw_lib/ -c \$(FFLAGS) \$(CPPFLAGS) -o \$@ \$(MODDIR)/vdw_lib/\$(@F:.o=.F90)
+                                                                          
+vdw_interface.mod: vdw_interface.o                                        
+	@true                                                             
+vdw_param.mod: vdw_param.o                                                
+	@true                                                             
+vdw_calculator.mod:                                                       
+	@true                                                             
+vdw_interface.o: vdw_param.mod vdw_calculator.mod \$(MODDIR)/vdw_lib/vdw_in
+vdw_calculator.o: vdw_param.mod \$(MODDIR)/vdw_lib/vdw_calculator.F90      
+                             
+\$(GRIMME_LIB): \$(OBJ_GRIMME)
+	\$(AR) \$(GRIMME_LIB) \$(OBJ_GRIMME)
+	\$(RANLIB) \$(GRIMME_LIB)
+END
+fi
 cat << END >&3
 ################################################################################
 # Module dependencies
