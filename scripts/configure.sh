@@ -58,6 +58,7 @@ Description of options:
    -coverage   (-c) With GCC compiler only, allows for specific configuration files,
                     to generate the code coverage/profiling during an execution
    -qmmm            Generates a makefile for QMMM 
+   -scr             Use scratch library
    -vdw             Compile and include vdw_lib module
    -iphigenie       Support for external interface to iphigenie
    -omp             Enables the use of OMP instructions (if the config file allows that)
@@ -135,7 +136,11 @@ do
       qmmm=1
       echo "** Enabling QM/MM (if Gromos and MM_Interface modules will be available)" >&2
       ;;
-    -vdw|-w)
+    -scr)
+      scr=1
+      echo "** Using scratch_lib **" >&2
+      ;;
+    -vdw)
       vdw=1
       echo "** Using vdw_lib **" >&2
       ;;
@@ -277,6 +282,11 @@ else
   VDWLIB=''
   VDWCPPFLAG=''
 fi
+if [ $scr ]; then
+  SCRCPPFLAG="-D__USE_SCRATCHLIBRARY "
+  SCRLIB=' $(LIBDIR)/libscratch_module.a'
+  EXTRA_DEPS="$EXTRA_DEPS \$(SCRATCH_LIB)"
+fi
       
 if [ -n $DEST ]; then
     # Makefile requires DEST to be full path for correct work
@@ -355,6 +365,11 @@ cat << END >&3
 GRIMME_LIB = ${VDWLIB} 
 END
 fi
+if [ $scr ]; then
+cat << END >&3
+SCRATCHMODULE_LIB = ${SCRLIB} 
+END
+fi
 cat << END >&3
 
 .SUFFIXES: .F90 .f90 .c .o
@@ -368,11 +383,11 @@ END
 
 cat << END >&3
 FFLAGS = ${FFLAGS} -I\${SRCDIR} -I\${OBJDIR}
-LFLAGS = ${LFLAGS} ${MINPACKLIB} \$(GRIMME_LIB) 
+LFLAGS = ${LFLAGS} ${MINPACKLIB} \$(GRIMME_LIB) \$(SCRATCHMODULE_LIB) 
 CFLAGS = ${CFLAGS} -I\${SRCDIR}
 NVCCFLAGS = ${NVCCFLAGS} -I\${SRCDIR}
 CPP = ${CPP}
-CPPFLAGS = ${CPPFLAGS} ${QMMM_FLAGS} ${CPPFLAGS_OMP3} ${MINPACKCPP} ${VDWCPPFLAG} -I\${SRCDIR} -D'__GIT_REV="\$(shell ${CPMD_ROOT}/scripts/getversion.sh ${CPMD_ROOT})"'
+CPPFLAGS = ${CPPFLAGS} ${QMMM_FLAGS} ${CPPFLAGS_OMP3} ${MINPACKCPP} ${VDWCPPFLAG} ${SCRCPPFLAG} -I\${SRCDIR} -D'__GIT_REV="\$(shell ${CPMD_ROOT}/scripts/getversion.sh ${CPMD_ROOT})"'
 NOOPT_FLAG = ${NOOPT_FLAG}
 END
 
@@ -626,6 +641,9 @@ fi
 if [ $vdw ]; then
     echo "include \$(MODDIR)/vdw_lib/VDWLIB_SOURCES" >&3
 fi
+if [ $scr ]; then
+    echo "include \$(MODDIR)/scratchmodule_lib/SCRATCHLIB_SOURCES" >&3
+fi
 echo "EXTRA_DEPS = ${EXTRA_DEPS}" >&3
 printf "Add explicit rules..." >&2
 cat << END >&3
@@ -855,6 +873,26 @@ vdw_calculator.o: vdw_param.mod \$(MODDIR)/vdw_lib/vdw_calculator.F90
 	\$(RANLIB) \$(GRIMME_LIB)
 END
 fi
+if [ $scr ]; then
+  cat << END >&3
+\$(OBJ_SCRATCHMODULE):                                                            
+	\$(FC) -I\$(MODDIR)/scratchmodule_lib/ -c \$(FFLAGS) \$(CPPFLAGS) -o \$@ \$(MODDIR)/scratchmodule_lib/\$(@F:.o=.F90)
+
+data_managment_utils.mod: data_managment_utils.o
+	@true
+segment_managment_utils.mod: segment_managment_utils.o
+	@true
+pool_managment_utils.mod: pool_managment_utils.o
+	@true
+segment_managment_utils.o: data_managment_utils.mod \$(MODDIR)/scratchmodule_lib/segment_managment_utils.F90
+pool_managment_utils.o:  segment_managment_utils.mod \$(MODDIR)/scratchmodule_lib/pool_managment_utils.F90
+scratch_interface.o: pool_managment_utils.mod \$(MODDIR)/scratchmodule_lib/scratch_interface.F90
+\$(SCRATCHMODULE_LIB): \$(OBJ_SCRATCHMODULE)
+	\$(AR) \$(SCRATCHMODULE_LIB) \$(OBJ_SCRATCHMODULE)
+	\$(RANLIB) \$(SCRATCHMODULE_LIB)
+
+END
+fi
 cat << END >&3
 ################################################################################
 # Module dependencies
@@ -884,7 +922,7 @@ do
   if [ $verbose ]; then
     printf "[%s]" $name
   fi
-  ${AWK} -v qmmm=${qmmm}  '
+  ${AWK} -v qmmm=${qmmm} -v scr=${scr} '
        NR==1 { # Add here any exclusion to external modules
                SkipInclude["xc_f03_lib_m"] = 0;
                SkipInclude["mpif.h"] = 0;
@@ -892,11 +930,13 @@ do
                SkipInclude["mpi_f08"] = 0;
                SkipInclude["rhjsx.inc"] = 0;
                SkipInclude["uhjsx.inc"] = 0;
-               SkipInclude["scratch_interface"] = 0;
                SkipInclude["mkl_service"] = 0;
                SkipInclude["elpa"] = 0;
                if (qmmm != 1) {
                   SkipInclude["coordsz"] = 0;
+               }
+               if (scr != 1) {
+                 SkipInclude["scratch_interface"] = 0;
                }
                MaxLength=60;
                ll = length(FILENAME);

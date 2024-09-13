@@ -861,7 +861,7 @@ CONTAINS
     ELSE
 #if !defined _USE_SCRATCHLIBRARY
        IF(.NOT.ALLOCATED(para_buff))THEN
-          ALLOCATE(para_buff(il_para_buff(1)),ierr)
+          ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
           IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
                __LINE__,__FILE__)
        END IF
@@ -870,10 +870,10 @@ CONTAINS
           il_para_buff(1)=CEILING(REAL(n*mp_int1_in_bytes,real_8)/&
                buff_size_in_bytes)
 #if !defined _USE_SCRATCHLIBRARY
-          DEALLOCATE(para_buff,ierr)
+          DEALLOCATE(para_buff,stat=ierr)
           IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
                __LINE__,__FILE__)
-          ALLOCATE(para_buff(il_para_buff(1)),ierr)
+          ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
           IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
                __LINE__,__FILE__)
 #endif

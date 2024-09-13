@@ -26,7 +26,7 @@ subroutine mp_min_int4_r1(data,n,comm)
   ELSE
 #if !defined _USE_SCRATCHLIBRARY
      IF(.NOT.ALLOCATED(para_buff))THEN
-        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
              __LINE__,__FILE__)
      END IF
@@ -35,10 +35,10 @@ subroutine mp_min_int4_r1(data,n,comm)
 	il_para_buff(1)=CEILING(REAL(n*mp_int4_in_bytes,real_8)/&
              buff_size_in_bytes)
 #if !defined _USE_SCRATCHLIBRARY
-        DEALLOCATE(para_buff,ierr)
+        DEALLOCATE(para_buff,stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
              __LINE__,__FILE__)
-        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
              __LINE__,__FILE__)
 #endif
@@ -97,7 +97,7 @@ subroutine mp_min_real8_r1(data,n,comm)
   ELSE
 #if !defined _USE_SCRATCHLIBRARY
      IF(.NOT.ALLOCATED(para_buff))THEN
-        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
              __LINE__,__FILE__)
      END IF
@@ -106,10 +106,10 @@ subroutine mp_min_real8_r1(data,n,comm)
 	il_para_buff(1)=CEILING(REAL(n*mp_double_in_bytes,real_8)/&
              buff_size_in_bytes)
 #if !defined _USE_SCRATCHLIBRARY
-        DEALLOCATE(para_buff,ierr)
+        DEALLOCATE(para_buff,stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
              __LINE__,__FILE__)
-        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
              __LINE__,__FILE__)
 #endif
@@ -168,7 +168,7 @@ subroutine mp_min_complex8_r1(data,n,comm)
   ELSE
 #if !defined _USE_SCRATCHLIBRARY
      IF(.NOT.ALLOCATED(para_buff))THEN
-        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
              __LINE__,__FILE__)
      END IF
@@ -177,10 +177,10 @@ subroutine mp_min_complex8_r1(data,n,comm)
 	il_para_buff(1)=CEILING(REAL(n*mp_double_complex_in_bytes,real_8)/&
              buff_size_in_bytes)
 #if !defined _USE_SCRATCHLIBRARY
-        DEALLOCATE(para_buff,ierr)
+        DEALLOCATE(para_buff,stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate para_buff', &
              __LINE__,__FILE__)
-        ALLOCATE(para_buff(il_para_buff(1)),ierr)
+        ALLOCATE(para_buff(il_para_buff(1)),stat=ierr)
         IF(ierr/=0) CALL stopgm(procedureN,'cannot allocate para_buff', &
              __LINE__,__FILE__)
 #endif
