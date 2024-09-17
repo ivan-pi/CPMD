@@ -285,7 +285,7 @@ fi
 if [ $scr ]; then
   SCRCPPFLAG="-D__USE_SCRATCHLIBRARY "
   SCRLIB=' $(LIBDIR)/libscratch_module.a'
-  EXTRA_DEPS="$EXTRA_DEPS \$(SCRATCH_LIB)"
+  EXTRA_DEPS="$EXTRA_DEPS \$(SCRATCHMODULE_LIB) "
 fi
       
 if [ -n $DEST ]; then
@@ -883,6 +883,8 @@ data_managment_utils.mod: data_managment_utils.o
 segment_managment_utils.mod: segment_managment_utils.o
 	@true
 pool_managment_utils.mod: pool_managment_utils.o
+	@true
+scratch_interface.mod: scratch_interface.o
 	@true
 segment_managment_utils.o: data_managment_utils.mod \$(MODDIR)/scratchmodule_lib/segment_managment_utils.F90
 pool_managment_utils.o:  segment_managment_utils.mod \$(MODDIR)/scratchmodule_lib/pool_managment_utils.F90
