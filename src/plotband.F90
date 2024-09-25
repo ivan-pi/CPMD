@@ -7,7 +7,8 @@ PROGRAM plotband
                                              m_getarg,&
                                              m_iargc,&
                                              m_walltime
-
+  USE kinds, only: real_8
+  
   IMPLICIT NONE
   INTEGER, PARAMETER :: maxpanels=20 
   REAL(real_8), PARAMETER :: rydberg=13.606_real_8 
