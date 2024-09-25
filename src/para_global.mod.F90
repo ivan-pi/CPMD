@@ -13,11 +13,11 @@ MODULE para_global
 
   ! maximum buffer size for reduction operations (require an allocation)
   INTEGER(int_8), PUBLIC     :: il_para_buff(1)=2**16
-  INTEGER, PUBLIC            :: buff_size_in_bytes=STORAGE_SIZE(para_buff)/STORAGE_SIZE('A')
 #ifdef _USE_SCRATCHLIBRARY
   COMPLEX(real_8), PUBLIC, POINTER __CONTIGUOUS  :: para_buff(:)
 #else
   COMPLEX(real_8), PUBLIC, ALLOCATABLE, TARGET   :: para_buff(:)
 #endif
+  INTEGER, PUBLIC            :: buff_size_in_bytes=STORAGE_SIZE(para_buff)/STORAGE_SIZE('A')
 
 END MODULE para_global

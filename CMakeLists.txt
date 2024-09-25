@@ -29,7 +29,11 @@ option(MINPACK "Use MINPACK library" OFF)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
 add_definitions(-D__GIT_REV="cmake")
 
-# libcpmd.a and cpmd.x are defined in here
-add_subdirectory(src)
+if(SCR)
+    add_definitions(-D_USE_SCRATCHLIBRARY)
+endif()
 
 add_subdirectory(modules)
+
+# libcpmd.a and cpmd.x are defined in here
+add_subdirectory(src)
