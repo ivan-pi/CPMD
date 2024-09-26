@@ -10,11 +10,22 @@ endif()
 if(SCR)
     message(STATUS "Scratch library enabled")
     add_definitions(-D__USE_SCRATCH_LIBRARY)
-    add_library(scratchmodule
+    add_library(scratchmodule OBJECT
         scratchmodule_lib/data_managment_utils.F90
         scratchmodule_lib/segment_managment_utils.F90
         scratchmodule_lib/pool_managment_utils.F90
         scratchmodule_lib/scratch_interface.F90)
+
+    add_executable(test_pool_managment_utils
+        scratchmodule_lib/pool_managment_utils.F90
+        scratchmodule_lib/segment_managment_utils.F90
+        scratchmodule_lib/data_managment_utils.F90)
+    target_compile_definitions(test_pool_managment_utils PUBLIC _TEST_POOL)
+
+    add_executable(test_data_managment_utils
+        scratchmodule_lib/data_managment_utils.F90)
+    target_compile_definitions(test_data_managment_utils PUBLIC _TEST_DATA)
+
 endif()
 
 

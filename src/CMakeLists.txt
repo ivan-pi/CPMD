@@ -881,17 +881,29 @@ add_library(cpmd
 
     cuuser_interfaces.mod.F90
     cuuser_utils.mod.F90
+
+    blas_utils.mod.F90
+
+    sysdepend.c
+    c_mem_utils.c
 )
 
 if(SCR)
     target_link_libraries(cpmd PRIVATE scratchmodule)
 endif()
 
+if(VDW)
+    target_link_libraries(cpmd PRIVATE vdw)
+endif()
+
 add_executable(cpmd.x cpmd.F90)
 target_link_libraries(cpmd.x PRIVATE cpmd)
 
-#add_executable(plotband plotband.F90)
-#target_link_libraries(plotband PRIVATE cpmd)
+# Intel MKL Only
+target_link_libraries(cpmd.x PRIVATE -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64)
+
+add_executable(plotband plotband.F90)
+target_link_libraries(plotband PRIVATE cpmd)
 
 if(USE_CUDA)
     add_executable(GPUBandwidth GPUBandwidth.F90)

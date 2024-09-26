@@ -26,9 +26,12 @@ option(MINPACK "Use MINPACK library" OFF)
 #
 # BUILD PART
 #
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
-add_definitions(-D__GIT_REV="cmake")
 
+
+# TODO: clean-up flag setting
+add_definitions(-D__GIT_REV="cmake")
 add_definitions(-D__HAS_FFT_FFTW3)
 add_definitions(-D__ALPHALINUX)
 add_definitions(-D__HPC)
@@ -36,12 +39,6 @@ add_definitions(-D__PARALLEL)
 add_definitions(-D__HAS_SIZEOF)
 add_definitions(-D__HAS_BF_STREAM_IO)
 add_definitions(-D__INTEL_MKL)
-add_definitions(-D__USE_SCRATCH_LIBRARY)
-add_definitions(-D__HAS_LIBGRIMMEVDW)
-
-if(SCR)
-    add_definitions(-D__USE_SCRATCHLIBRARY)
-endif()
 
 add_subdirectory(modules)
 
