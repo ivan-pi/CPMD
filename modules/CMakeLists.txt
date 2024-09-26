@@ -1,16 +1,15 @@
 if(VDW)
+    message(STATUS "VDW enabled")
+    add_definitions(-D__HAS_LIBGRIMMEVDW)
     add_library(vdw
         vdw_lib/vdw_calculator.F90
-        vdw_lib/vdw_grimme.F90
         vdw_lib/vdw_interface.F90
-        vdw_lib/vdw_param-D3mod.inc
-        vdw_lib/vdw_param-D3org.inc
-        vdw_lib/vdw_param-R0ab.inc
         vdw_lib/vdw_param.F90)
 endif()
 
-
 if(SCR)
+    message(STATUS "Scratch library enabled")
+    add_definitions(-D__USE_SCRATCH_LIBRARY)
     add_library(scratchmodule
         scratchmodule_lib/data_managment_utils.F90
         scratchmodule_lib/segment_managment_utils.F90
@@ -24,7 +23,7 @@ add_library(mimic
 
 
 if (IPHIGENIE)
-    message("Building interface to iphigenie")
+    message(STATUS "Building interface to iphigenie")
     add_library(iffiinter
         IPhigenie_Interface/iffi_comm.mod.F90
         IPhigenie_Interface/iffi_elstat.mod.F90

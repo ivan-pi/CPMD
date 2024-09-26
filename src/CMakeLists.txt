@@ -243,7 +243,6 @@ add_library(cpmd
     gs_disortho_utils.mod.F90
     eextern_utils.mod.F90
     vhk_utils.mod.F90
-    fftchk_utils.mod.F90
     bc.mod.F90
     genxc_utils.mod.F90
     envj.mod.F90
@@ -269,7 +268,6 @@ add_library(cpmd
     prcnosmove_utils.mod.F90
     jacobi_utils.mod.F90
     tpar.mod.F90
-    cp_curho_types.mod.F90
     fcas.mod.F90
     mm_rho_forcedr_utils.mod.F90
     atom.mod.F90
@@ -375,7 +373,6 @@ add_library(cpmd
     td_pcg_utils.mod.F90
     recpnew_utils.mod.F90
     eind_ii_utils.mod.F90
-    cp_cuwfn_utils.mod.F90
     pi_cntl_utils.mod.F90
     updwf_p_utils.mod.F90
     reigs_utils.mod.F90
@@ -471,7 +468,6 @@ add_library(cpmd
     cp_dxc_driver.mod.F90
     rotate_my_wannier_para_p_utils.mod.F90
     fftprp_utils.mod.F90
-    cp_cuvpsi_types.mod.F90
     meta_colvar_util_utils.mod.F90
     pw_hfx_resp.mod.F90
     compress.F90
@@ -668,7 +664,6 @@ add_library(cpmd
     ksdiag_utils.mod.F90
     lanc_phon_p_utils.mod.F90
     copot_utils.mod.F90
-    cp_cuwfn_types.mod.F90
     g_loc_opeigr_utils.mod.F90
     fusion_utils.mod.F90
     ksmat_utils.mod.F90
@@ -732,7 +727,6 @@ add_library(cpmd
     mp_interface.mod.F90
     fftmain_utils.mod.F90
     dipo.mod.F90
-    cp_cuortho_utils.mod.F90
     rswf.mod.F90
     atwf.mod.F90
     geofile_utils.mod.F90
@@ -762,8 +756,6 @@ add_library(cpmd
     radin_utils.mod.F90
     struc_utils.mod.F90
     enosmove_utils.mod.F90
-    cp_curho_utils.mod.F90
-    cp_cuortho_types.mod.F90
     sfac.mod.F90
     evirial_utils.mod.F90
     meta_cv_qmmm_utils.mod.F90
@@ -847,6 +839,48 @@ add_library(cpmd
     nlcc.mod.F90
     znum_mat_utils.mod.F90
     lsd_func_utils.mod.F90
+
+   cufft_types.mod.F90
+   cufft_interfaces.mod.F90
+   cufft_utils.mod.F90
+   cp_cufft_types.mod.F90
+   cp_cufft_utils.mod.F90
+
+   cusolver_types.mod.F90
+   cusolver_interfaces.mod.F90
+   cusolver_utils.mod.F90
+
+   cublas_types.mod.F90
+   cublas_interfaces.mod.F90
+   cublas_utils.mod.F90
+
+   nvml_types.mod.F90
+   nvml_interfaces.mod.F90
+   nvml_utils.mod.F90
+
+   cuda_memcpy2d.inc
+   cuda_mem_host.inc
+   cuda_mem_managed.inc
+   cuda_memcpy.inc
+   cuda_types.mod.F90
+   cuda_interfaces.mod.F90
+   cuda_utils.mod.F90
+   cp_cuda_types.mod.F90
+   cp_cuda_utils.mod.F90
+
+   cp_cudensity_utils.mod.F90
+   cp_cuvpsi_types.mod.F90
+
+   fftchk_utils.mod.F90
+   cp_curho_types.mod.F90
+   cp_curho_utils.mod.F90
+   cp_cuwfn_types.mod.F90
+   cp_cuwfn_utils.mod.F90
+   cp_cuortho_types.mod.F90
+   cp_cuortho_utils.mod.F90
+
+    cuuser_interfaces.mod.F90
+    cuuser_utils.mod.F90
 )
 
 if(SCR)
@@ -863,40 +897,11 @@ if(USE_CUDA)
     add_executable(GPUBandwidth GPUBandwidth.F90)
     target_link_libraries(GPUBandwidth PRIVATE CPMD_core)
     add_library(CPMD_cuda
-        cuuser_interfaces.mod.F90
-        cuuser_utils.mod.F90
+
         cuuser_utils_kernels.cu
         cuuser_utils.cu
     )
 
-#    cufft_types.mod.F90
-#    cufft_interfaces.mod.F90
-#    cufft_utils.mod.F90
-#    cp_cufft_types.mod.F90
-#    cp_cufft_utils.mod.F90
 
-#    cusolver_types.mod.F90
-#    cusolver_interfaces.mod.F90
-#    cusolver_utils.mod.F90
-
-#    cublas_types.mod.F90
-#    cublas_interfaces.mod.F90
-#    cublas_utils.mod.F90
-
-#    nvml_types.mod.F90
-#    nvml_interfaces.mod.F90
-#    nvml_utils.mod.F90
-
-#    cuda_memcpy2d.inc
-#    cuda_mem_host.inc
-#    cuda_mem_managed.incx
-#    cuda_memcpy.inc
-#    cuda_types.mod.F90
-#    cuda_interfaces.mod.F90
-#    cuda_utils.mod.F90
-#    cp_cuda_types.mod.F90
-#    cp_cuda_utils.mod.F90
-
-# cp_cudensity_utils.mod.F90
 
 endif()
