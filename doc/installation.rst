@@ -155,7 +155,9 @@ CMake options
      - OpenMP.
    * - ``CPMD_FFT``
      - ``DEFAULT``
-     - ``DEFAULT`` (built-in) or ``FFTW3``; without a configuration.
+     - ``DEFAULT`` (built-in, ``-D__HAS_FFT_DEFAULT``) or ``FFTW3``
+       (``-D__HAS_FFT_FFTW3``); without a configuration. See
+       ``src/cpmd_global.h`` for how the FFT library is selected.
    * - ``CPMD_ENABLE_LIBXC``
      - ``OFF``
      - libxc functionals (``-D__HAS_LIBXC``); without a configuration.

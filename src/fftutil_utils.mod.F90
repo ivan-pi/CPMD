@@ -1,29 +1,4 @@
 #include "cpmd_global.h"
-#if defined(__FFT_HASNT_THREADED_COPIES)
-#define HASNT_THREADED_COPIES .TRUE.
-#else
-#define HASNT_THREADED_COPIES .FALSE.
-#endif
-
-#if defined(__FFT_HAS_LOW_LEVEL_TIMERS)
-#define HAS_LOW_LEVEL_TIMERS .TRUE.
-#else
-#define HAS_LOW_LEVEL_TIMERS .FALSE.
-#endif
-
-#if defined(__FFT_HAS_SPECIAL_COPY)
-#define HAS_SPECIAL_COPY __FFT_HAS_SPECIAL_COPY
-#else
-#define HAS_SPECIAL_COPY 0
-#endif
-
-#ifndef __COLLAPSE2
-#if defined(__FFT_HAS_OMP_COLLAPSE)
-#define __COLLAPSE2 collapse(2)
-#else
-#define __COLLAPSE2
-#endif
-#endif
 
 MODULE fftutil_utils
   USE fft_maxfft,                      ONLY: maxfft
@@ -76,7 +51,7 @@ CONTAINS
 
 ! ==--------------------------------------------------------------==
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset('     PHASE',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset('     PHASE',isub)
     ijk2=parap%nrxpl(parai%mepos,2)-parap%nrxpl(parai%mepos,1)+1 ! jh-mb
     !$omp parallel do private (J,K,II,IJK1) shared(IJK2) __COLLAPSE2
     DO k=1,spar%nr3s
@@ -88,7 +63,7 @@ CONTAINS
           ENDDO
        ENDDO
     ENDDO
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt('     PHASE',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt('     PHASE',isub)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE phase
   ! ==================================================================
@@ -103,11 +78,11 @@ CONTAINS
 
     INTEGER                                  :: isub, n
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
     n=krmax-krmin+1
     CALL zeroing(b)!,m*kr)
     CALL matmov(n,m,a,n,b(krmin,1),kr)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE putz
   ! ==================================================================
@@ -125,10 +100,10 @@ CONTAINS
 
 ! ==--------------------------------------------------------------==
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
     n=krmax-krmin+1
     CALL matmov(n,m,a(krmin,1),kr,b,n)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE getz
   ! ==================================================================
@@ -155,14 +130,14 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! ==--------------------------------------------------------------==
     ! ..Pack the data for sending
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
-    !$    IF(HASNT_THREADED_COPIES) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    !$    IF(_FFT_NO_THREADED_COPIES) THEN
     !$       max_threads = omp_get_max_threads()
     !$       call omp_set_num_threads(1)
     !$    ENDIF
     IF (tr4a2a) THEN
        CALL type_cast(yf, maxfft, yf4)
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           DO ip=0,mproc-1
              nrx = sp5(ip)*nrays
@@ -184,7 +159,7 @@ CONTAINS
           ENDDO
        END SELECT
     ELSE
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           DO ip=0,mproc-1
              nrx = sp5(ip)*nrays
@@ -206,8 +181,8 @@ CONTAINS
           ENDDO
        END SELECT
     ENDIF
-    !$    IF(HASNT_THREADED_COPIES) call omp_set_num_threads(max_threads)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    !$    IF(_FFT_NO_THREADED_COPIES) call omp_set_num_threads(max_threads)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE unpack_y2x
   ! ==================================================================
@@ -228,16 +203,16 @@ CONTAINS
     !$    INTEGER, EXTERNAL :: omp_get_max_threads
     CHARACTER(*),PARAMETER :: procedureN='PACK_Y2X'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
     ! ..Pack the data for sending
-    ! IF(HAS_LOW_LEVEL_TIMERS) CALL TISET(procedureN,ISUB1)
-    !$    IF(HASNT_THREADED_COPIES) THEN
+    ! IF(_FFT_LOW_LEVEL_TIMERS) CALL TISET(procedureN,ISUB1)
+    !$    IF(_FFT_NO_THREADED_COPIES) THEN
     !$       max_threads = omp_get_max_threads()
     !$       call omp_set_num_threads(1)
     !$    ENDIF
     IF (tr4a2a) THEN
        CALL type_cast(xf, maxfft, xf4)
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           DO ip=0,mproc-1
              mxrp = sp8(ip)
@@ -263,7 +238,7 @@ CONTAINS
           ENDDO
        END SELECT
     ELSE
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
 
           !$omp parallel do shared(SP8,NRX,M,LDA) &
@@ -292,8 +267,8 @@ CONTAINS
           ENDDO
        END SELECT
     ENDIF
-    !$    IF(HASNT_THREADED_COPIES) call omp_set_num_threads(max_threads)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    !$    IF(_FFT_NO_THREADED_COPIES) call omp_set_num_threads(max_threads)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE pack_y2x
   ! ==================================================================
@@ -320,7 +295,7 @@ CONTAINS
 ! ==--------------------------------------------------------------==
 ! ..All to all communication
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -335,7 +310,7 @@ CONTAINS
     ELSE
        CALL mp_all2all( xf, yf, lda, comm )
     ENDIF
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE
@@ -361,15 +336,15 @@ CONTAINS
     !$    INTEGER, EXTERNAL :: omp_get_max_threads
     CHARACTER(*),PARAMETER :: procedureN='PACK_X2Y'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
     ! ..Prepare data for sending
-    !$    IF(HASNT_THREADED_COPIES) THEN
+    !$    IF(_FFT_NO_THREADED_COPIES) THEN
     !$       max_threads = omp_get_max_threads()
     !$       call omp_set_num_threads(1)
     !$    ENDIF
     IF (tr4a2a) THEN
        CALL type_cast(yf, maxfft, yf4)
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           DO ip=0,mproc-1
              nrx = sp5(ip)*nrays
@@ -391,7 +366,7 @@ CONTAINS
           ENDDO
        END SELECT
     ELSE
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           DO ip=0,mproc-1
              nrx = sp5(ip)*nrays
@@ -413,8 +388,8 @@ CONTAINS
           ENDDO
        END SELECT
     ENDIF
-    !$    IF(HASNT_THREADED_COPIES) call omp_set_num_threads(max_threads)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    !$    IF(_FFT_NO_THREADED_COPIES) call omp_set_num_threads(max_threads)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE pack_x2y
   ! ==================================================================
@@ -435,16 +410,16 @@ CONTAINS
     !$    INTEGER, EXTERNAL :: omp_get_max_threads
     CHARACTER(*),PARAMETER :: procedureN='UNPACK_X2Y'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub1)
     ! ..Unpacking the data
     CALL zeroing(yf)!,maxfft)
-    !$    IF(HASNT_THREADED_COPIES) THEN
+    !$    IF(_FFT_NO_THREADED_COPIES) THEN
     !$       max_threads = omp_get_max_threads()
     !$       call omp_set_num_threads(1)
     !$    ENDIF
     IF (tr4a2a) THEN
        CALL type_cast(xf, maxfft, xf4)
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           DO ip=0,mproc-1
              mxrp = sp8(ip)
@@ -470,7 +445,7 @@ CONTAINS
           ENDDO
        END SELECT
     ELSE
-       SELECT CASE(HAS_SPECIAL_COPY)
+       SELECT CASE(_FFT_SPECIAL_COPY)
        CASE default
           !$omp parallel do shared(SP8,LR1,M,LDA) &
           !$omp             private(MXRP,I,II,JJ)
@@ -498,8 +473,8 @@ CONTAINS
           ENDDO
        END SELECT
     ENDIF
-    !$    IF(HASNT_THREADED_COPIES) call omp_set_num_threads(max_threads)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
+    !$    IF(_FFT_NO_THREADED_COPIES) call omp_set_num_threads(max_threads)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub1)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE unpack_x2y
   ! ==================================================================
@@ -512,7 +487,7 @@ CONTAINS
     INTEGER                                  :: i, ii, ijk, isub, j, k
     REAL(real_8), DIMENSION(2)               :: pf = (/1._real_8,-1._real_8/)
 
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset('     PHASE',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset('     PHASE',isub)
     !$omp parallel do default(none) __COLLAPSE2 &
     !$omp             private(K,J,I,II,IJK) &
     !$omp             shared(F,PF,NR3S,NR2S,N1U,N1O)
@@ -525,7 +500,7 @@ CONTAINS
           ENDDO
        ENDDO
     ENDDO
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt('     PHASE',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt('     PHASE',isub)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE phasen
   ! ==================================================================
@@ -549,7 +524,7 @@ CONTAINS
     REAL(real_8), POINTER __CONTIGUOUS       :: a_r(:,:,:,:)
     INTEGER                                  :: isub1,isub2
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -561,7 +536,7 @@ CONTAINS
     CALL reshape_inplace(b,(/kr*2,kr1,kr2s,nperbatch/),b_r)
     CALL putz_n_r(a_r,b_r,krmin,krmax,kr,kr1,kr2s,nperbatch)
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE
@@ -582,7 +557,7 @@ CONTAINS
     INTEGER                                  :: isub1,isub2,n,is,i,j,k,n1
 
 ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -607,7 +582,7 @@ CONTAINS
     END DO
     !$omp end parallel
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE
@@ -633,7 +608,7 @@ CONTAINS
 
     CHARACTER(*),PARAMETER :: procedureN='PACK_Y2X_n'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -669,7 +644,7 @@ CONTAINS
     end do
     !$omp end parallel
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE
@@ -696,7 +671,7 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! ==--------------------------------------------------------------==
     ! ..Pack the data for sending
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -724,7 +699,7 @@ CONTAINS
        END DO
     END DO
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE
@@ -749,7 +724,7 @@ CONTAINS
                                                 k, nrs, nrx, i,is,nstate
     CHARACTER(*),PARAMETER :: procedureN='PACK_X2Y_n'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -777,7 +752,7 @@ CONTAINS
        END DO
     END DO
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE
@@ -806,7 +781,7 @@ CONTAINS
     !$    INTEGER, EXTERNAL :: omp_get_max_threads
     CHARACTER(*),PARAMETER :: procedureN='UNPACK_X2Y_n'
     ! ==--------------------------------------------------------------==
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE
@@ -828,7 +803,7 @@ CONTAINS
     CALL reshape_inplace(xf,(/nstate*offset*2/),xf_r)
     CALL unpack_x2y_n_r(xf_r,yf_r,m,lr1,lda,msp,lmsp,sp8,maxfft,mproc,&
        offset,nstate)
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN//'_tuning',isub1)
        ELSE

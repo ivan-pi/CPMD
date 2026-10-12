@@ -100,9 +100,57 @@
 #define _HAS_SCALAPACK
 #endif
 
-!tk Enable FFTW3 if __INTEL_MKL is defined but disable if __HAS_FFT_DEFAULT is defined
-#if defined(__INTEL_MKL) && !defined(__HAS_FFT_DEFAULT)
+!------------------------------------------------------
+! FFT library
+!
+! The configuration selects the FFT library with one of
+!   __HAS_FFT_FFTW3    FFTW3 (or the FFTW3 interface of Intel MKL)
+!   __HAS_FFT_ESSL     IBM ESSL
+!   __HAS_FFT_HP       HP MLIB
+!   __HAS_FFT_DEFAULT  built-in FFT (from S. Goedecker)
+! and the sources only test the _HAS_FFT_* macro defined here, so
+! that exactly one library is used. An explicitly requested library
+! takes precedence over the built-in FFT. __INTEL_MKL selects FFTW3
+! unless another FFT is requested, and without any selection the
+! built-in FFT is used.
+!------------------------------------------------------
+#if defined(__HAS_FFT_FFTW3)
 #define _HAS_FFT_FFTW3
+#elif defined(__HAS_FFT_ESSL)
+#define _HAS_FFT_ESSL
+#elif defined(__HAS_FFT_HP)
+#define _HAS_FFT_HP
+#elif defined(__HAS_FFT_DEFAULT) || !defined(__INTEL_MKL)
+#define _HAS_FFT_DEFAULT
+#else
+#define _HAS_FFT_FFTW3
+#endif
+
+! FFT tuning switches
+!   __FFT_HAS_LOW_LEVEL_TIMERS    time the individual steps of the FFT
+!   __FFT_HASNT_THREADED_COPIES   run the pack/unpack copies on one thread
+!   __FFT_HAS_SPECIAL_COPY=<n>    variant of the pack/unpack copies
+!   __FFT_NCACHE=<n>              cache size used by the built-in FFT
+#if defined(__FFT_HAS_LOW_LEVEL_TIMERS)
+#define _FFT_LOW_LEVEL_TIMERS .TRUE.
+#else
+#define _FFT_LOW_LEVEL_TIMERS .FALSE.
+#endif
+
+#if defined(__FFT_HASNT_THREADED_COPIES)
+#define _FFT_NO_THREADED_COPIES .TRUE.
+#else
+#define _FFT_NO_THREADED_COPIES .FALSE.
+#endif
+
+#if defined(__FFT_HAS_SPECIAL_COPY)
+#define _FFT_SPECIAL_COPY __FFT_HAS_SPECIAL_COPY
+#else
+#define _FFT_SPECIAL_COPY 0
+#endif
+
+#if defined(__FFT_NCACHE)
+#define _FFT_NCACHE __FFT_NCACHE
 #endif
 
 !gm elpa lib
