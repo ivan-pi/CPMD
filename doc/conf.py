@@ -55,6 +55,8 @@ latex_elements = {
     'preamble': r'''
 \usepackage{amsmath,amssymb}
 \setcounter{tocdepth}{1}
+\DeclareUnicodeCharacter{2006}{\,}
+\DeclareUnicodeCharacter{22EE}{\ensuremath{\vdots}}
 ''',
     'printindex': r'\footnotesize\raggedright\printindex',
 }

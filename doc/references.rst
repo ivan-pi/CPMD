@@ -41,7 +41,7 @@ References
 
 .. [qmmm03] A. Laio, J. VandeVondele, and U. Röthlisberger J. Phys. Chem. B **106**, 7300 (2002).
 
-.. [qmmm04] M. Boero, *Reactive Simulations for Biochemical Processes* in *Atomic-Scale Modeling of Nanosystems and Nanostructured materials* p.8̃1-98, Springer, Berlin Heidelberg, 2010. ISBN 978-3-642-04650-6
+.. [qmmm04] M. Boero, *Reactive Simulations for Biochemical Processes* in *Atomic-Scale Modeling of Nanosystems and Nanostructured materials* pp. 81-98, Springer, Berlin Heidelberg, 2010. ISBN 978-3-642-04650-6
 
 .. [apdsmp] A. Putrino, D. Sebastiani, and M. Parrinello, J. Chem. Phys. **113**, 7102 (2000).
 
