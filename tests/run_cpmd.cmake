@@ -1,13 +1,13 @@
 # Run cpmd.x and compare the last total energy with a reference value.
 #
-# Variables: LAUNCHER (MPI launcher, may be empty), CPMD, INPUT, PP_DIR,
+# Variables: LAUNCHER (MPI launcher, may be empty), CPMD, POSTFLAGS, INPUT, PP_DIR,
 #            WORK_DIR, ENERGY, TOLERANCE
 
 file(REMOVE_RECURSE "${WORK_DIR}")
 file(MAKE_DIRECTORY "${WORK_DIR}")
 
 execute_process(
-  COMMAND ${LAUNCHER} "${CPMD}" "${INPUT}" "${PP_DIR}"
+  COMMAND ${LAUNCHER} "${CPMD}" ${POSTFLAGS} "${INPUT}" "${PP_DIR}"
   WORKING_DIRECTORY "${WORK_DIR}"
   OUTPUT_FILE "${WORK_DIR}/output"
   ERROR_FILE "${WORK_DIR}/error"

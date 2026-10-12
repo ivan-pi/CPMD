@@ -12,27 +12,6 @@
 add_library(cpmd_options INTERFACE)
 add_library(cpmd_definitions INTERFACE)
 
-# Split a configure-style CPPFLAGS string into definitions, include
-# directories and other options.
-function(cpmd_split_cppflags flags out_defs out_incs out_opts)
-  separate_arguments(_words UNIX_COMMAND "${flags}")
-  set(_defs)
-  set(_incs)
-  set(_opts)
-  foreach(_w IN LISTS _words)
-    if(_w MATCHES "^-D(.+)$")
-      list(APPEND _defs "${CMAKE_MATCH_1}")
-    elseif(_w MATCHES "^-I(.+)$")
-      list(APPEND _incs "${CMAKE_MATCH_1}")
-    else()
-      list(APPEND _opts "${_w}")
-    endif()
-  endforeach()
-  set(${out_defs} "${_defs}" PARENT_SCOPE)
-  set(${out_incs} "${_incs}" PARENT_SCOPE)
-  set(${out_opts} "${_opts}" PARENT_SCOPE)
-endfunction()
-
 # Definitions selected by the CMake options, used in both modes
 set(CPMD_DEFINITIONS)
 if(CPMD_ENABLE_QMMM)
@@ -56,10 +35,18 @@ if(CPMD_CONFIG)
   # -------------------------------------------------------------------------
   # Settings from configure/<CPMD_CONFIG>
   # -------------------------------------------------------------------------
-  cpmd_split_cppflags("${CPMD_CFG_CPPFLAGS}" _defs _incs _opts)
+  # CPPFLAGS: -D -> definitions, -I -> include directories, rest -> options
+  separate_arguments(_cppflags UNIX_COMMAND "${CPMD_CFG_CPPFLAGS}")
+  set(_defs ${_cppflags})
+  list(FILTER _defs INCLUDE REGEX "^-D")
+  list(TRANSFORM _defs REPLACE "^-D" "")
+  set(_incs ${_cppflags})
+  list(FILTER _incs INCLUDE REGEX "^-I")
+  list(TRANSFORM _incs REPLACE "^-I" "")
+  list(FILTER _cppflags EXCLUDE REGEX "^-[DI]")
   list(APPEND CPMD_DEFINITIONS ${_defs})
   target_include_directories(cpmd_definitions INTERFACE ${_incs})
-  target_compile_options(cpmd_definitions INTERFACE ${_opts})
+  target_compile_options(cpmd_definitions INTERFACE ${_cppflags})
 
   separate_arguments(_fflags UNIX_COMMAND "${CPMD_CFG_FFLAGS}")
   separate_arguments(_cflags UNIX_COMMAND "${CPMD_CFG_CFLAGS}")
@@ -83,31 +70,6 @@ if(CPMD_CONFIG)
   if(CPMD_ENABLE_OPENMP AND CPMD_CFG_OMP3_DISABLED STREQUAL "true")
     list(APPEND CPMD_DEFINITIONS __HASNT_OMP_COLLAPSE)
   endif()
-
-  if("__PARALLEL" IN_LIST CPMD_DEFINITIONS)
-    set(CPMD_ENABLE_MPI ON CACHE BOOL "Build with MPI" FORCE)
-  else()
-    set(CPMD_ENABLE_MPI OFF CACHE BOOL "Build with MPI" FORCE)
-  endif()
-  if(CPMD_CFG_NVCC AND "__HAS_CUDA" IN_LIST CPMD_DEFINITIONS)
-    set(CPMD_ENABLE_CUDA ON CACHE BOOL "Build with CUDA" FORCE)
-  else()
-    set(CPMD_ENABLE_CUDA OFF CACHE BOOL "Build with CUDA" FORCE)
-  endif()
-
-  # Sources the Makefile compiles with NOOPT_FLAG instead of FFLAGS. Here
-  # NOOPT_FLAG is appended, so it has to override the optimisation level.
-  set(CPMD_NOOPT_SOURCES)
-  separate_arguments(_objs UNIX_COMMAND "${CPMD_CFG_NOOPT_OBJS}")
-  foreach(_o IN LISTS _objs)
-    string(REGEX REPLACE "\\.o$" ".F90" _src "${_o}")
-    list(APPEND CPMD_NOOPT_SOURCES "${_src}")
-  endforeach()
-  separate_arguments(CPMD_NOOPT_FLAGS UNIX_COMMAND "${CPMD_CFG_NOOPT_FLAG}")
-
-  separate_arguments(CPMD_GROMOS_FFLAGS UNIX_COMMAND "${CPMD_CFG_FFLAGS_GROMOS}")
-  separate_arguments(CPMD_GROMOS_MODULES_FFLAGS UNIX_COMMAND
-                     "${CPMD_CFG_FFLAGS_GROMOS_MODULES}")
 else()
   # -------------------------------------------------------------------------
   # Native CMake configuration

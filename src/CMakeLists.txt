@@ -1037,10 +1037,7 @@ set(CPMD_SRC_MAIN
 
 set(CPMD_SOURCE_GROUPS
     AL BASE PA LA FFT DATA IN PS VD NC XC HFX KS WF AT GM MD MT VA PP PE LR TD
-    IS ST SY KP PI PM KD MM FM CL VW BS SH CD SO BC GPU CC)
-if(CPMD_ENABLE_CUDA)
-  list(APPEND CPMD_SOURCE_GROUPS CU)
-endif()
+    IS ST SY KP PI PM KD MM FM CL VW BS SH CD SO BC GPU CC CU)
 
 set(CPMD_SOURCES)
 foreach(_group IN LISTS CPMD_SOURCE_GROUPS)
@@ -1048,23 +1045,21 @@ foreach(_group IN LISTS CPMD_SOURCE_GROUPS)
   source_group("${_group}" FILES ${CPMD_SRC_${_group}})
 endforeach()
 
-# ---------------------------------------------------------------------------
 # Consistency check with src/SOURCES (configure.sh build)
-# ---------------------------------------------------------------------------
 file(STRINGS SOURCES _make_lines REGEX "^[^#]")
 string(REGEX MATCHALL "[A-Za-z0-9_.]+\\.(F90|cu|c)" _make_sources "${_make_lines}")
-set(_cmake_sources)
-foreach(_group IN LISTS CPMD_SOURCE_GROUPS ITEMS CU)
-  list(APPEND _cmake_sources ${CPMD_SRC_${_group}})
-endforeach()
 set(_only_make ${_make_sources})
-list(REMOVE_ITEM _only_make ${_cmake_sources})
-set(_only_cmake ${_cmake_sources})
+list(REMOVE_ITEM _only_make ${CPMD_SOURCES})
+set(_only_cmake ${CPMD_SOURCES})
 list(REMOVE_ITEM _only_cmake ${_make_sources})
 if(_only_make OR _only_cmake)
   message(WARNING "src/CMakeLists.txt and src/SOURCES list different files.\n"
                   "  Only in SOURCES: ${_only_make}\n"
                   "  Only in CMakeLists.txt: ${_only_cmake}")
+endif()
+
+if(NOT CPMD_ENABLE_CUDA)
+  list(REMOVE_ITEM CPMD_SOURCES ${CPMD_SRC_CU})
 endif()
 
 # ---------------------------------------------------------------------------
@@ -1075,31 +1070,25 @@ set_target_properties(cpmd_lib PROPERTIES
   OUTPUT_NAME cpmd
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_include_directories(cpmd_lib PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/mod")
-target_link_libraries(cpmd_lib PUBLIC cpmd_options cpmd_definitions)
-if(CPMD_ENABLE_QMMM)
-  target_link_libraries(cpmd_lib PUBLIC cpmd_gromos)
-endif()
-if(CPMD_ENABLE_SCRATCHLIB)
-  target_link_libraries(cpmd_lib PUBLIC cpmd_scratch)
-endif()
-if(CPMD_ENABLE_VDWLIB)
-  target_link_libraries(cpmd_lib PUBLIC cpmd_grimme)
-endif()
-if(CPMD_ENABLE_CUDA AND CPMD_CONFIG)
-  # architectures are given in NVCCFLAGS of the configuration
-  set_target_properties(cpmd_lib PROPERTIES CUDA_ARCHITECTURES OFF)
-endif()
+target_link_libraries(cpmd_lib PUBLIC
+  cpmd_options cpmd_definitions
+  # optional libraries from modules/
+  $<TARGET_NAME_IF_EXISTS:cpmd_gromos>
+  $<TARGET_NAME_IF_EXISTS:cpmd_scratch>
+  $<TARGET_NAME_IF_EXISTS:cpmd_grimme>)
 
 # Version string for the output header (__GIT_REV in the Makefile)
 set_property(SOURCE header_utils.mod.F90 APPEND PROPERTY
   COMPILE_DEFINITIONS "__GIT_REV=\"${CPMD_GIT_REV}\"")
 
-# Files compiled without optimisation (NOOPT_OBJS of the configuration)
-foreach(_src IN LISTS CPMD_NOOPT_SOURCES)
-  if(_src IN_LIST CPMD_SOURCES)
-    set_property(SOURCE ${_src} APPEND PROPERTY COMPILE_OPTIONS ${CPMD_NOOPT_FLAGS})
-  endif()
-endforeach()
+# Files the Makefile compiles with NOOPT_FLAG instead of FFLAGS (NOOPT_OBJS
+# of the configuration). Here NOOPT_FLAG is appended to the usual flags.
+separate_arguments(_noopt_srcs UNIX_COMMAND "${CPMD_CFG_NOOPT_OBJS}")
+if(_noopt_srcs)
+  list(TRANSFORM _noopt_srcs REPLACE "\\.o$" ".F90")
+  separate_arguments(_noopt_flags UNIX_COMMAND "${CPMD_CFG_NOOPT_FLAG}")
+  set_property(SOURCE ${_noopt_srcs} APPEND PROPERTY COMPILE_OPTIONS ${_noopt_flags})
+endif()
 
 # ---------------------------------------------------------------------------
 # cpmd.x
@@ -1109,10 +1098,7 @@ set_target_properties(cpmd PROPERTIES
   OUTPUT_NAME cpmd.x
   LINKER_LANGUAGE Fortran
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/cpmd")
-target_link_libraries(cpmd PRIVATE cpmd_lib)
-if(CPMD_ENABLE_QMMM)
-  target_link_libraries(cpmd PRIVATE cpmd_mm_interface)
-endif()
+target_link_libraries(cpmd PRIVATE cpmd_lib $<TARGET_NAME_IF_EXISTS:cpmd_mm_interface>)
 
 install(TARGETS cpmd RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS cpmd_lib ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

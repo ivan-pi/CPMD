@@ -4,13 +4,11 @@
 # build tree and compares the final total energy with a reference value.
 
 if(CPMD_ENABLE_MPI)
-  if(NOT MPIEXEC_EXECUTABLE)
-    find_program(MPIEXEC_EXECUTABLE NAMES mpiexec mpirun)
-  endif()
+  # Already done without a configuration; with one it provides MPIEXEC_*
+  find_package(MPI QUIET)
   set(CPMD_TEST_NPROCS 2 CACHE STRING "Number of MPI processes for the tests")
-  set(_launcher "${MPIEXEC_EXECUTABLE}" -n ${CPMD_TEST_NPROCS} ${MPIEXEC_PREFLAGS})
-else()
-  set(_launcher "")
+  set(_launcher ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${CPMD_TEST_NPROCS}
+                ${MPIEXEC_PREFLAGS})
 endif()
 
 # cpmd_add_test(<name> <input> <reference energy> <tolerance>)
@@ -20,6 +18,7 @@ function(cpmd_add_test name input energy tolerance)
     COMMAND ${CMAKE_COMMAND}
       "-DLAUNCHER=${_launcher}"
       "-DCPMD=$<TARGET_FILE:cpmd>"
+      "-DPOSTFLAGS=${MPIEXEC_POSTFLAGS}"
       "-DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/${input}"
       "-DPP_DIR=${_dir}"
       "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/${name}"

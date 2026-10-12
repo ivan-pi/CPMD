@@ -51,7 +51,7 @@ project(CPMD
   HOMEPAGE_URL "https://github.com/OpenCPMD/CPMD"
   LANGUAGES Fortran C)
 
-if(CPMD_ENABLE_CUDA OR CPMD_CFG_NVCC)
+if(CPMD_ENABLE_CUDA)
   enable_language(CUDA)
 endif()
 

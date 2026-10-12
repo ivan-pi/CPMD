@@ -6,8 +6,13 @@
 #   -scr        scratchmodule_lib       (libscratch_module.a)
 #   -vdw        vdw_lib                 (libgrimme.a)
 
-# Stop with a clear message if an optional module is incomplete
-function(cpmd_require_sources what)
+# cpmd_module_library(<target> <output name> <description> <sources>...)
+#
+# Static library from optional module sources: stops with a clear message
+# if sources are missing, keeps its Fortran modules in mod/<target> and
+# exports that directory to its users.
+function(cpmd_module_library target output description)
+  set(_missing)
   foreach(_f IN LISTS ARGN)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_f}")
       list(APPEND _missing "${_f}")
@@ -15,8 +20,15 @@ function(cpmd_require_sources what)
   endforeach()
   if(_missing)
     list(JOIN _missing "\n  " _missing)
-    message(FATAL_ERROR "${what}: missing source files in ${CMAKE_CURRENT_SOURCE_DIR}:\n  ${_missing}")
+    message(FATAL_ERROR "${description}: missing source files in ${CMAKE_CURRENT_SOURCE_DIR}:\n  ${_missing}")
   endif()
+
+  set(_moddir "${CMAKE_CURRENT_BINARY_DIR}/mod/${target}")
+  add_library(${target} STATIC ${ARGN})
+  set_target_properties(${target} PROPERTIES
+    OUTPUT_NAME ${output}
+    Fortran_MODULE_DIRECTORY "${_moddir}")
+  target_include_directories(${target} PUBLIC "${_moddir}")
 endfunction()
 
 # ---------------------------------------------------------------------------
@@ -92,9 +104,6 @@ if(CPMD_ENABLE_QMMM)
     MM_Interface/mm_cap_H.F
     MM_Interface/mm_charge_rest.F
   )
-  cpmd_require_sources("QM/MM (the Gromos sources are not distributed with CPMD, see Gromos/README.md)"
-    ${CPMD_GROMOS_MODULES} ${CPMD_GROMOS_SRC} ${CPMD_INTERFACE_SRC})
-
   # configure.sh: CPPFLAGS_GROMOS
   set(_gromos_definitions EWALD EWATCUT HAT_SHAPE UNPACKED_GRID)
   if("__HASNT_OMP_COLLAPSE" IN_LIST CPMD_DEFINITIONS)
@@ -104,34 +113,33 @@ if(CPMD_ENABLE_QMMM)
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/Gromos"
     "${CMAKE_CURRENT_SOURCE_DIR}/MM_Interface")
+  # FFLAGS_GROMOS[_MODULES] of the configuration, on top of FFLAGS
+  separate_arguments(_fflags_gromos UNIX_COMMAND "${CPMD_CFG_FFLAGS_GROMOS}")
+  separate_arguments(_fflags_gromos_modules UNIX_COMMAND "${CPMD_CFG_FFLAGS_GROMOS_MODULES}")
   set_source_files_properties(${CPMD_GROMOS_SRC} ${CPMD_INTERFACE_SRC}
-    PROPERTIES Fortran_FORMAT FIXED COMPILE_OPTIONS "${CPMD_GROMOS_FFLAGS}")
+    PROPERTIES Fortran_FORMAT FIXED COMPILE_OPTIONS "${_fflags_gromos}")
   set_source_files_properties(${CPMD_GROMOS_MODULES}
-    PROPERTIES COMPILE_OPTIONS "${CPMD_GROMOS_MODULES_FFLAGS}")
+    PROPERTIES COMPILE_OPTIONS "${_fflags_gromos_modules}")
+
+  set(_missing_gromos "QM/MM (the Gromos sources are not distributed with CPMD, see Gromos/README.md)")
 
   # Gromos is compiled with the Fortran flags, but not with the CPMD
   # preprocessor definitions (as in the generated Makefile)
-  add_library(cpmd_gromos STATIC ${CPMD_GROMOS_MODULES} ${CPMD_GROMOS_SRC})
-  set_target_properties(cpmd_gromos PROPERTIES
-    OUTPUT_NAME gromos
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/gromos")
+  cpmd_module_library(cpmd_gromos gromos "${_missing_gromos}"
+    ${CPMD_GROMOS_MODULES} ${CPMD_GROMOS_SRC})
   target_compile_definitions(cpmd_gromos PRIVATE ${_gromos_definitions})
-  target_include_directories(cpmd_gromos
-    PRIVATE ${_gromos_includes}
-    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/mod/gromos")
+  target_include_directories(cpmd_gromos PRIVATE ${_gromos_includes})
   target_link_libraries(cpmd_gromos PUBLIC cpmd_options)
 
   # The MM interface uses the CPMD modules; libcpmd calls back into it.
-  add_library(cpmd_mm_interface STATIC ${CPMD_INTERFACE_SRC})
-  set_target_properties(cpmd_mm_interface PROPERTIES
-    OUTPUT_NAME interface
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/mm_interface")
+  cpmd_module_library(cpmd_mm_interface interface "${_missing_gromos}"
+    ${CPMD_INTERFACE_SRC})
   target_compile_definitions(cpmd_mm_interface PRIVATE ${_gromos_definitions})
   target_include_directories(cpmd_mm_interface PRIVATE ${_gromos_includes})
   target_link_libraries(cpmd_mm_interface PRIVATE cpmd_lib cpmd_gromos)
 
   # Gromos headers included through gromos.h by the CPMD sources
-  target_include_directories(cpmd_options INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_include_directories(cpmd_definitions INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -146,15 +154,10 @@ if(CPMD_ENABLE_IPHIGENIE)
     IPhigenie_Interface/iffi_inter.mod.F90
     IPhigenie_Interface/iffi_wfct.mod.F90
   )
-  cpmd_require_sources("IPHIGENIE interface" ${CPMD_IFFIINTER_SRC})
-
   # libiffiinter.a is linked into IPHIGENIE together with libcpmd.a
-  add_library(cpmd_iffiinter STATIC
-    ${CPMD_IFFIINTER_SRC}
-    "${PROJECT_SOURCE_DIR}/src/timetag.F90")
-  set_target_properties(cpmd_iffiinter PROPERTIES
-    OUTPUT_NAME iffiinter
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/iffiinter")
+  cpmd_module_library(cpmd_iffiinter iffiinter "IPHIGENIE interface"
+    ${CPMD_IFFIINTER_SRC})
+  target_sources(cpmd_iffiinter PRIVATE "${PROJECT_SOURCE_DIR}/src/timetag.F90")
   target_include_directories(cpmd_iffiinter PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/IPhigenie_Interface")
   target_link_libraries(cpmd_iffiinter PUBLIC cpmd_lib)
@@ -171,15 +174,10 @@ if(CPMD_ENABLE_SCRATCHLIB)
     scratchmodule_lib/pool_managment_utils.F90
     scratchmodule_lib/scratch_interface.F90
   )
-  cpmd_require_sources("Scratch library" ${CPMD_SCRATCHMODULE_SRC})
-
-  add_library(cpmd_scratch STATIC ${CPMD_SCRATCHMODULE_SRC})
-  set_target_properties(cpmd_scratch PROPERTIES
-    OUTPUT_NAME scratch_module
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/scratch")
-  target_include_directories(cpmd_scratch
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/scratchmodule_lib"
-    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/mod/scratch")
+  cpmd_module_library(cpmd_scratch scratch_module "Scratch library"
+    ${CPMD_SCRATCHMODULE_SRC})
+  target_include_directories(cpmd_scratch PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/scratchmodule_lib")
   target_link_libraries(cpmd_scratch PUBLIC cpmd_options cpmd_definitions)
 endif()
 
@@ -192,14 +190,9 @@ if(CPMD_ENABLE_VDWLIB)
     vdw_lib/vdw_interface.F90
     vdw_lib/vdw_param.F90
   )
-  cpmd_require_sources("Grimme vdW library" ${CPMD_GRIMME_SRC})
-
-  add_library(cpmd_grimme STATIC ${CPMD_GRIMME_SRC})
-  set_target_properties(cpmd_grimme PROPERTIES
-    OUTPUT_NAME grimme
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/grimme")
-  target_include_directories(cpmd_grimme
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vdw_lib"
-    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/mod/grimme")
+  cpmd_module_library(cpmd_grimme grimme "Grimme vdW library"
+    ${CPMD_GRIMME_SRC})
+  target_include_directories(cpmd_grimme PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/vdw_lib")
   target_link_libraries(cpmd_grimme PUBLIC cpmd_options cpmd_definitions)
 endif()

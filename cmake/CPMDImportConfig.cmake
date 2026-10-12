@@ -21,7 +21,7 @@
 #   FFLAGS_GROMOS*   -> extra Fortran options for the QM/MM modules
 #   NOOPT_OBJS/FLAG  -> extra options for the listed sources
 #   OMP3_DISABLED    -> -D__HASNT_OMP_COLLAPSE with OpenMP enabled
-#   CPP, LD, AR, RANLIB, IRAT are not used: CMake preprocesses with the
+#   CPP, LD, AR, RANLIB, IRAT are not imported: CMake preprocesses with the
 #   compiler and links with the Fortran compiler.
 
 set(_cpmd_cfg_args)
@@ -55,36 +55,41 @@ if(_cpmd_cfg_err)
   message(STATUS "Configuration ${CPMD_CONFIG} says:\n${_cpmd_cfg_err}")
 endif()
 
-get_filename_component(_cpmd_cfg_file "${CPMD_CONFIG}" NAME)
-set(_cpmd_cfg_file "${CMAKE_BINARY_DIR}/CPMDConfig-${_cpmd_cfg_file}.cmake")
-file(WRITE "${_cpmd_cfg_file}" "${_cpmd_cfg_out}")
-include("${_cpmd_cfg_file}")
+cmake_language(EVAL CODE "${_cpmd_cfg_out}")
 message(STATUS "Using CPMD configuration ${CPMD_CFG_FILE}")
+
+# Features fixed by the configuration; these normal variables take
+# precedence over the cache options of the same name.
+if(" ${CPMD_CFG_CPPFLAGS} " MATCHES " -D__PARALLEL ")
+  set(CPMD_ENABLE_MPI ON)
+else()
+  set(CPMD_ENABLE_MPI OFF)
+endif()
+if(CPMD_CFG_NVCC AND " ${CPMD_CFG_CPPFLAGS} " MATCHES " -D__HAS_CUDA ")
+  set(CPMD_ENABLE_CUDA ON)
+  # architectures are chosen with -gencode in NVCCFLAGS
+  set(CMAKE_CUDA_ARCHITECTURES OFF)
+else()
+  set(CPMD_ENABLE_CUDA OFF)
+endif()
 
 # Compilers: the first word is the compiler, the rest are extra flags.
 # They can only be set before the first project() call of a build tree.
-macro(_cpmd_cfg_compiler lang var)
-  if(CPMD_CFG_${var})
-    separate_arguments(_cpmd_words UNIX_COMMAND "${CPMD_CFG_${var}}")
-    list(POP_FRONT _cpmd_words _cpmd_prog)
-    set(CPMD_CFG_${var}_EXTRA_FLAGS ${_cpmd_words})
-    if(NOT CMAKE_${lang}_COMPILER)
-      set(CMAKE_${lang}_COMPILER "${_cpmd_prog}")
-    elseif(NOT CMAKE_${lang}_COMPILER MATCHES "(^|/)${_cpmd_prog}$")
-      message(STATUS "${lang} compiler is ${CMAKE_${lang}_COMPILER}; "
-                     "${var}=${_cpmd_prog} from ${CPMD_CONFIG} is not used "
-                     "(compilers can only be chosen in a fresh build tree)")
-    endif()
+function(_cpmd_cfg_compiler lang var)
+  if(NOT CPMD_CFG_${var})
+    return()
   endif()
-endmacro()
+  separate_arguments(_words UNIX_COMMAND "${CPMD_CFG_${var}}")
+  list(POP_FRONT _words _prog)
+  set(CPMD_CFG_${var}_EXTRA_FLAGS ${_words} PARENT_SCOPE)
+  if(NOT CMAKE_${lang}_COMPILER)
+    set(CMAKE_${lang}_COMPILER "${_prog}" PARENT_SCOPE)
+  elseif(NOT CMAKE_${lang}_COMPILER MATCHES "(^|/)${_prog}$")
+    message(STATUS "${lang} compiler is ${CMAKE_${lang}_COMPILER}; "
+                   "${var}=${_prog} from ${CPMD_CONFIG} is not used "
+                   "(compilers can only be chosen in a fresh build tree)")
+  endif()
+endfunction()
 _cpmd_cfg_compiler(Fortran FC)
 _cpmd_cfg_compiler(C CC)
-if(CPMD_CFG_NVCC)
-  _cpmd_cfg_compiler(CUDA NVCC)
-endif()
-
-unset(_cpmd_cfg_args)
-unset(_cpmd_cfg_out)
-unset(_cpmd_cfg_err)
-unset(_cpmd_cfg_res)
-unset(_cpmd_cfg_file)
+_cpmd_cfg_compiler(CUDA NVCC)

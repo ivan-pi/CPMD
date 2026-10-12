@@ -25,10 +25,10 @@ unset omp debug coverage qmmm
 Configuration=
 for option in "$@"; do
   case $option in
-    -omp|-o)        omp=1 ;;
-    -debug|-d)      debug=1 ;;
-    -coverage|-c)   coverage=1 ;;
-    -qmmm|-q)       qmmm=1 ;;
+    -omp)           omp=1 ;;
+    -debug)         debug=1 ;;
+    -coverage)      coverage=1 ;;
+    -qmmm)          qmmm=1 ;;
     -*)             echo "import_config.sh: unknown option $option" >&2; exit 2 ;;
     *)              Configuration=$option ;;
   esac
@@ -51,10 +51,10 @@ fi
 if [ -x /usr/bin/nawk ]; then AWK='/usr/bin/nawk'; else AWK='awk'; fi
 GREP='grep'
 
-# Variables a configuration file may set
-VARS="FC CC LD CPP CPPFLAGS FFLAGS CFLAGS LFLAGS LIBS NVCC NVCCFLAGS CUDA_PATH
-      NOOPT_FLAG NOOPT_OBJS FFLAGS_GROMOS FFLAGS_GROMOS_MODULES OMP3_DISABLED
-      AR RANLIB IRAT"
+# Variables used by the CMake build (configuration files may set others,
+# such as LD, CPP, LIBS, AR or RANLIB, which CMake does not need)
+VARS="FC CC CPPFLAGS FFLAGS CFLAGS LFLAGS NVCC NVCCFLAGS NOOPT_FLAG NOOPT_OBJS
+      FFLAGS_GROMOS FFLAGS_GROMOS_MODULES OMP3_DISABLED"
 for v in $VARS; do unset "$v"; done
 
 # Source the configuration. Anything it prints goes to stderr; an 'exit'
