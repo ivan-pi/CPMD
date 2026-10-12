@@ -125,7 +125,7 @@ Keywords
 
       MISSING: required companion keywords (e.g.
       :kw:`STATES <STATES TDDFT>` with SINGLET and TRIPLET, SOC settings in
-      ``&CPMD``), physical reference.
+      ``&CPMD``, see :kw:`SPIN-ORBIT COUPLING`), physical reference.
 
 .. source: src/lr_in_utils.mod.F90:795
 

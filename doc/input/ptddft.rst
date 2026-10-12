@@ -36,7 +36,7 @@ Keywords
    :section: &PTDDFT
 
    Applies an absorbing-boundary mask to the propagated Kohn-Sham orbitals
-   after each Cayley propagation step (with :kw:`RUNGE_KUTTA` only in the
+   after each Cayley propagation step (with :kw:`RUNGE-KUTTA` only in the
    second half step). Three real numbers are read from the next line:
    ``p1 p2 p3``. Along each Cartesian direction the mask is 1 inside
    :math:`|x| < p_1 L`, decays as

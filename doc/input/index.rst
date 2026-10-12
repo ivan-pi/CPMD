@@ -76,8 +76,10 @@ ignored.
    * - Section
      - Purpose
    * - ``&INFO``
-     - A place to put comments about the job. The contents of this section
-       are copied to the output file at the beginning of the calculation.
+     - A place to put comments about the job (optional). Its lines (at most
+       30; further lines are ignored) are copied verbatim to the output,
+       right after the program header; each line is truncated to 74
+       characters. Reading stops at the first line that contains ``&END``.
    * - :doc:`&CPMD <cpmd>`
      - General control parameters for the calculation (**required**).
    * - :doc:`&SYSTEM <system>`

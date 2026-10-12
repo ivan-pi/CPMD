@@ -2229,7 +2229,7 @@ Keywords
    the EH dynamics do an optimization of the wavefunction with a convergence of
    1.D-8 or 1.D-9, if possible. An additional file called "wavefunctions" is
    produced, which contains the complex KS orbitals needed for the restart of the
-   EH dynamics (see restart options in &PTDDFT). Typical (minimal) input &CPMD and
+   EH dynamics (see :kw:`RESTART <RESTART PTDDFT>` in ``&PTDDFT``). Typical (minimal) input &CPMD and
    &PTDDFT sections to be used with EH dynamics
 
    &CPMD
