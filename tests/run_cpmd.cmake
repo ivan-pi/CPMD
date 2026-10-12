@@ -1,28 +1,43 @@
-# Run cpmd.x and compare the last total energy with a reference value.
+# Run cpmd.x on one or more inputs and compare the last total energy with a
+# reference value.
 #
-# Variables: LAUNCHER (MPI launcher, may be empty), CPMD, POSTFLAGS, INPUT, PP_DIR,
-#            WORK_DIR, ENERGY, TOLERANCE
+# Variables: LAUNCHER (MPI launcher, may be empty), CPMD, POSTFLAGS,
+#            INPUTS ("|"-separated, run in order), PP_DIR, WORK_DIR, ENERGY,
+#            TOLERANCE
 
 file(REMOVE_RECURSE "${WORK_DIR}")
 file(MAKE_DIRECTORY "${WORK_DIR}")
 
-execute_process(
-  COMMAND ${LAUNCHER} "${CPMD}" ${POSTFLAGS} "${INPUT}" "${PP_DIR}"
-  WORKING_DIRECTORY "${WORK_DIR}"
-  OUTPUT_FILE "${WORK_DIR}/output"
-  ERROR_FILE "${WORK_DIR}/error"
-  RESULT_VARIABLE result)
-file(READ "${WORK_DIR}/output" output)
-if(NOT result EQUAL 0)
-  message(FATAL_ERROR "cpmd.x failed (${result}), see ${WORK_DIR}:\n${output}")
-endif()
-if(NOT output MATCHES "PROGRAM CPMD ENDED")
-  message(FATAL_ERROR "cpmd.x did not finish, see ${WORK_DIR}/output")
-endif()
+string(REPLACE "|" ";" inputs "${INPUTS}")
+list(LENGTH inputs ninputs)
+set(step 0)
+foreach(input IN LISTS inputs)
+  math(EXPR step "${step} + 1")
+  if(ninputs GREATER 1)
+    set(out "output.${step}")
+    set(err "error.${step}")
+  else()
+    set(out "output")
+    set(err "error")
+  endif()
+  execute_process(
+    COMMAND ${LAUNCHER} "${CPMD}" ${POSTFLAGS} "${input}" "${PP_DIR}"
+    WORKING_DIRECTORY "${WORK_DIR}"
+    OUTPUT_FILE "${WORK_DIR}/${out}"
+    ERROR_FILE "${WORK_DIR}/${err}"
+    RESULT_VARIABLE result)
+  file(READ "${WORK_DIR}/${out}" output)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "cpmd.x failed (${result}) on ${input}, see ${WORK_DIR}:\n${output}")
+  endif()
+  if(NOT output MATCHES "PROGRAM CPMD ENDED")
+    message(FATAL_ERROR "cpmd.x did not finish on ${input}, see ${WORK_DIR}/${out}")
+  endif()
+endforeach()
 
 string(REGEX MATCHALL "TOTAL ENERGY = +[-0-9.]+" lines "${output}")
 if(NOT lines)
-  message(FATAL_ERROR "No total energy found in ${WORK_DIR}/output")
+  message(FATAL_ERROR "No total energy found in ${WORK_DIR}/${out}")
 endif()
 list(POP_BACK lines last)
 string(REGEX REPLACE ".* " "" energy "${last}")

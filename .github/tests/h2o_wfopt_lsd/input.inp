@@ -1,0 +1,35 @@
+H2O+ doublet, LDA: spin-polarised (LSD) wavefunction optimisation
+
+&CPMD
+ OPTIMIZE WAVEFUNCTION
+ LSD
+ CONVERGENCE ORBITALS
+  1.0d-6
+&END
+&SYSTEM
+ SYMMETRY
+  1
+ ANGSTROM
+ CELL
+  7.0 1.0 1.0 0.0 0.0 0.0
+ CUTOFF
+  50.0
+ CHARGE
+  1.0
+ MULTIPLICITY
+  2
+&END
+&DFT
+ FUNCTIONAL LDA
+&END
+&ATOMS
+*O_GO.psp
+ LMAX=P
+  1
+  0.0000  0.0000  0.1173
+*H_GO.psp
+ LMAX=S
+  2
+  0.0000  0.7572 -0.4692
+  0.0000 -0.7572 -0.4692
+&END

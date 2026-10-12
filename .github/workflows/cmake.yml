@@ -30,6 +30,19 @@ jobs:
           - name: gfortran-14, MPI + OpenMP
             gcc: 14
             cmake-args: -DCPMD_ENABLE_OPENMP=ON
+          # FFTW3 instead of the built-in FFT
+          - name: gfortran-13, MPI + OpenMP, FFTW3
+            gcc: 13
+            cmake-args: -DCPMD_ENABLE_OPENMP=ON -DCPMD_FFT=FFTW3
+            packages: libfftw3-dev
+          # Optional libraries from modules/ (adds the vdW D3 test), with
+          # 2 OpenMP threads per MPI process
+          - name: gfortran-13, MPI + OpenMP, scratch and vdW libraries
+            gcc: 13
+            cmake-args: >-
+              -DCPMD_ENABLE_OPENMP=ON -DCPMD_ENABLE_SCRATCHLIB=ON
+              -DCPMD_ENABLE_VDWLIB=ON -DCPMD_TEST_NTHREADS=2
+            ctest-parallel: 1
           # Machine configuration from configure/ (mpif90 wrapper, gfortran-13)
           - name: configure/CRAY-HPE-GFORTRAN-AMDEPYC
             gcc: 13
@@ -44,7 +57,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             gcc-${{ matrix.gcc }} gfortran-${{ matrix.gcc }} ninja-build \
-            libopenmpi-dev openmpi-bin liblapack-dev libblas-dev
+            libopenmpi-dev openmpi-bin liblapack-dev libblas-dev \
+            ${{ matrix.packages }}
 
       - name: Select compilers
         if: ${{ !matrix.config }}
@@ -59,7 +73,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --parallel ${{ matrix.ctest-parallel || 2 }}
 
       - name: Upload test output
         if: failure()

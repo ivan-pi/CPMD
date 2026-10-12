@@ -35,7 +35,7 @@ option(CPMD_ENABLE_COVERAGE   "Instrument for coverage analysis (configure.sh -c
 set(CPMD_FFT "DEFAULT" CACHE STRING "FFT library without CPMD_CONFIG: DEFAULT (built-in) or FFTW3")
 set_property(CACHE CPMD_FFT PROPERTY STRINGS DEFAULT FFTW3)
 set(CPMD_MINPACK_LIBRARY "" CACHE FILEPATH "MINPACK library to link (configure.sh -minpack=), -D__MINPACK")
-option(CPMD_BUILD_TESTS       "Add the smoke tests in tests/ (run with ctest)" ON)
+option(CPMD_BUILD_TESTS       "Add the tests in tests/ and .github/tests/ (run with ctest)" ON)
 
 if(CPMD_CONFIG)
   include(cmake/CPMDImportConfig.cmake)

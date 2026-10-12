@@ -1,0 +1,32 @@
+H2O, LDA: wavefunction optimisation with the G vectors split over 2 CP groups (needs 2 MPI processes)
+
+&CPMD
+ OPTIMIZE WAVEFUNCTION
+ CP_GROUPS
+  2
+ CONVERGENCE ORBITALS
+  1.0d-6
+&END
+&SYSTEM
+ SYMMETRY
+  1
+ ANGSTROM
+ CELL
+  7.0 1.0 1.0 0.0 0.0 0.0
+ CUTOFF
+  50.0
+&END
+&DFT
+ FUNCTIONAL LDA
+&END
+&ATOMS
+*O_GO.psp
+ LMAX=P
+  1
+  0.0000  0.0000  0.1173
+*H_GO.psp
+ LMAX=S
+  2
+  0.0000  0.7572 -0.4692
+  0.0000 -0.7572 -0.4692
+&END

@@ -185,23 +185,37 @@ CMake options
      - MINPACK library (``-D__MINPACK``).
    * - ``CPMD_BUILD_TESTS``
      - ``ON``
-     - Add the smoke tests in ``tests/``.
+     - Add the tests in ``tests/`` and ``.github/tests/``.
    * - ``CPMD_TEST_NPROCS``
      - ``2``
      - MPI processes used by the tests.
+   * - ``CPMD_TEST_NTHREADS``
+     - ``1``
+     - OpenMP threads per process used by the tests.
 
 Tests
 ~~~~~
 
-``ctest --test-dir build`` runs a few short calculations (``tests/``) and
-compares the final total energy with a reference value. MPI builds run them
-with ``mpiexec -n 2``; set ``MPIEXEC_EXECUTABLE``, ``MPIEXEC_PREFLAGS`` or
-``CPMD_TEST_NPROCS`` to change that. These are smoke tests for the build, not
-a replacement for the CPMD regression test suite
-(https://github.com/CPMD-code/Regtests).
+``ctest --test-dir build`` runs a few short calculations and compares the
+last total energy of each with a reference value: a smoke test in ``tests/``
+and the regression tests used by CI in ``.github/tests/`` (registered in
+``.github/tests/tests.cmake``, pseudopotentials in ``.github/tests/pseudo/``).
+They cover wavefunction optimisation (ODIIS, PCG, LSD, PBE, k-points, CP
+groups), restarting, geometry optimisation, BO and CP molecular dynamics
+and, with ``CPMD_ENABLE_VDWLIB``, the Grimme D3 correction. MPI builds run
+them with ``mpiexec -n 2``; set ``MPIEXEC_EXECUTABLE``, ``MPIEXEC_PREFLAGS``
+or ``CPMD_TEST_NPROCS`` to change that, and ``CPMD_TEST_NTHREADS`` for the
+number of OpenMP threads per process (default 1). These tests check that the
+build works and that results do not change; they are not a replacement for
+the CPMD regression test suite (https://github.com/CPMD-code/Regtests).
+
+FFTW3 builds take much longer to run the tests (about a minute each) because
+CPMD creates its FFTW plans with ``FFTW_EXHAUSTIVE``.
 
 The GitHub Actions workflow ``.github/workflows/cmake.yml`` builds CPMD with
-the gfortran versions of the Ubuntu runner and runs the tests.
+the gfortran versions of the Ubuntu runner (native configuration with MPI,
+with FFTW3, with the scratch and vdW libraries and two OpenMP threads, and
+one ``configure/`` file) and runs the tests.
 
 Layout of the build
 ~~~~~~~~~~~~~~~~~~~
