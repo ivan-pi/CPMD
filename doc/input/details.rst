@@ -598,17 +598,36 @@ Skip atom type and use default minimal slater function
 
 ``nshell`` is the number L-values  ``l1 l2 .. lx``  to be used.
 
-``[f1 f2 ... ]`` is their occupation.
+``[f1 f2 ... ]`` is their occupation. If :kw:`CDFT` with the ``HDA``
+option is active, a second line with occupations is read after the first one
+(for every basis type that uses OCCUPATION); these occupations are used to
+reset the initial occupations when the CDFT optimizers are re-initialized.
 
 The format **PSEUDO AO** refers to the &WAVEFUNCTION section on the
-corresponding pseudopotential file.
+corresponding pseudopotential file. For Vanderbilt ultrasoft
+pseudopotentials the pseudo-atomic wavefunctions stored in the Vanderbilt
+file are used instead of a ``&WAVEFUNCTION`` section.
 
 With a L-value of -1 a specific function can be skipped.
 
-The \* for the numerical basis has to be in the first column. The default
+A line is taken as a numerical (or Gaussian) basis entry if it contains a
+\* anywhere (it does not have to be in the first column); a line containing
+``SLATER`` is, however, always taken as a Slater basis entry. The file is
+searched in the pseudopotential library directory. The default
 format is 1, other possible formats are 2 and 3. The numbers correspond to the
 format numbers in the old pseudopotential definitions for the atomic
-wavefunctions.
+wavefunctions:
+
+- FORMAT=1 (default): first line ``mesh clog``, then ``mesh`` lines with
+  the radius and the ``nshell`` radial functions.
+- FORMAT=2: unformatted file, one record per shell containing ``mesh clog``
+  and the pairs (r, f(r)).
+- FORMAT=3: one comment line, then for each shell a line ``mesh clog``
+  followed by ``mesh`` lines with r and f(r).
+
+A value of ``clog`` larger than 1 is interpreted as the grid ratio and its
+logarithm is taken. The functions are interpolated to a 256-point
+logarithmic grid.
 
 The format **GAUSSIAN** allows to use any linear combination of Gaussian
 functions. The format of the file is as follows:
@@ -616,10 +635,11 @@ functions. The format of the file is as follows:
 ::
 
    Comment line
-   Lmax
-   (for each l value)
+   number of l values (Lmax+1)
+   (for each l = 0 ... Lmax)
      Comment line
      # of functions; # of exponents
+     Comment line
      exp1 exp2 ... expn
      c11  c21      cn1
      c12  c22      cn2

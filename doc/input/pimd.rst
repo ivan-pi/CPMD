@@ -27,7 +27,8 @@ Keywords
    adiabaticity control parameter FACSTAGE, which makes the non-centroid modes
    artificially fast in order to sample adiabatically the quantum fluctuations,
    has to be chosen carefully; note that FACSTAGE :math:`= 1/\gamma` as introduced
-   in Ref. [aicmd]_ in eq. (2.51).
+   in Ref. [aicmd]_ in eq. (2.51). The abbreviation ``CMD`` is also
+   accepted.
 
 .. keyword:: CLASSICAL TEST
    :section: &PIMD
@@ -53,7 +54,8 @@ Keywords
    :math:`P` normal modes in three dimensions, see
    e.g. Ref. [Tuckerman96]_. This option does only specify the
    generation of the initial configuration if INITIALIZATION and GENERATE REPLICAS
-   are active. Default is DEBROGLIE CENTROID and 500 Kelvin.
+   are active. Default is DEBROGLIE CENTROID and 500 Kelvin. ``CENTROIDS``
+   is accepted as an alias of ``CENTROID``.
 
 .. keyword:: FACMASS
    :section: &PIMD
@@ -118,7 +120,7 @@ Keywords
    is PARENT to standard output file (Note: some information such as messages for
    correct reading / writing of restart files is lost); GROUPS and ALL write to
    the files OUTPUT\_\ :math:`n` where :math:`n` is the group and bead number,
-   respectively.
+   respectively. ``GROUP`` is accepted as an alias of ``GROUPS``.
 
 .. keyword:: PRINT LEVEL
    :section: &PIMD
@@ -164,7 +166,7 @@ Keywords
    Ref. [Craig2004]_ but just T as in the standard path integral and
    centroid MD. Note that RPMD in the staging mode representation is not supported
    and the generalized Langevin thermostat is available in the normal mode
-   representation only.
+   representation only. The abbreviation ``RPMD`` is also accepted.
 
 .. keyword:: STAGING
    :section: &PIMD

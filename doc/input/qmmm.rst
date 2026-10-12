@@ -55,6 +55,17 @@ Keywords
          MXEX14 373
        END ARRAYSIZES
 
+   Accepted labels (matched as substrings, so the order of the tests
+   matters): ``MAXNAT``, ``MAXNDR``, ``MAXCON``, ``MFORCE``, ``MAXANG``,
+   ``JRCNJA``, ``IVECT``, ``MXGGRP``, ``MAXGP``, ``MAXATT`` (alias ``NRATT``),
+   ``MAXAA2``, ``MAXNRP``, ``MAXNBT``, ``MAXBNH``, ``MAXBON``, ``MAXTTY``,
+   ``MXQHEH``, ``MAXTH`` (sets MAXTHE), ``MAXQTY``, ``MAXHIH``, ``MAXQHI``,
+   ``MAXPTY``, ``MXPHIH``, ``MAXPHI``, ``MAXCAG``, ``MAXAEX``, ``MXEX14``,
+   ``MAXNRS``, ``MXCONS``, ``MAXINB``, ``MAXJNB``, ``MAXJ``, ``MAXP``.
+   Unknown labels and unparsable lines produce a warning and are skipped.
+   Non-positive values produce the warning ``ILLEGAL VALUE ... IGNORED``,
+   but are nevertheless assigned.
+
 .. keyword:: BOX TOLERANCE
    :section: &QMMM
    :notes: (mandatory)
@@ -67,7 +78,7 @@ Keywords
    properly anymore. This value may need to be adjusted to the requirements of the
    Poisson solver used (see section :ref:`hints:symm0`).
 
-   **Default** value is 8 a.u.
+   **Default** value is 7 a.u.
 
 .. keyword:: BOX WALLS
    :target: BOX WALLS QMMM
@@ -246,35 +257,48 @@ Keywords
    :notes: (mandatory)
 
    Input block for the QM/MM forcematching. A general description is given in
-   section :ref:`sec:forcematch-desc`.
+   section :ref:`sec:forcematch-desc`. The sub-keywords are matched as
+   substrings of the line; lines inside the block that match no sub-keyword
+   are ignored silently (including a value line that belongs to a
+   misspelled sub-keyword).
 
    **READ REF FORCES [FILE,COVALENT]**
 
-   | Flag to read the QM/MM reference forces directly from the file FM_REF_FORCES,
-     i.e. no QM/MM SPs are computed. **Default**: false. An alternative file name
-     can be specified on the next line with the option **FILE**. With the option
-     **COVALENT** covalent forces are read from the file FM_REF_COVFORCES.
-   | **READ REF TRAJ [FILE]**
+   Flag to read the QM/MM reference forces directly from the file
+   FM_REF_FORCES, i.e. no QM/MM SPs are computed. **Default**: false. An
+   alternative file name can be specified on the next line with the option
+   **FILE**. With the option **COVALENT** covalent forces are read from the
+   file FM_REF_COVFORCES.
+
+   **READ REF TRAJ [FILE]**
 
    Read reference trajectory from file TRAJECTORY_REF (or set the **FILE** option
    to read a non-default file name from the next line) with a given stride and
    compute single points on the respective frames.
 
+   **COMPUTE REF TRAJ**
+
+   Requests the computation of the reference trajectory. Not implemented:
+   the run stops with ``Computing reference trajectory not yet implemented``.
+
    **RESTART SP**
 
-   | If in a previous force matching run not all of the SPs could be computed
-     (e.g. limited wall time) this flag indicates cpmd to restart the SP
-     calculations. The FM_REF\* files from the previous run have to be present and
-     they will be appended. With this option make sure that the frames contained
-     in the already existing FM_REF\* files are consistent. **Default**: false.
-   | **READ REF STRIDE**
+   If in a previous force matching run not all of the SPs could be computed
+   (e.g. limited wall time) this flag indicates cpmd to restart the SP
+   calculations. The FM_REF\* files from the previous run have to be present and
+   they will be appended. With this option make sure that the frames contained
+   in the already existing FM_REF\* files are consistent. **Default**: false.
+
+   **READ REF STRIDE**
 
    Stride to apply when reading the TRAJECTORY_REF file is read from the next
-   line. Default=1, i.e. every frame is used for the SP calculations.
+   line. **Default**\ =1, i.e. every frame is used for the SP calculations.
 
    **TOPOL OUT**
 
-   Filename for the final topology file. **Default**: FMATCH.top.
+   Filename for the final topology file, read from the next line.
+   **Default**: FMATCH.top. Any line containing ``TOPOL`` and ``OUT`` is
+   accepted.
 
    **INITWF [OFF]**
 
@@ -294,13 +318,29 @@ Keywords
      of charges to be fixed has to be given and then the corresponding number of
      lines with: gromos index     charge.
 
-   **MV**
+   **OPT QFIT WEIGHTS**
 
-   Weight on the potential in the charge fitting. **Default**\ =0.1.
+   Determine the weights of the charge fit automatically (any line
+   containing ``OPT``, ``QFIT`` and ``WEIGHT`` is accepted). This is the
+   **default**; it is switched off by any of **WV**, **WF**,
+   **WQ INDIVIDUAL** or **WQ GENERAL**. The automatic weights are
+   :math:`w_V = 1/\sqrt{\sum V^2}`, :math:`w_F = 1/\sqrt{\sum F^2}` (sums over
+   all frames and NN atoms) and :math:`w_{tot} = 10^9`, which replaces any
+   value given with **WTOT**. The charge-restraint weights stay at the
+   **WQ GENERAL** default of 0.1 (``qfit_optimize_weights`` also assigns
+   0.01 to the per-atom array ``fm_wq``, but only after the weights actually
+   used, ``fm_wq_unique``, have been set up, so this has no effect).
+
+   **WV**
+
+   Weight on the potential in the charge fitting, read from the next line.
+   **Default**\ =1.0. Giving WV (or WF, WQ INDIVIDUAL, WQ GENERAL) switches
+   off the automatic determination of the weights (see **OPT QFIT WEIGHTS**).
 
    **WF**
 
-   Weight on the field in the charge fitting. **Default**\ =0.0.
+   Weight on the field in the charge fitting, read from the next line.
+   **Default**\ =0.0.
 
    **WQ INDIVIDUAL**
 
@@ -315,8 +355,10 @@ Keywords
 
    **WTOT**
 
-   Weight of the total charge contribution in the charge fitting.
-   **Default**\ =1.0E7.
+   Weight of the total-charge constraint in the charge fitting, read from
+   the next line. **Default**\ =1.0E6. Note that with the default automatic
+   weights (no WV, WF, WQ INDIVIDUAL or WQ GENERAL given) the value is
+   replaced by 1.0E9.
 
    **EQUIV**
 
@@ -330,7 +372,7 @@ Keywords
    | ``...``
    | ``atom5   atom7``
 
-   There are *``n_equiv``* equivalencies specified (``n_equiv`` lines are read
+   There are ``n_equiv`` equivalencies specified (``n_equiv`` lines are read
    from the input). For each pair of equivalencies the gromos indexes have to be
    specified on one separate line. The lower index has to be given first!
 
@@ -370,17 +412,48 @@ Keywords
 
    Do not fit improper dihedrals. **Default**\ =false.
 
-   **MAXITER**
+   **FMCAP**
 
-   Give on the next line the maximal number of iterations for the non-linear
-   fitting procedure of the bonded interactions. **Default**\ =500.
+   Declares capping hydrogens for the force matching. The number of pairs is
+   read from the next line, followed by one line per pair with the Gromos
+   index of the capping hydrogen and the Gromos index of the capped atom. The
+   Hirshfeld charge of each capping hydrogen is added to its capped atom, the
+   capping hydrogen is excluded from the charge fit, and its reference force
+   is added to that of the capped atom.
+
+   **MAXITER LM**
+
+   The maximal number of iterations of the non-linear (Levenberg-Marquardt)
+   fit of the bonded parameters is read from the next line.
+   **Default**\ =500. The word ``LM`` is required; with ``MAXITER`` alone the
+   next line is skipped and the default is kept.
 
    **COMPUTE RMS [NO]**
 
    Per default the RMS on the forces is computed after the fitting has been
-   completed. Switch it off with the **NO** option. Example:
+   completed. Switch it off with the **NO** option.
 
-   ::
+   **FM_EXCLUDE**
+
+   The number of atoms is read from the next line, followed by one Gromos
+   atom index per line. These atoms are excluded from the NN/ESP lists of the
+   electrostatic coupling during force matching (label ``lab_DM`` in
+   ``mm_nlist``), which the output reports as "excluded from charge
+   fitting" (e.g. MM atoms close to capping hydrogens).
+
+   **CLASSICAL**
+
+   Debugging option: sets the classical-only flag (no QM calculation). Force
+   matching stops after the charge fit with ``no force matching in a
+   classical run``.
+
+   .. todo::
+
+      MISSING: literature reference for the automatic weights and
+      FM_EXCLUDE use cases; confirm that LM stands for Levenberg-Marquardt
+      (the code only tests the letters LM).
+
+   Example::
 
        FORCEMATCH
          READ REF TRAJ FILE
@@ -389,7 +462,7 @@ Keywords
            10
          WV
          1.0
-         WOT
+         WTOT
          1000000.0
          WQ GENERAL
          0.1
@@ -423,13 +496,19 @@ Keywords
 
 .. keyword:: HIRSHFELD
    :section: &QMMM
-   :options: [ON,OFF]
+   :options: [OFF]
    :notes: (mandatory)
 
-   With this option, restraints to Hirshfeld charges [Hirshfeld77]_
-   can be turned on or off
+   Restraints to Hirshfeld charges [Hirshfeld77]_ are used by default.
+   ``HIRSHFELD OFF`` switches them off (the Hirshfeld charges are then set
+   to zero). **Default** is ON.
 
-   **Default** value is ON.
+   .. warning::
+
+      Only a line containing both ``HIRSHFELD`` and ``OFF`` is recognized;
+      the form ``HIRSHFELD ON`` is not recognized and only produces the
+      warning ``UNRECOGNIZED LINE IN &QMMM SECTION`` (harmless, since ON is
+      the default).
 
 .. keyword:: INPUT
    :section: &QMMM
@@ -450,7 +529,7 @@ Keywords
    the QM/MM interface code to avoid confusion with the MAXNAT keyword in the
    :kw:`ARRAYSIZES ... END ARRAYSIZES` block.)
 
-   **Default** value is 5000.
+   **Default** value is 6000.
 
 .. keyword:: NOSPLIT
    :section: &QMMM
@@ -522,7 +601,7 @@ Keywords
    DCD the file TRAJ_INT.dcd is also written to. if the sampling rate is negative,
    then **only** the TRAJ_INT.dcd is written.
 
-   **Default** value is 5 for MD calculations and OFF for others.
+   **Default** value is 10 for MD calculations and OFF for others.
 
 .. keyword:: SCALE14
    :section: &QMMM
@@ -589,6 +668,11 @@ Keywords
 
    **Default** value is 100.
 
+   .. warning::
+
+      UPDATE LIST must be given after :kw:`ELECTROSTATIC COUPLING`, which
+      resets the value to 100.
+
 .. keyword:: VERBOSE
    :section: &QMMM
    :notes: (mandatory)
@@ -623,9 +707,9 @@ Keywords
 
    The Temperatures of the QM subsystem, the MM solute (without the QM atoms) and
    the solvent (if present) are calculated separately and written to the standard
-   output and a file ``QM_TEMP``. The file has 5 columns containing the QM
-   temperature, the MM temperature, the solvent temperature (or 0.0 if the solvent
-   is part of the solute), and the total temperature in that order. With the
+   output and a file ``QM_TEMP``. The file has 5 columns: the MD step number,
+   the QM temperature, the MM temperature, the solvent temperature (or 0.0 if
+   the solvent is part of the solute), and the total temperature. With the
    optional parameters STEP followed by an integer, this is done only every
    ``nfi_lt`` timesteps.
 

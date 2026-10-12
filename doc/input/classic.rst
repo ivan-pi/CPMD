@@ -59,6 +59,33 @@ Keywords
 .. keyword:: FORCE FIELD ... END FORCE FIELD
    :section: &CLASSIC
 
+   Block with the classical force-field parameters, terminated by a line
+   containing ``END`` and ``FORCE``. Each line starts with a tag:
+
+   - ``R12 lab1 lab2 a rc``: purely repulsive :math:`(a/R)^{12}` pair
+     potential between classical atom types with labels ``lab1`` and
+     ``lab2`` (the ``LABEL=`` values of the ``CLASSIC`` species in
+     ``&ATOMS``, at most 4 characters), parameter ``a`` and cutoff radius
+     ``rc``. The parameters are stored symmetrically. Pairs in which both
+     atoms are quantum atoms are skipped.
+   - ``LJ``: recognized but ignored (not implemented).
+
+   Lines with other tags are ignored.
+
+   Example::
+
+      FORCE FIELD
+        R12 Ar Ar 6.0 15.0
+      END FORCE FIELD
+
+   .. todo::
+
+      MISSING: units of ``a`` and ``rc`` (presumably Bohr) and the exact
+      energy expression (``sigmasq`` = :math:`a^2` is used in
+      ``clas_force``).
+
+.. source: src/readff_utils.mod.F90:24
+
 .. keyword:: FREEZE QUANTUM
    :section: &CLASSIC
 
@@ -67,8 +94,16 @@ Keywords
 
 .. keyword:: FULL TRAJECTORY
    :section: &CLASSIC
+   :options: {SAMPLE}
 
-   Not documented
+   Writes the coordinates and velocities of all classical atoms to the
+   unformatted file ``CLASSIC`` (six single-precision numbers per atom) during
+   a classical-force-field MD run. With ``SAMPLE`` the output interval ``n``
+   in MD steps is read from the next line (**default** 1); a frame is written
+   whenever :math:`\mathrm{mod}(n_{fi}-1, n) = 0`. Any line containing
+   ``FULL`` and ``TRAJ`` is accepted.
+
+.. source: src/cl_init_utils.mod.F90:107
 
 .. keyword:: MOVIE
    :target: MOVIE CLASSIC
@@ -93,9 +128,15 @@ Keywords
 .. keyword:: PRINT COORDINATES
    :section: &CLASSIC
 
-   Not documented
+   Prints the coordinates of all classical atoms (index, label, QM species
+   index, x, y, z) to the standard output at the start and at the end of a
+   classical-force-field MD run. Any line containing ``PRINT`` and ``COORD``
+   is accepted.
 
 .. keyword:: PRINT FF
    :section: &CLASSIC
 
-   Not documented
+   Prints the parameters of the force field read in
+   :kw:`FORCE FIELD ... END FORCE FIELD` (for the :math:`(a/R)^{12}` potential:
+   the pair of atom labels, the parameter and the cutoff RC) to the standard
+   output. Any line containing ``PRINT`` and ``FF`` is accepted.
