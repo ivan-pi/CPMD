@@ -293,22 +293,6 @@ Keywords
 
    The keyword has to appear after :kw:`FREE ENERGY FUNCTIONAL`.
 
-.. keyword:: BOX WALLS
-   :section: &CPMD
-
-   The thickness parameter for soft, reflecting QM-box walls is read from the next
-   line. This keyword allows to reverse the momentum of the particles
-   (:math:`{\bf p}_I \rightarrow -{\bf p}_I`) when they reach the walls of the
-   simulation supercell in the case in which no periodic boundary conditions are
-   applied. Specifically, in the unidimensional surface-like case, molecules
-   departing from the surface are reflected back along the direction orthogonal to
-   the surface, whereas in the bidimensional polymer-like case, they are reflected
-   back in the two dimensions orthogonal to the "polymer" axis. Warning: This
-   procedure, although keeping your particles inside the cell, affect the momentum
-   conservation.
-
-   This feature is **disabled by default**
-
 .. keyword:: BROKEN SYMMETRY
    :section: &CPMD
 
@@ -2192,26 +2176,6 @@ Keywords
    ionic gradient drops below the value read from the next line, the implicit
    Newton-Raphson method takes over (output: ``INR STARTING AFTER GNMAX =
    ...``).
-
-.. keyword:: MODIFIED GOEDECKER
-   :section: &CPMD
-   :alternatives: [PARAMETERS]
-
-   To be used in combination with :kw:`LOW SPIN EXCITATION` **ROKS**.
-
-   Calculation of the off-diagonal Kohn-Sham matrix elements :math:`F_{AB}` and
-   :math:`F_{BA}` (with A, B: ROKS-SOMOs) is performed according to a modified
-   Goedecker-Umrigar scheme (
-   :math:`F_{AB} := (1-\lambda _{AB})F_{AB} + \lambda _{AB} F_{BA}` and
-   :math:`F_{BA} := (1-\lambda _{BA})F_{BA} + \lambda _{BA} F_{AB}` ). Default
-   values are :math:`\lambda _{AB}=-0.5` and :math:`\lambda _{BA}=0.5`. see
-   Ref. [GrimmJCP2003]_.
-
-   With the optional keyword **PARAMETERS**: :math:`\lambda _{AB}` and
-   :math:`\lambda _{BA}` are read from the next line. Can be used to avoid
-   unphysical rotation of the SOMOs. Always check the orbitals!
-
-   See also :ref:`hints:roks`.
 
 .. keyword:: MOLECULAR DYNAMICS
    :section: &CPMD
@@ -4326,7 +4290,8 @@ Keywords
    parameters between the opening and closing section keywords EMPIRICAL
    CORRECTION and END EMPIRICAL CORRECTION. Note that the two possible vdW
    options, EMPIRICAL CORRECTION and WANNIER CORRECTION are mutually exclusive.
-   See :kw:`VDW PARAMETERS` for more details.
+   See :kw:`EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION` for more
+   details.
 
    The empirical correction cannot be combined with
    :kw:`KOHN-SHAM ENERGIES`; the run stops with ``vdWc incompatible with KS``

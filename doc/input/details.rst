@@ -55,11 +55,20 @@ The general format for entering the pseudo potentials in the input file is:
          (version 7.3.0 or newer).
 
       -  The label **CLASSIC** indicates that the following atoms are to be
-         treated with classical force fields only. See section &CLASSIC for
-         more information.
+         treated with classical force fields only. See section
+         :doc:`&CLASSIC <classic>` for more information. The options
+         ``LABEL=xxxx`` (four characters) and ``MASS=m`` are then required
+         on the same line, otherwise the program stops. If classical atoms
+         are present, each quantum species line must also carry
+         ``LABEL=xxxx``.
+
+      -  The label **NONE** requests a bare all-electron Coulomb potential
+         ("FULL Potential") instead of a pseudopotential. No file is read;
+         the name after ``*`` must be the element symbol (one or two
+         characters), and the valence charge is set to the atomic number.
 
       -  The label **\_EAM\_** indicates that the following atoms are treated
-         using the EAM approach.
+         using the EAM approach (see :doc:`&EAM <eam>`).
 
       -  The label **FRAC** indicates that the core charge of a pseudopotential
          should not be rounded for the calculation of the number of electrons
@@ -677,5 +686,7 @@ described by M. Elstner *et al.*\ [Elstner]_ requires parameter
 sets designed to use only in conjunction with a specific corresponding density
 functional, the alternate parametrization by
 S. Grimme\ [Grimme06]_ is less specific and therefore easier to
-use and independent of the chose functional. Parameters for elements up to Xe
-have been directly coded into CPMD. See the description of the keyword :kw:`VDW PARAMETERS` for more details regarding custom input.
+use and independent of the chosen functional. Parameters for the elements H
+to Rn have been coded into CPMD. See the description of the keyword
+:kw:`EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION` for more details
+regarding custom input.

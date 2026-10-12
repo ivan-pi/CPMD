@@ -47,6 +47,25 @@ Keywords
    **Default** is **atomic units** which are always used internally. Not supported
    for :kw:`QMMM` calculations.
 
+.. keyword:: BOX WALLS
+   :section: &SYSTEM
+
+   The thickness parameter for soft, reflecting QM-box walls is read from the next
+   line. This keyword allows to reverse the momentum of the particles
+   (:math:`{\bf p}_I \rightarrow -{\bf p}_I`) when they reach the walls of the
+   simulation supercell in the case in which no periodic boundary conditions are
+   applied. Specifically, in the unidimensional surface-like case, molecules
+   departing from the surface are reflected back along the direction orthogonal to
+   the surface, whereas in the bidimensional polymer-like case, they are reflected
+   back in the two dimensions orthogonal to the "polymer" axis. Warning: This
+   procedure, although keeping your particles inside the cell, affects the momentum
+   conservation.
+
+   **Default** thickness is 7.0 (atomic units; the value is not converted
+   by :kw:`ANGSTROM`).
+
+   This feature is **disabled by default**
+
 .. keyword:: CELL
    :section: &SYSTEM
    :options: {ABSOLUTE, DEGREE, VECTORS}
@@ -159,7 +178,7 @@ Keywords
 
 .. keyword:: COUPLINGS LINRES
    :section: &SYSTEM
-   :options: {BRUTE FORCE,NVECT=n}
+   :options: {BRUTE FORCE,NVECT=n [SPECIFY]}
    :alternatives: [THR,TOL]
 
    Calculate non-adiabatic couplings [nonadiabatic]_ using
@@ -177,7 +196,7 @@ Keywords
    :kw:`COUPLINGS NSURF`. ``THRESHOLDS`` is accepted as an alias of ``THR``.
 
    Together with ``NVECT=n`` the option ``SPECIFY`` reads the start vectors
-   from a separate ``&VECTORS`` section: the first line of that section is a
+   from a separate :doc:`&VECTORS <vectors>` section: the first line of that section is a
    header (if it contains ``FIXED``, the first vector is not read), followed by
    the vectors, each with :math:`3 N_\text{at}` components; the vectors are
    normalized by the program.
@@ -447,6 +466,28 @@ Keywords
 
    **Default** are the **minimal values** compatible with the energy cutoff and
    the **FFT** requirements.
+
+.. keyword:: MODIFIED GOEDECKER
+   :section: &SYSTEM
+   :alternatives: [PARAMETERS]
+
+   To be used in combination with :kw:`LOW SPIN EXCITATION` **ROKS**; without
+   it the program stops. The alias ``PARAMETER`` is also accepted for
+   ``PARAMETERS``.
+
+   Calculation of the off-diagonal Kohn-Sham matrix elements :math:`F_{AB}` and
+   :math:`F_{BA}` (with A, B: ROKS-SOMOs) is performed according to a modified
+   Goedecker-Umrigar scheme (
+   :math:`F_{AB} := (1-\lambda _{AB})F_{AB} + \lambda _{AB} F_{BA}` and
+   :math:`F_{BA} := (1-\lambda _{BA})F_{BA} + \lambda _{BA} F_{AB}` ). Default
+   values are :math:`\lambda _{AB}=-0.5` and :math:`\lambda _{BA}=0.5`. see
+   Ref. [GrimmJCP2003]_.
+
+   With the optional keyword **PARAMETERS**: :math:`\lambda _{AB}` and
+   :math:`\lambda _{BA}` are read from the next line. Can be used to avoid
+   unphysical rotation of the SOMOs. Always check the orbitals!
+
+   See also :ref:`hints:roks`.
 
 .. keyword:: MULTIPLICITY
    :section: &SYSTEM
