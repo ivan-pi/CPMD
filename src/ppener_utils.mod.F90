@@ -77,11 +77,6 @@ CONTAINS
     ENDIF
     !$omp  parallel do private(IG,VP,RP,RHET,RHOG,RHETS,RHOGS,VCG) &
     !$omp  reduction(+:EH,EI,EE,EPS)
-#ifdef __SR8000
-    !poption parallel
-    !poption tlocal(IG,VP,RP,RHET,RHOG,RHETS,RHOGS,VCG)
-    !poption psum(EH,EI,EE,EPS)
-#endif 
     DO ig=ig1,ncpw%nhg
        ! ==------------------------------------------------------------==
        ! == In VTEMP it is stored temporarily the potential in G-space.==

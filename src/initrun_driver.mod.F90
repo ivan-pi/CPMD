@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE initrun_driver
   USE ainitwf_utils,                   ONLY: ainitwf
   USE andp,                            ONLY: rin0,&
@@ -95,11 +97,12 @@ CONTAINS
     ! == Initialization of a run (read from RESTART file or not)      ==
     ! ==--------------------------------------------------------------==
 
-    INTEGER                                  :: irec(:)
-    COMPLEX(real_8)                          :: c0(:,:,:), cm(*), sc0(*)
-    REAL(real_8)                             :: rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
-    REAL(real_8)                             :: eigv(*)
+    INTEGER,INTENT(OUT) __CONTIGUOUS         :: irec(:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: c0(:,:,:)
+    COMPLEX(real_8),INTENT(OUT)              :: cm(*), sc0(*)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS    :: rhoe(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS :: psi(:,:)
+    REAL(real_8),INTENT(OUT)                 :: eigv(*)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'initrun'
 

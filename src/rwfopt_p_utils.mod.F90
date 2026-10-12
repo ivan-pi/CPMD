@@ -220,7 +220,7 @@ CONTAINS
        ALLOCATE(pme(nkpt%ngwk,cnti%mdiis*nstate),STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
             __LINE__,__FILE__)
-       ALLOCATE(gde(nkpt%ngwk,cnti%mdiis*nstate/4),STAT=ierr)
+       ALLOCATE(gde(nkpt%ngwk,cnti%mdiis*nstate),STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
             __LINE__,__FILE__)
        CALL zeroing(pme)!,nkpt%ngwk*nstate*cnti%mdiis)
@@ -247,7 +247,7 @@ CONTAINS
        time2 =m_walltime()
        tcpu=(time2-time1)*1.e-3_real_8
        IF (paral%io_parent)&
-            WRITE(6,'(a,f8.2,a8)') ' TIME FOR INITIALIZATION:',&
+            WRITE(6,'(a,f9.2,a8)') ' TIME FOR INITIALIZATION:',&
             tcpu,' SECONDS'
     ENDIF
     ! ==--------------------------------------------------------------==

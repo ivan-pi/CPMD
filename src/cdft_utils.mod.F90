@@ -15,6 +15,7 @@ MODULE cdft_utils
                                              pi
   USE coor,                            ONLY: tau0
   USE cppt,                            ONLY: nzh
+  USE loadpa_utils,                    ONLY: leadim
   USE elct,                            ONLY: crge
   USE ener,                            ONLY: ener_com
   USE error_handling,                  ONLY: stopgm
@@ -855,10 +856,10 @@ CONTAINS
        WRITE(6,'(1X,64("-"),/)')
        WRITE(6,'(1X,A)') '*** CDFT FINAL RESULTS ***'
        IF (.NOT.cdftlog%tcall) THEN
-          WRITE(6,'(2X,A,T54,D10.4)') "FINAL V: ",cdftcom%oldv(1)
+          WRITE(6,'(2X,A,T54,D11.4)') "FINAL V: ",cdftcom%oldv(1)
        ELSE
-          WRITE(6,'(2X,A,T54,D10.4)') "FINAL V: ",cdftcom%oldv(1)
-          WRITE(6,'(2X,T54,D10.4)') cdftcom%oldv(2)
+          WRITE(6,'(2X,A,T54,D11.4)') "FINAL V: ",cdftcom%oldv(1)
+          WRITE(6,'(2X,T54,D11.4)') cdftcom%oldv(2)
        ENDIF
        WRITE(6,'(2X,A,T54,E10.2E1)') "VGRAD: ",finalchrg(2)-&
             finalchrg(1)-cdftcom%cdft_nc
@@ -893,7 +894,7 @@ CONTAINS
 
     COMPLEX(real_8), ALLOCATABLE             :: w2(:), wtemp(:)
     INTEGER                                  :: i, ierr, il, ip, ipp, j, k, &
-                                                ml, zslice
+                                                ml, mlorg, zslice
     REAL(real_8)                             :: da1(3,3), ws
     REAL(real_8), ALLOCATABLE                :: wbuff(:), wfull(:,:,:)
 
@@ -962,15 +963,15 @@ CONTAINS
           IF (paral%parent)THEN
              DO ipp=1,parai%nproc
                 ip=parap%pgroup(ipp)
-                ml=parap%sparm(5,ip)
-                ml=ml+MOD(ml+1,2)
+                mlorg=parap%sparm(5,ip)
+                CALL leadim(nr1=mlorg,kr1=ml)
                 !msglen=(ml*kr2s*kr3s)*8
                 IF (ip.NE.parai%me) THEN
                    CALL mp_recv(wbuff,ml*fpar%kr2s*fpar%kr3s,ip,ip,parai%allgrp)
                    DO i=1,parap%sparm(5,ip)
                       DO j=1,fpar%kr2s
                          DO k=1,fpar%kr3s
-                            wfull(parap%nrxpl(ip,1)+i,j,k)&
+                            wfull(parap%nrxpl(ip,1)+i-1,j,k)&
                                  =wbuff(i+(j-1)*ml+(k-1)*ml*fpar%kr2)
                          ENDDO
                       ENDDO

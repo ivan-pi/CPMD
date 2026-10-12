@@ -1,3 +1,5 @@
+#include "cpmd_global.h"
+
 MODULE updwf_utils
   USE adapttol_utils,                  ONLY: tol_chk_cnvgrad
   USE forcedr_driver,                  ONLY: forcedr
@@ -13,6 +15,7 @@ MODULE updwf_utils
   USE mm_input,                        ONLY: clc
   USE mm_qmmm_forcedr_utils,           ONLY: mm_qmmm_forcedr
   USE norm,                            ONLY: gemax
+  USE odiis_utils,                     ONLY: odiis
   USE ortho_utils,                     ONLY: give_scr_ortho,&
                                              ortho,&
                                              preortho
@@ -52,14 +55,16 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! ==               UPDATES THE WAVEFUNCTIONS                      ==
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8)                          :: c0(:,:), c2(:,:), sc0(:,:)
-    REAL(real_8)                             :: tau0(:,:,:), fion(:,:,:)
-    COMPLEX(real_8)                          :: pme(*), gde(*)
-    REAL(real_8)                             :: vpp(nkpt%ngwk), rhoe(:,:)
-    COMPLEX(real_8)                          :: psi(:,:)
-    INTEGER                                  :: nstate
-    REAL(real_8)                             :: eigv(nstate)
-    LOGICAL                                  :: tfor, update_pot
+    COMPLEX(real_8),INTENT(INOUT) __CONTIGUOUS :: c0(:,:)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: c2(:,:), sc0(:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS    :: tau0(:,:,:)
+    REAL(real_8),INTENT(OUT) __CONTIGUOUS      :: fion(:,:,:), rhoe(:,:)
+    REAL(real_8),INTENT(OUT)                   :: vpp(nkpt%ngwk)
+    COMPLEX(real_8),INTENT(INOUT)              :: pme(*), gde(*)
+    COMPLEX(real_8),INTENT(OUT) __CONTIGUOUS   :: psi(:,:)
+    INTEGER,INTENT(IN)                         :: nstate
+    REAL(real_8),INTENT(OUT)                   :: eigv(nstate)
+    LOGICAL,INTENT(IN)                         :: tfor, update_pot
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'updwf'
 
@@ -81,7 +86,7 @@ CONTAINS
        CALL mm_dim(mm_go_qm,statusdummy)
     ELSE
        CALL forcedr(c0,c2,sc0,rhoe,psi,tau0,fion,eigv,&
-            nstate,1,.TRUE.,tfor)
+            nstate,1,.TRUE.,tfor,.TRUE.)
        IF (.NOT.tfor) THEN
           CALL zeroing(fion)!,3*maxsys%nax*maxsys%nsx)
        ENDIF
@@ -143,11 +148,10 @@ CONTAINS
              CALL zclean(c0,nstate,ncpw%ngw)
           ENDIF
        ELSE
-          CALL preortho(c0,nstate)
-          IF (pslo_com%tivan) THEN
-             CALL rnlsm(c0,nstate,1,1,.FALSE.)
-          ENDIF
-          CALL ortho(nstate,c0,c2)
+          IF (.NOT.pslo_com%tivan) THEN
+             CALL preortho(c0,nstate)
+             CALL ortho(nstate,c0,c2)
+          END IF
        ENDIF
     ENDIF
     ! ==--------------------------------------------------------------==

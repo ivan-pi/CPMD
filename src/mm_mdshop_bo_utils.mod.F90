@@ -105,7 +105,6 @@ MODULE mm_mdshop_bo_utils
   USE rattle_utils,                    ONLY: rattle
   USE resetac_utils,                   ONLY: resetac
   USE response_pmod,                   ONLY: dmbi
-  USE rhoofr_utils,                    ONLY: give_scr_rhoofr
   USE rhopri_utils,                    ONLY: give_scr_rhopri,&
                                              rhopri
   USE rinitwf_utils,                   ONLY: give_scr_rinitwf
@@ -114,7 +113,6 @@ MODULE mm_mdshop_bo_utils
   USE rk4ov_utils,                     ONLY: rk4ov_new,&
                                              rk4ov_old
   USE rmas,                            ONLY: rmass
-  USE rnlsm_utils,                     ONLY: give_scr_rnlsm
   USE ropt,                            ONLY: infi,&
                                              iteropt,&
                                              ropt_mod
@@ -550,16 +548,16 @@ CONTAINS
        IF (cntl%tdiag) THEN
           IF (cntl%tlanc) nx=1
           IF (cntl%tdavi) nx=nkpt%ngwk*cnti%ndavv*nkpt%nkpnt+1
-          IF (cntl%diis)  nx=((nkpt%ngwk*crge%n+8)*cnti%mdiis*nkpt%nkpnt)/4
+          IF (cntl%diis)  nx=((nkpt%ngwk*crge%n+8)*cnti%mdiis*nkpt%nkpnt)
        ELSEIF (cntl%tsde) THEN
           nx=1
        ELSEIF (cntl%diis) THEN
-          nx=(nkpt%ngwk*crge%n+8)*cnti%mdiis/2+4
+          nx=(nkpt%ngwk*crge%n+8)*cnti%mdiis+4
        ELSEIF (cntl%pcg) THEN
           nx=1
        ENDIF
-       nxs0=(nkpt%ngwk*sh02%nst_s0+8)*cnti%mdiis/2+4
-       nxs1=(nkpt%ngwk*sh02%nst_s1+8)*cnti%mdiis/2+4
+       nxs0=(nkpt%ngwk*sh02%nst_s0+8)*cnti%mdiis+4
+       nxs1=(nkpt%ngwk*sh02%nst_s1+8)*cnti%mdiis+4
        ifcalc=0
 
        ! Initialize Metadynamics contributions
@@ -1319,19 +1317,16 @@ CONTAINS
     INTEGER                                  :: lmmmdshopbo
     CHARACTER(len=30)                        :: tag
 
-    INTEGER :: lcalc_alm, lcopot, lforces_diag, lmoverho, lpropcal, lrhoofr, &
-      lrhopri, lrinitwf, lrnlsm, ltddft, nstate
+    INTEGER :: lcalc_alm, lcopot, lforces_diag, lmoverho, lpropcal, &
+      lrhopri, lrinitwf, ltddft, nstate
 
     nstate=crge%n
-    lrnlsm=0
     lcalc_alm=0
     lcopot=0
     lrhopri=0
     lmoverho=0
     ltddft=0
     CALL give_scr_rinitwf(lrinitwf,tag,nstate)
-    IF (pslo_com%tivan) CALL give_scr_rnlsm(lrnlsm,tag,nstate,.FALSE.)
-    CALL give_scr_rhoofr(lrhoofr,tag)
     IF (fint1%ttrot) CALL give_scr_calc_alm(lcalc_alm,tag)
     CALL give_scr_forces_diag(lforces_diag,tag,nstate,.TRUE.)
     IF (corel%tinlc) CALL give_scr_copot(lcopot,tag)
@@ -1339,7 +1334,7 @@ CONTAINS
     CALL give_scr_propcal(lpropcal,tag,nstate)
     IF (tmovr) CALL give_scr_moverho(lmoverho,tag)
     IF (cntl%tddft) CALL give_scr_lr_tddft(ltddft,.TRUE.,tag)
-    lmmmdshopbo=MAX(lrinitwf,lrnlsm,lrhoofr,lforces_diag,ltddft,&
+    lmmmdshopbo=MAX(lrinitwf,lforces_diag,ltddft,&
          lcopot,lcalc_alm,lrhopri,lpropcal,lmoverho)
     IF (cntl%tqmmm) lmmmdshopbo=MAX(lmmmdshopbo,fpar%kr1*fpar%kr2s*fpar%kr3s)
     IF (cntl%tqmmm) lmmmdshopbo=MAX(lmmmdshopbo,maxsys%nax*maxsys%nsx*3)

@@ -98,9 +98,6 @@ CONTAINS
 #ifdef __NEC
     !CDIR NODEP
 #endif
-#ifdef __SR8000
-    !poption parallel
-#endif
     DO ig=1,ncpw%nhg
        v(nzh(ig))=vtmp(ig)-parm%tpiba*gk(1,ig)*vtmp(ig)
        v(indz(ig))=CONJG(vtmp(ig)+parm%tpiba*gk(1,ig)*vtmp(ig))
@@ -125,9 +122,6 @@ CONTAINS
 #else 
     !ocl novrec(v)
     !$omp parallel do private(IG)
-#ifdef __SR8000
-    !poption parallel
-#endif
     DO ig=1,ncpw%nhg
        v(nzh(ig))=parm%tpiba*(uimag*gk(2,ig)-gk(3,ig))*vtmp(ig)
        v(indz(ig))=parm%tpiba*(-uimag*gk(2,ig)+gk(3,ig))*CONJG(vtmp(ig))

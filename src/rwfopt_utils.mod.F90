@@ -113,10 +113,12 @@ CONTAINS
   ! ==================================================================
   SUBROUTINE rwfopt(c0,c2,sc0,pme,gde,vpp,eigv)
     ! ==--------------------------------------------------------------==
-    COMPLEX(real_8), INTENT(inout)           :: c0(:,:,:), c2(:,:), sc0(:,:,:)
-    COMPLEX(real_8)                          :: pme(:), gde(:)
-    REAL(real_8)                             :: vpp(:), &
-                                                eigv(crge%n,nkpt%nkpts)
+    COMPLEX(real_8), INTENT(INOUT)&
+        __CONTIGUOUS                         :: c0(:,:,:), c2(:,:), sc0(:,:,:)
+    COMPLEX(real_8),INTENT(INOUT)&
+        __CONTIGUOUS                         :: pme(:), gde(:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: vpp(:)
+    REAL(real_8),INTENT(INOUT)               :: eigv(crge%n,nkpt%nkpts)
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'rwfopt'
     CHARACTER(len=11), PARAMETER             :: filename = 'LOCPOT.cube'

@@ -9,7 +9,8 @@ MODULE vofrhoa_utils
   USE error_handling,                  ONLY: stopgm
   USE fftmain_utils,                   ONLY: fwfftn
   USE htrstr_utils,                    ONLY: htrstr
-  USE kinds,                           ONLY: real_8
+  USE kinds,                           ONLY: real_8,&
+                                             int_8
   USE mp_interface,                    ONLY: mp_sum
   USE nvtx_utils
   USE parac,                           ONLY: parai
@@ -27,7 +28,10 @@ MODULE vofrhoa_utils
                                              tiset
   USE vlocst_utils,                    ONLY: vlocst
   USE zeroing_utils,                   ONLY: zeroing
-
+#ifdef _USE_SCRATCHLIBRARY
+  USE scratch_interface,               ONLY: request_scratch,&
+                                             free_scratch
+#endif
   IMPLICIT NONE
 
   PRIVATE
@@ -50,16 +54,23 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     ! EHR[
     ! EHR]
-    REAL(real_8)                             :: tau0(:,:,:), fion(:,:,:), &
+    REAL(real_8),INTENT(IN) __CONTIGUOUS     :: tau0(:,:,:)
+    REAL(real_8),INTENT(INOUT) __CONTIGUOUS  :: fion(:,:,:), &
                                                 rhoe(:)
-    COMPLEX(real_8)                          :: v(:), vtemp(:)
-    LOGICAL                                  :: tfor, tstress
+    COMPLEX(real_8),INTENT(INOUT)&
+         __CONTIGUOUS                        :: v(:), vtemp(:)
+    LOGICAL,INTENT(IN)                       :: tfor, tstress
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'vofrhoa'
 
     COMPLEX(real_8)                          :: ee, eh, ei, eps
+#ifdef _USE_SCRATCHLIBRARY
+    COMPLEX(real_8), POINTER __CONTIGUOUS    :: eirop(:), eivps(:)
+#else
     COMPLEX(real_8), ALLOCATABLE             :: eirop(:), eivps(:)
+#endif
     INTEGER                                  :: ierr, isub, nnrs
+    INTEGER(int_8)                           :: il_eivps(1), il_eirop(1)
     REAL(real_8)                             :: ehs
 
 ! Variables
@@ -68,14 +79,23 @@ CONTAINS
 
     CALL tiset(procedureN,isub)
     __NVTX_TIMER_START ( procedureN )
+    il_eirop(1)=ncpw%nhg
+    il_eivps(1)=ncpw%nhg
 
-    ALLOCATE(eivps(ncpw%nhg),STAT=ierr)
+#ifdef _USE_SCRATCHLIBRARY
+    CALL request_scratch(il_eivps,eivps,procedureN//'_eivps',ierr)
+#else
+    ALLOCATE(eivps(il_eivps(1)),STAT=ierr)
+#endif
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
          __LINE__,__FILE__)
-    ALLOCATE(eirop(ncpw%nhg),STAT=ierr)
+#ifdef _USE_SCRATCHLIBRARY
+    CALL request_scratch(il_eirop,eirop,procedureN//'_eirop',ierr)
+#else
+    ALLOCATE(eirop(il_eirop(1)),STAT=ierr)
+#endif
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
          __LINE__,__FILE__)
-
     nnrs  = spar%nr1s*spar%nr2s*spar%nr3s
     CALL eicalc(eivps,eirop)
     ! ..External Field or forces of external potential
@@ -131,13 +151,20 @@ CONTAINS
        CALL vlocst(ener_com%epseu,v,eivps)
     ENDIF
 
-    DEALLOCATE(eivps,STAT=ierr)
-    IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
-         __LINE__,__FILE__)
+#ifdef _USE_SCRATCHLIBRARY
+    CALL free_scratch(il_eirop,eirop,procedureN//'_eirop',ierr)
+#else
     DEALLOCATE(eirop,STAT=ierr)
+#endif
     IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
          __LINE__,__FILE__)
-
+#ifdef _USE_SCRATCHLIBRARY
+    CALL free_scratch(il_eivps,eivps,procedureN//'_eivps',ierr)
+#else
+    DEALLOCATE(eivps,STAT=ierr)
+#endif
+    IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
+         __LINE__,__FILE__)
     __NVTX_TIMER_STOP
     CALL tihalt(procedureN,isub)
     ! ==--------------------------------------------------------------==

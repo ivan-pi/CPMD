@@ -18,6 +18,7 @@ MODULE control_def_utils
   USE fint,                            ONLY: fint1,&
                                              fint4,&
                                              fint5
+  USE fft,                             ONLY: batch_fft,a2a_msgsize
   USE g_loc,                           ONLY: glocal,&
                                              gloci,&
                                              glocr
@@ -100,6 +101,7 @@ CONTAINS
     cntl%use_mpi_io=.FALSE.
     cntl%md=.FALSE.
     cntl%tmdbo=.FALSE.
+    cntl%tmdcp=.FALSE.
     cntl%tmdfile=.FALSE.
     cntl%tprcp=.FALSE.
     cntl%geopt=.FALSE.
@@ -259,11 +261,7 @@ CONTAINS
     cntl%timing=.TRUE.
     cntl%rcomp=.FALSE.
     cntl%wcomp=.FALSE.
-#if defined (__NEC) 
     cntl%bigmem=.TRUE.
-#else
-    cntl%bigmem=.FALSE.
-#endif
     cntl%fcnstr=.FALSE.
     cntl%krwfn=.FALSE.
     cntl%posver=.FALSE.
@@ -335,10 +333,14 @@ CONTAINS
     cprint%minwriteatom=1
     cprint%maxwriteatom=1000000
     cprint%twriteforcetrajectory=.FALSE.
+    cprint%twritefixforcetrajectory=.FALSE.
     ! Debugging
     cntl%tdebfor=.FALSE.
     store1%tdebio=.FALSE.
     store1%tdebacc=.FALSE.
+    cntl%tverbosefor=.FALSE.
+    cntl%tverbosevel=.FALSE.
+    cntl%tverbosepos=.FALSE.
     ! Tracing
     cp_trace%ttrace=.FALSE.
     cp_trace%ttrace_master_only=.FALSE.
@@ -665,6 +667,35 @@ CONTAINS
     iface1%intwrite = .FALSE.
     intfn = "interface.bin"
     ! ==--------------------------------------------------------------==
+    ! TK use distributed fnl_rotation by default
+    cntl%distribute_fnl_rot = .TRUE.
+    ! TK do not enable overlapping communication computation algorithms
+    ! by default
+    cntl%overlapp_comm_comp = .FALSE.
+    ! TK rnlsm blockcounts and sizes
+    !TK batch fft - defaults to no
+    batch_fft=.FALSE.
+    !TK minimum message size
+    a2a_msgsize=1000
+    !TK buffercounts of rnlsm1/2
+    cnti%rnlsm1_bc=3
+    cnti%rnlsm2_bc=3
+    !TK fraction of work of first/last buffers of rnlsm1/2
+    cntr%rnlsm1_b1=0.5
+    cntr%rnlsm1_b2=0.3
+    cntr%rnlsm2_b1=0.5
+    cntr%rnlsm2_b2=0.3
+    !TK autotuning disabled
+    cnti%rnlsm_autotune_maxit=0
+    !TK do not tune fft batchsize
+    cntl%fft_tune_batchsize=.FALSE.
+    cnti%fft_tune_it_per_batch=2
+    !TK blockingfactor for new/rhov bigmem
+    cnti%blocksize_uspp=1200
+    !TK do not use elpa
+    cntl%use_elpa=.FALSE.
+    cnti%elpa_num_proc=-1
+    cntl%use_elpa_autotune=.FALSE.
     RETURN
   END SUBROUTINE control_def
   ! ==================================================================
