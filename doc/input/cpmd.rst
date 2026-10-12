@@ -65,7 +65,7 @@ Keywords
 
 .. keyword:: ANDERSON MIXING
    :section: &CPMD
-   :alternatives: N=n
+   :alternatives: [N=n, G-SPACE]
 
    Anderson mixing for the electronic density during self-consistent iterations.
    In the next line the parameter (between 0 and 1) for the Anderson mixing is
@@ -78,12 +78,22 @@ Keywords
    program reads :math:`n` lines, each with a threshold density and an Anderson
    mixing parameter.
 
+   With the option ``G-SPACE`` the density is mixed in reciprocal space instead
+   of real space. Density mixing is only used with diagonalization schemes
+   (e.g. :kw:`LANCZOS DIAGONALIZATION`, :kw:`DAVIDSON DIAGONALIZATION`).
+
 .. keyword:: ANNEALING
    :section: &CPMD
    :options: {IONS,ELECTRONS,CELL}
 
    Scale the ionic, electronic, or cell velocities every time step. The scaling
    factor is read from the next line.
+
+   The alias ``ANNEAL`` is accepted, and ``ELECTRON`` for ``ELECTRONS``. Only
+   one of the options is evaluated per line. Without any of ``IONS``,
+   ``ELECTRONS``, ``CELL``, annealing is switched on for ions, electrons and
+   cell, and three scaling factors (in this order) are read from the next
+   line.
 
 .. keyword:: BENCHMARK
    :section: &CPMD
@@ -131,6 +141,9 @@ Keywords
      chemical potential (:math:`\mu^\dagger_1`) or
    | **XWEIGHT** requests to sample the bicanonical ensemble at constant
      bicanonical weight (:math:`x_1`).
+   | The abbreviation ``CHEMICALPOT`` is also accepted. One of the two run
+     types must be given; otherwise the program stops ("Must specify
+     Runtype").
    | **Default** is to use no INFO printing at each AIMD step.
    | Two parameters read in from next line:
    | [**chemicalPotential**\ :math:`~|~`\ **xWeight**] [**temperature**]
@@ -273,7 +286,10 @@ Keywords
    Computes the Bogoliubov correction for the energy of the Trotter approximation
    or not.
 
-   **Default** is **no Bogoliubov correction**.
+   **Default** with :kw:`FREE ENERGY FUNCTIONAL` is to apply the Bogoliubov
+   correction; use ``BOGOLIUBOV CORRECTION OFF`` (after
+   :kw:`FREE ENERGY FUNCTIONAL`) to switch it off. Without the free energy
+   functional the correction is not used.
 
    The keyword has to appear after :kw:`FREE ENERGY FUNCTIONAL`.
 
@@ -332,6 +348,7 @@ Keywords
 
 .. keyword:: BROYDEN MIXING
    :section: &CPMD
+   :alternatives: [ADAPT]
 
    Parameters read in from next line.
 
@@ -341,7 +358,7 @@ Keywords
 
    *BROYMIX*:
 
-   Initial mixing, e.g. :math:`0.1`; **default** value is **0.5**
+   Initial mixing, e.g. :math:`0.1`; **default** value is **0.15**
 
    *ECUTBROY:*
 
@@ -359,24 +376,39 @@ Keywords
 
    *IBRESET:*
 
-   Number of Broyden vectors. :math:`5` is usually a good value and the default.
+   Number of Broyden vectors (the Broyden history is reset after this number
+   of steps). **Default** is **8**; in the positional form a value of 0
+   selects 50.
 
    *KERMIX:*
 
    Kerker mixing according to the original definition of
    Ref. [Kerker]_. By default the mixing parameter is set to 0.
 
-   You can also specify some parameters with the following syntax:
+   In the positional form all six values must be given.
 
-   **[BROYMIX=**\ *BROYMIX*\ **]** **[ECUTBROY=**\ *ECUTBROY*\ **]**
+   If the parameter line contains an equal sign, the parameters are instead
+   read in ``keyword=value`` form; parameters that are not given keep their
+   default values:
 
-   **[W02BROY=**\ *W02BROY*\ **]** **[NFRBROY=**\ *NFRBROY*\ **]**
+   **[BROYMIX=**\ *BROYMIX*\ **]** or **[MIX=**\ *BROYMIX*\ **]**,
+   **[CUTBROY=**\ *ECUTBROY*\ **]**,
 
-   **[IBRESET=**\ *IBRESET*\ **]**
+   **[W02BROY=**\ *W02BROY*\ **]** or **[W02=**\ *W02BROY*\ **]**,
+   **[NFRBROY=**\ *NFRBROY*\ **]**,
 
+   **[IBRESET=**\ *IBRESET*\ **]** or **[RESET=**\ *IBRESET*\ **]**,
    **[KERMIX=**\ *KERMIX*\ **]**
 
-   Finally, you can use the keyword **DEFAULT** to use the default values.
+   Note that the cutoff is given with ``CUTBROY=``; ``ECUTBROY=`` is silently
+   ignored. To use all default values, give e.g. ``MIX=0.15`` on the
+   parameter line. There is no ``DEFAULT`` option: a parameter line without
+   an equal sign that does not contain six numbers stops the program with
+   "ERROR WHILE READING VALUE".
+
+   With the option ``ADAPT`` on the keyword line, adaptive weights
+   :math:`w = \max(1, 1/\lVert F \rVert)` (:math:`F` is the density residual)
+   are used for the Broyden vectors instead of constant weights :math:`w = 1`.
 
 .. keyword:: CAYLEY
    :section: &CPMD
@@ -489,7 +521,9 @@ Keywords
 .. keyword:: CLASSTRESS
    :section: &CPMD
 
-   Not documented.
+   Calculate the classical stress tensor every *NSTEP* steps in classical
+   molecular dynamics; *NSTEP* is read from the next line (output:
+   ``EVALUATE THE CLASSICAL STRESS TENSOR OF SYSTEM EVERY ... STEPS``).
 
 .. keyword:: CMASS
    :section: &CPMD
@@ -526,25 +560,38 @@ Keywords
 
 .. keyword:: COMPRESS
    :section: &CPMD
-   :alternatives: [WRITEnn]
+   :alternatives: [WRITEnn, WRITEAOnn]
 
-   Write the wavefunctions with nn bytes precision to the restart file.
+   Write the wavefunctions with reduced precision to the restart file.
 
-   Possible choices are ``WRITE32``, ``WRITE16``, ``WRITE8`` and ``WRITEAO``.
+   Possible choices are ``WRITE64``, ``WRITE32``, ``WRITE16``, ``WRITE8``
+   (plane-wave coefficients with 8, 4, 2 or 1 bytes) and ``WRITEAO64``,
+   ``WRITEAO32``, ``WRITEAO16``, ``WRITEAO8``. ``WRITEAO`` without a number is
+   not recognized. ``COMPRESS`` without a (recognized) option is equivalent
+   to ``COMPRESS WRITE32``.
 
-   ``WRITE32`` corresponds to the compress option in older versions. ``WRITEAO``
-   stores the wavefunction as a projection on atomic basis sets. The atomic basis
+   ``WRITE32`` corresponds to the compress option in older versions.
+   ``WRITEAOnn`` stores the wavefunction as a projection on atomic basis sets.
+   The atomic basis
    set can be specified in the section &BASIS … &END. If this input section is
    missing a default basis from Slater type orbitals is constructed. See
    section :ref:`input:basis` for more details.
 
-.. keyword:: CONJUGATE GRADIENTS
+.. keyword:: CONJUGATE GRADIENT
    :section: &CPMD
-   :alternatives: [ELECTRONS, IONS, NOPRECONDITIONING]
+   :alternatives: [ELECTRONS, IONS, NOPRECONDITIONING, MINIMIZE]
 
-   For the electrons, the keyword is equivalent to :kw:`PCG`. The
-   ``NOPRECONDITIONING`` parameter only applies for electrons. For the ions the
-   conjugate gradients scheme is used to relax the atomic positions.
+   Note the singular ``GRADIENT``; the plural form ``CONJUGATE GRADIENTS`` is
+   not recognized (the line is reported as an unknown keyword).
+
+   For the electrons, the keyword is equivalent to :kw:`PCG`; the options
+   ``MINIMIZE`` (additional line searches, as for :kw:`PCG`) and
+   ``NOPRECONDITIONING`` apply to electrons only. For the ions the conjugate
+   gradient scheme is used to relax the atomic positions
+   (``CONJUGATE GRADIENT IONS`` is equivalent to :kw:`TCGP`). ``NOPREC`` is
+   accepted for ``NOPRECONDITIONING`` and ``ION`` for ``IONS``. At least one
+   of ``ELECTRONS`` or ``IONS`` must be given; otherwise the keyword has no
+   effect.
 
 .. keyword:: CONVERGENCE
    :section: &CPMD
@@ -591,7 +638,7 @@ Keywords
 .. keyword:: CONVERGENCE
    :target: CONVERGENCE 2
    :section: &CPMD
-   :alternatives: [ORBITALS, GEOMETRY, CELL]
+   :alternatives: [ORBITALS, GEOMETRY, CELL, RHOFIX]
 
    The convergence criteria for optimization runs is specified.
 
@@ -604,6 +651,20 @@ Keywords
    For diagonalization schemes the first value is the biggest variation of a
    density component. **Defaults** are **10\ :math:`^{-3}`** and
    **10\ :math:`^{-3}`**.
+
+   For ``CONVERGENCE ORBITALS`` (aliases ``ORBITAL`` and ``WAVEFUNCTION``) an
+   optional second number on the same line sets a criterion on the change of
+   the total energy: in diagonalization schemes the wavefunction is also
+   considered converged when the change of the total energy between two
+   iterations is smaller than this value in two consecutive iterations
+   (**default** 0, not used).
+
+   With ``CONVERGENCE RHOFIX`` the convergence criterion for the wavefunction
+   optimization at fixed density (:kw:`FIXRHO UPWFN`) is read; this is the
+   same value as set with :kw:`FIXRHO WFTOL` (**default** :math:`10^{-7}`).
+
+   ``CONVERGENCE`` without any of the recognized options reads two numbers
+   from the next line, the criteria for the orbitals and for the geometry.
 
 .. keyword:: CONVERGENCE
    :target: CONVERGENCE 3
@@ -660,6 +721,11 @@ Keywords
    (e.g. :kw:`ODIIS`, :kw:`PCG`, :kw:`LBFGS`,
    :kw:`GDIIS`) fail to converge or may converge to the wrong state.
 
+   The alias ``DAMP`` is accepted. Only one of the options is evaluated per
+   line. Without any of ``IONS``, ``ELECTRONS``, ``CELL``, damping is switched
+   on for ions, electrons and cell, and three damping factors (in this order)
+   are read from the next line.
+
 .. keyword:: DAVIDSON DIAGONALIZATION
    :section: &CPMD
 
@@ -680,6 +746,8 @@ Keywords
    states, the default number of additional vectors is 25. By using less than 25
    some memory can be saved but convergence might be somewhat slower.
 
+   The plural form ``DAVIDSON PARAMETERS`` is also accepted.
+
 .. keyword:: DCACP
    :section: &CPMD
 
@@ -690,12 +758,21 @@ Keywords
 .. keyword:: DEBUG CODE
    :section: &CPMD
 
-   Very verbose output concerning subroutine calls for debugging purpose.
+   Intended for very verbose output concerning subroutine calls for debugging
+   purposes.
 
-.. keyword:: DEBUG FILEOPEN
+   .. warning::
+
+      This option is currently not recognized by the input parser and has no
+      effect: the ``DEBUG`` keyword only evaluates the options ``FORCES``,
+      ``FILE``, ``IO``, ``NOACC`` and ``HUBBARD``.
+
+.. keyword:: DEBUG FILE
    :section: &CPMD
 
-   Very verbose output concerning opening files for debugging purpose.
+   Very verbose output concerning opening files for debugging purposes.
+   Note that the option is ``FILE``; ``DEBUG FILEOPEN`` is not recognized and
+   has no effect.
 
 .. keyword:: DEBUG FORCES
    :section: &CPMD
@@ -744,7 +821,14 @@ Keywords
 .. keyword:: DEBUG MEMORY
    :section: &CPMD
 
-   Very verbose output concerning memory for debugging purpose.
+   Intended for very verbose output concerning memory for debugging purposes.
+
+   .. warning::
+
+      This option is currently not recognized by the input parser and has no
+      effect: the ``DEBUG`` keyword only evaluates the options ``FORCES``,
+      ``FILE``, ``IO``, ``NOACC`` and ``HUBBARD``. To check the memory
+      allocations, use :kw:`CHECK MEMORY`.
 
 .. keyword:: DEBUG NOACC
    :section: &CPMD
@@ -820,8 +904,15 @@ Keywords
 
 .. keyword:: DISTRIBUTE FNL
    :section: &CPMD
+   :options: {ON, OFF}
 
-   The array ``FNL`` is distributed in parallel runs.
+   With ``ON`` the array ``FNL`` is distributed in parallel runs;
+   ``DISTRIBUTE FNL OFF`` switches the distribution off. The keyword without
+   ``ON`` has no effect. **Default** is ``OFF``. The spelling
+   ``DISTRIBUTED FNL`` is also accepted.
+
+   The distributed ``FNL`` storage is not implemented for the stress tensor
+   and some other routines (the run stops with ``TFDIST NOT IMPLEMENTED``).
 
 .. keyword:: DISTRIBUTE FNL ROT
    :section: &CPMD
@@ -863,6 +954,9 @@ Keywords
    When setting **LINALG ON** the keyword :kw:`BLOCKSIZE STATES` becomes relevant (see entry). The number of
    :kw:`BLOCKSIZE STATES` must be an **exact divisor** of the
    number of :kw:`STATES`.
+
+   The abbreviation ``DIST LINALG`` is also accepted. A line that also
+   contains ``NEWORTHO`` is treated as :kw:`LINALG NEWORTHO`.
 
 .. keyword:: ELECTRONIC SPECTRA
    :section: &CPMD
@@ -938,7 +1032,7 @@ Keywords
 
 .. keyword:: EXTRAPOLATE WFN
    :section: &CPMD
-   :options: {STORE}
+   :alternatives: [STORE, ASPC, POLY, CSTEPS=n]
 
    Read the number of wavefunctions to retain from the next line.
 
@@ -951,6 +1045,13 @@ Keywords
 
    With the additional keyword **STORE** the wavefunction history is also written
    to restart files. See :kw:`RESTART` for how to read it back.
+
+   Two extrapolation schemes are available: ``ASPC`` (always stable
+   predictor-corrector, the **default**) and ``POLY`` (alias ``POLYNOMIAL``,
+   polynomial extrapolation). With ``CSTEPS=n`` (ASPC only) the wavefunction
+   optimization is no longer converged once the full wavefunction history is
+   available; instead, at most ``n`` corrector steps are done in each MD step.
+   The first wavefunction is always fully converged.
 
 .. keyword:: FFT_N_DEVICES_PER_TASK
    :section: &CPMD
@@ -1095,7 +1196,10 @@ Keywords
    centered on the position *coord_fdiff(1..3)* with a radius *radius* (useful for
    a point defect).
 
-   **NOTE:** The the step length for the finite difference is **always** in Bohr
+   If ``COORD=`` is given, ``RADIUS=`` is mandatory. The singular
+   ``FINITE DIFFERENCE`` is also accepted.
+
+   **NOTE:** The step length for the finite difference is **always** in Bohr
    (default is 1.0d-2 a.u.). The (optional) coordinates of the center and the
    radius are read in either Angstrom or Bohr, depending on whether the
    :kw:`ANGSTROM` keyword is specified or not.
@@ -1122,7 +1226,6 @@ Keywords
 
 .. keyword:: FIXRHO UPWFN
    :section: &CPMD
-   :alternatives: [VECT LOOP WFTOL]
 
    Wavefunctions optimization with the method of direct inversion of the iterative
    subspace (DIIS), performed without updating the charge density at each step.
@@ -1131,27 +1234,26 @@ Keywords
    numbers are calculated, the density is updated, and a new wavefunction
    optimization is started. The variations of the density coefficients are used as
    convergence criterion. The default electron temperature is 1000 K and 4
-   unoccupied states are added. Implemented also for k-points. Only one sub-option
-   is allowed per line and the respective parameter is read from the next line.
-   The parameters mean:
+   unoccupied states are added. Implemented also for k-points.
 
-   *VECT*:
+   The parameters of the fixed-density optimization are set with the separate
+   keywords :kw:`FIXRHO VECT` (number of DIIS vectors, **default** 4),
+   :kw:`FIXRHO LOOP` (minimum and maximum number of DIIS iterations per
+   wavefunction optimization, **defaults** 4 and 20) and :kw:`FIXRHO WFTOL`
+   (convergence tolerance, **default** :math:`10^{-7}`, adjusted automatically
+   to the convergence of the density), each on its own line followed by a
+   line with the value(s), e.g.::
 
-   The number of DIIS vectors is read from the next line. (ODIIS with 4 vectors is
-   the default).
+      FIXRHO UPWFN
+      FIXRHO LOOP
+       4 20
 
-   *LOOP:*
+   They cannot be given as options on the ``FIXRHO UPWFN`` line: in this
+   case the option is ignored and the value on the next line is reported as
+   an unknown keyword.
 
-   the minimum and maximum number of DIIS iterations per each wfn optimization is
-   read from the following line. Default values are 4 and 20.
-
-   *WFTOL:*
-
-   The convergence tolerance for the wfn optimization during the ODIIS is read
-   from the following line. The default value is :math:`10^{-7}`. The program
-   adjusts this criterion automatically, depending on the convergence status of
-   the density. As the density improves (when the density updates become smaller),
-   also the wavefunction convergence criterion is set to its final value.
+   The option ``PCG`` is accepted by the parser but currently has no effect:
+   the wavefunction is always optimized with DIIS.
 
 .. keyword:: FIXRHO VECT
    :section: &CPMD
@@ -1218,6 +1320,9 @@ Keywords
    By **default** we use **Lanczos diagonalization** with **Trotter
    factorization** and **Bogoliubov correction**. If the number of states is not
    specified, use :math:`N_{electrons}/2+4`.
+
+   The keyword is recognized from the words ``FREE ENERGY``; the alias
+   ``FREE-ENERGY`` is also accepted.
 
 .. keyword:: GAUGEFIELD
    :section: &CPMD
@@ -1509,6 +1614,8 @@ Keywords
    For variable cell dynamics only the kinetic energy as calculated for the
    reference cell is used.
 
+   The alias ``HTHRS`` is also accepted.
+
 .. keyword:: HARMONIC REFERENCE SYSTEM
    :section: &CPMD
    :alternatives: [OFF]
@@ -1540,18 +1647,49 @@ Keywords
    geometry optimization is constructed from a block matrix formed of the
    parametrized Hessian and the partial Hessian (of the reaction core). If the
    reaction core spans the entire system, its Hessian is simply copied. The
-   keywords :kw:`RESTART` PHESS are required.
+   keywords :kw:`RESTART` PHES are required.
 
 .. keyword:: IMPLICIT NEWTON RAPHSON
    :section: &CPMD
-   :options: {PREC, CONTINUE, VERBOSE, ALTERNATIVE, STEP}
-   :alternatives: [N=nreg]
+   :alternatives: [PREC, CONTINUE, ALTERNATIVE STEP]
 
-   Not documented.
+   Geometry optimization by the implicit Newton-Raphson (INR) method, which
+   uses density-functional perturbation theory (output: ``GEOMETRY
+   OPTIMIZATION BY IMPLICIT NEWTON-RAPHSON (USES DFPT)``). The maximum number
+   of internal INR iterations is read from the next line. The keyword is
+   recognized if the line contains ``IMPLICIT`` and ``NEWTON``, or the single
+   word ``NEWTON-RAPHSON``, or ``TURBOCICCIO``.
+
+   Options on the keyword line:
+
+   * ``PRECONDITIONED`` (alias ``PREC``) uses a preconditioner built from an
+     empirical Hessian;
+   * ``CONTINUE`` (alias ``CONT``) continues an interrupted inner CG-INR
+     cycle;
+   * ``ALTERNATIVE STEP`` (both words) selects an alternative formula for the
+     step length of the inner iterations.
+
+   The convergence thresholds of the inner iterations are set with
+   :kw:`INR PARAMETER` (the option ``N=nreg`` belongs to that keyword and is
+   ignored here); an initial optimization with another method can be
+   requested with :kw:`MIXSD` or :kw:`MIXDIIS`.
+
+   Example::
+
+      IMPLICIT NEWTON RAPHSON PREC
+        50
+
+   .. warning::
+
+      The parser also checks for an option ``VERBOSE``, but it cannot be
+      used: any line containing ``VERBOSE`` is interpreted as the keyword
+      :kw:`VERBOSE <VERBOSE CPMD>`, so ``IMPLICIT NEWTON RAPHSON VERBOSE``
+      does not activate INR at all and the number on the next line is
+      reported as an unknown keyword.
 
 .. keyword:: INITIALIZE WAVEFUNCTION
    :section: &CPMD
-   :alternatives: [RANDOM, ATOMS]
+   :alternatives: [RANDOM, ATOMS, SIMPLE]
    :notes: [PRIMITIVE]
 
    The initial guess for wavefunction optimization are either random functions or
@@ -1564,6 +1702,15 @@ Keywords
    contamination in CDFT calculations (together with an already good initial guess
    for :math:`V`) as it allows a strict initial localisation of excess spins on
    any atom species.
+
+   With ``SIMPLE`` the initial wavefunction is obtained by projecting random
+   functions onto the space spanned by the (normalized) atomic
+   pseudo-wavefunctions and orthogonalizing the result, without the
+   atomic-orbital diagonalization used by ``ATOMS`` (not available for k
+   points).
+
+   The spelling ``INITIAL WAVEFUNCTION`` is also accepted, as well as
+   ``RANDOMIZED`` for ``RANDOM`` and ``ATOMIC`` for ``ATOMS``.
 
    **Default** is to use the **atomic pseudo-wavefunctions**.
 
@@ -1609,7 +1756,7 @@ Keywords
 
 .. keyword:: INTERFACE
    :section: &CPMD
-   :options: {EGO,GMX}
+   :options: {EGO,GMX,IPHIGENIE}
    :alternatives: {[MULLIKEN, LOWDIN, ESP, HIRSHFELD],PCGFIRST}
 
    Use CPMD together with a classical molecular dynamics code. CPMD and the
@@ -1621,6 +1768,11 @@ Keywords
 
    When using the suboption PCGFIRST the code will use :kw:`PCG` MINIMIZE
    on the very first wavefunction optimization and then switch back to DIIS.
+
+   The option ``IPHIGENIE`` selects the interface to the polarizable MM
+   program IPHIGENIE. One of ``EGO``, ``GMX`` or ``IPHIGENIE`` must be given;
+   otherwise the program stops with "UNKNOWN MM INTERFACE TYPE". If no charge
+   method is given, ``ESP`` is used.
 
 .. keyword:: INTFILE
    :section: &CPMD
@@ -1660,42 +1812,56 @@ Keywords
 
    **Default** is not to calculate Kohn-Sham energies (**OFF**).
 
+   The alias ``KS-EIGENVALUES`` is also accepted. Unless ``OFF`` is given, the
+   empirical van der Waals correction (:kw:`VDW CORRECTION`) is switched off,
+   because it would change the number of electrons.
+
    **Warning:** The usage of this keyword needs special care (especially
    restarts).
 
 .. keyword:: KSHAM
    :section: &CPMD
-   :alternatives: [MATRIX,ROUT,STATE]
+   :alternatives: [MATRIX,ROUT]
 
    | Write out the Kohn-Sham Hamiltonian Matrix in the orbital basis given in the
      RESTART file to KS_HAM. For this option to work the :kw:`RESTART`
      option and :kw:`OPTIMIZE WAVEFUNCTION` have to be
      activated. This option is useful for fragment orbital DFT (FODFT)
-     calculations. Orbitals for the output of the FO-DFT matrix element can be
-     given with the option **STATE**, then indices of the two orbitals are read
-     from the next line. **ROUT** controls printing of involved orbitals.
+     calculations. The indices of the two orbitals for the output of the
+     FO-DFT matrix element are always read from the next line. **ROUT**
+     controls printing of involved orbitals.
    | **MATRIX** instructs CPMD to read a transformation matrix from the file
      LOWDIN_A to transform the KS-Hamiltonian to the non-orthogonal orbital basis
      .
 
 .. keyword:: LANCZOS DIAGONALIZATION
    :section: &CPMD
-   :options: {ALL}
+   :alternatives: [ALL, NEW]
 
    Use **Lanczos diagonalization** scheme.
 
    **Default** with **free energy functional**.
 
+   With ``NEW`` an alternative block implementation of the Lanczos (Friesner)
+   diagonalization is used.
+
 .. keyword:: LANCZOS DIAGONALIZATION
    :target: LANCZOS DIAGONALIZATION OPT
    :section: &CPMD
-   :options: {OPT,RESET=n}
+   :options: {OPT,PERIODIC=n,RESET=n}
 
    Use **Lanczos diagonalization** scheme after (OPT) or periodically during
    (RESET=n) direct wavefunction optimization using :kw:`ODIIS`. The
    number n specifies the number of DIIS resets (ODIIS NO_RESET=nreset) due to
    poor progress until the wavefunction is diagonalized. This can be helpful if
    the wavefunction is converging very slowly.
+
+   With ``PERIODIC=n`` the wavefunction is optimized directly (as with
+   ``OPT``) and diagonalized every ``n`` optimization steps; the value ``n`` is
+   mandatory. Only one of ``OPT``, ``PERIODIC=n`` and ``RESET=n`` is used; if
+   several are given, ``OPT`` takes precedence over ``PERIODIC``, and
+   ``PERIODIC`` over ``RESET``. With ``PERIODIC`` and ``RESET`` the Lanczos
+   tolerance is set to :math:`10^{-8}` unless a larger value was set before.
 
 .. keyword:: LANCZOS PARAMETER
    :section: &CPMD
@@ -1720,6 +1886,8 @@ Keywords
    threshold density and a tolerance. See the hints section
    :ref:`hints:lanczos` for more information.
 
+   The plural form ``LANCZOS PARAMETERS`` is also accepted.
+
 .. keyword:: LANGEVIN
    :section: &CPMD
    :options: {WHITE, CPMD, OPTIMAL, SMART, CUSTOM, CENTROIDOFF}
@@ -1729,7 +1897,10 @@ Keywords
    Use a (generalized) Langevin equation to thermostat the
    simulation\ [Ceriotti10]_. By default, the component of the noise
    parallel to the center of mass velocity is removed at each step of the
-   thermostat. Removal can be disabled by the option *MOVECM*.
+   thermostat. Removal can be disabled by the option *MOVECM* (alias
+   *MOVECOM*). If none of ``WHITE``, ``CPMD``, ``OPTIMAL``, ``SMART`` or
+   ``CUSTOM`` is given, a value is still read from the next line, but the
+   thermostat is not switched on.
 
    *CUSTOM:*
 
@@ -1825,7 +1996,7 @@ Keywords
 
 .. keyword:: LBFGS
    :section: &CPMD
-   :alternatives: [NREM, NTRUST, NRESTT, TRUSTR]
+   :alternatives: [NREM, NTRUST, NRESTT, NTRSTR, TRUSTR]
 
    Use the limited-memory BFGS method (L-BFGS) for linear scaling **optimization**
    of the **ionic positions**. For more information, see [LSCAL]_.
@@ -1853,6 +2024,12 @@ Keywords
    *NRESTT* steps. Default is 0 (no periodic reset). This option makes only sense
    if the ionic gradient is not accurate.
 
+   *NTRSTR:*
+
+   Number of steps done with the trust radius algorithm before the optimizer
+   switches to the line search algorithm (as with *NTRUST=1*). The default
+   value 0 never switches.
+
    *TRUSTR:*
 
    Maximum and initial **trust radius**. Default is 0.5 atomic units.
@@ -1860,6 +2037,8 @@ Keywords
    It can be useful to combine these keywords with the keywords
    :kw:`PRFO`, :kw:`CONVERGENCE` ADAPT,
    :kw:`RESTART` LSSTAT, :kw:`PRINT` LSCAL ON and others.
+
+   The alias ``L-BFGS`` is also accepted.
 
 .. keyword:: LINALG NEWORTHO
    :section: &CPMD
@@ -1933,7 +2112,8 @@ Keywords
 .. keyword:: LSD
    :section: &CPMD
 
-   Use the local spin density approximation.
+   Use the local spin density approximation. The alias ``LSDA`` is also
+   accepted.
 
    **Warning:** Not all functionals in **OLDCODE** or **NEWCODE** are implemented
    for this option. Only in the **XC_DRIVER**, all functionals are available both
@@ -1948,6 +2128,8 @@ Keywords
 
    **Default** is **10000** steps.
 
+   The alias ``MAXIT`` is also accepted.
+
 .. keyword:: MAXRUNTIME
    :section: &CPMD
 
@@ -1955,6 +2137,9 @@ Keywords
    line. The calculation will stop after the given amount of time.
 
    **Default** is no limit.
+
+   The alias ``MAXRUN`` is also accepted. If the keyword is given more than
+   once, the smallest value is used.
 
 .. keyword:: MAXSTEP
    :section: &CPMD
@@ -1966,9 +2151,11 @@ Keywords
 
    **Default** is **10000** steps.
 
+   The alias ``MAXSTEPS`` is also accepted.
+
 .. keyword:: MEMORY
    :section: &CPMD
-   :options: {SMALL, BIG}
+   :options: {SMALL, BIG, CHECK}
 
    Using **BIG**, the structure factors for the density cutoff are only calculated
    once and stored for reuse.
@@ -1976,7 +2163,15 @@ Keywords
    This option allows for considerable time savings in connection with Vanderbilt
    pseudopotentials.
 
-   **Default** is (**SMALL**) to **recalculate** them whenever needed.
+   **Default** is **BIG**. With **SMALL** the structure factors would be
+   recalculated whenever needed.
+
+   ``MEMORY CHECK`` is equivalent to :kw:`CHECK MEMORY`.
+
+   .. warning::
+
+      In the current code the option **SMALL** has the same effect as
+      **BIG**, so the small-memory mode cannot be selected from the input.
 
 .. keyword:: MIRROR
    :section: &CPMD
@@ -1986,12 +2181,17 @@ Keywords
 .. keyword:: MIXDIIS
    :section: &CPMD
 
-   Not documented
+   As :kw:`MIXSD`, but the initial steps of the geometry optimization are made
+   with GDIIS. Only used with :kw:`IMPLICIT NEWTON RAPHSON`.
 
 .. keyword:: MIXSD
    :section: &CPMD
 
-   Not documented
+   Only used with :kw:`IMPLICIT NEWTON RAPHSON`. The geometry optimization
+   starts with ionic steepest-descent steps; when the largest component of the
+   ionic gradient drops below the value read from the next line, the implicit
+   Newton-Raphson method takes over (output: ``INR STARTING AFTER GNMAX =
+   ...``).
 
 .. keyword:: MODIFIED GOEDECKER
    :section: &CPMD
@@ -2015,7 +2215,7 @@ Keywords
 
 .. keyword:: MOLECULAR DYNAMICS
    :section: &CPMD
-   :alternatives: [CP, BO, ET, PT, CLASSICAL, FILE [XYZ, NSKIP=N, NSAMPLE=M]]
+   :alternatives: [CP, BO, EH, BD, PT, CLASSICAL, FILE [XYZ, NSKIP=N, NSAMPLE=M]]
 
    Perform a molecular dynamics (MD) run. **CP** stands for a Car-Parrinello type
    MD. With the option **BO** a Born-Oppenheimer MD is performed where the
@@ -2064,12 +2264,15 @@ Keywords
 
    &END
 
-   The keywords CAYLEY and RUNGE-KUTTA specifies the algorithms used for the
-   propagation of the KS orbitals (are the default and recommended options).
+   The keywords :kw:`CAYLEY` and :kw:`RUNGE-KUTTA` specify the algorithms
+   used for the propagation of the KS orbitals; :kw:`CAYLEY` is mandatory
+   (there is no default propagator; without :kw:`CAYLEY` or :kw:`CHEBY` the run
+   stops with "choose an integration method") and both are recommended. The
+   alias ``EHRENFEST`` is also accepted for ``EH``.
 
    **CLASSICAL** means that a MD that includes classical atoms is performed.
 
-   **BD** stands for Bohminan Dynamics. In the next line the number of
+   **BD** stands for Bohmian dynamics. In the next line the number of
    trajectories (:math:`N_{traj}`) used to describe the nuclear wavepacket are
    specified. The initial spread of the Gaussians associated to each element is
    guessed from the De Broglie wavelength. A special tuning of this value for the
@@ -2088,6 +2291,14 @@ Keywords
    control the selection of frames read: the frame read at step ISTEP is
    NSKIP+ISTEP*NSAMPLE.
 
+   The option **PT** is only accepted together with **BO** (on the same line,
+   in any order); it switches on a response calculation in each MD step
+   (routine ``mddiag_interaction_p``).
+
+   .. todo::
+
+      MISSING: description of the ``PT`` scheme and its required input.
+
    **Default** is **CP**.
 
 .. keyword:: MOVERHO
@@ -2104,7 +2315,8 @@ Keywords
 
    Write the atomic coordinates without applying periodic boundary conditions in
    MOVIE format every *IMOVIE* time steps on file *MOVIE*. *IMOVIE* is read from
-   the next line.
+   the next line if the option **SAMPLE** is given; otherwise the movie is only
+   written at the first step.
 
    **Default** is **not** to write a movie file.
 
@@ -2263,7 +2475,10 @@ Keywords
    :section: &CPMD
 
    Default is to check all atomic distances and stop the program if the smallest
-   distance is below 0.5 Bohr. This keyword requests not to perform the check.
+   distance is below 0.5 Bohr. With this keyword the minimum allowed distance
+   is reduced to :math:`10^{-10}` Bohr, i.e. only atoms at (practically)
+   identical positions stop the program. The alias ``NO_GEO_CHECK`` is also
+   accepted.
 
 .. keyword:: NONORTHOGONAL ORBITALS
    :section: &CPMD
@@ -2388,6 +2603,8 @@ Keywords
 
    **If the keyword is used all parameters have to be specified.**
 
+   The singular ``NOSE PARAMETER`` is also accepted.
+
 .. keyword:: NO_RESET
    :section: &CPMD
 
@@ -2439,6 +2656,8 @@ Keywords
    NO_RESET**, this number can be changed, or DIIS resets can be **disabled**
    altogether with a value of -1.
 
+   The short forms ``NOPREC`` and ``NO_RES=nreset`` are also accepted.
+
 .. keyword:: OPTIMIZE COMBINED
    :section: &CPMD
    :options: {XYZ, SAMPLE}
@@ -2480,7 +2699,7 @@ Keywords
 
 .. keyword:: OPTIMIZE GEOMETRY
    :section: &CPMD
-   :options: [XYZ, SAMPLE]
+   :options: [XYZ, SAMPLE, CLASSICAL]
 
    This option causes the program to optimize the geometry of the system through a
    sequence of wavefunction optimizations and position updates. The additional
@@ -2496,6 +2715,11 @@ Keywords
    :kw:`OPTIMIZE WAVEFUNCTION` for details on the
    corresponding options for wavefunction optimizations.
 
+   The alias ``GEOMETRY OPTIMIZATION`` is also accepted. With the option
+   ``CLASSICAL`` the optimization includes classical atoms (as for
+   :kw:`MOLECULAR DYNAMICS` ``CLASSICAL``). This keyword also switches on the
+   printing of the forces.
+
 .. keyword:: OPTIMIZE WAVEFUNCTION
    :section: &CPMD
 
@@ -2506,6 +2730,8 @@ Keywords
    for many other subsequent calculation types in CPMD, e.g. :kw:`MOLECULAR DYNAMICS` CP or :kw:`PROPERTIES`. By
    default a DIIS optimizer is used (see :kw:`ODIIS`), but other options
    are: :kw:`PCG` (optionally with MINIMIZE), :kw:`LANCZOS DIAGONALIZATION`, :kw:`DAVIDSON DIAGONALIZATION`, and :kw:`STEEPEST DESCENT` ELECTRONS.
+
+   The alias ``WAVEFUNCTION OPTIMIZATION`` is also accepted.
 
 .. keyword:: ORBITAL HARDNESS
    :section: &CPMD
@@ -2528,6 +2754,9 @@ Keywords
    With the additional keyword **MATRIX** the Löwdin transformation matrix is
    written to a file named LOWDIN_A.
 
+   The alias ``ORTHOGONALIZE`` is also accepted, and ``GRAM SCHMIDT`` (two
+   words) is accepted for ``GRAM-SCHMIDT``.
+
 .. keyword:: PARA_BUFF_SIZE
    :target: PARA BUFF SIZE
    :section: &CPMD
@@ -2539,8 +2768,13 @@ Keywords
    :target: PARA STACK BUFF SIZE
    :section: &CPMD
 
-   Set the stack buffer size for parallel operation (sum, ...). Default is 2**8.
-   The size is read from the next line.
+   Intended to set the stack buffer size for parallel operation (sum, ...).
+
+   .. warning::
+
+      This keyword does not exist in the current code: the line is reported
+      as an unknown keyword, and a number on the following line is reported
+      as another unknown input line.
 
 .. keyword:: PARA_USE_MPI_IN_PLACE
    :target: PARA USE MPI IN PLACE
@@ -2551,19 +2785,28 @@ Keywords
 .. keyword:: PARRINELLO-RAHMAN
    :section: &CPMD
    :options: {NPT,SHOCK}
+   :alternatives: [TOLKINC=tolkinc]
 
    To be used together with :kw:`MOLECULAR DYNAMICS`.
 
    A **variable cell MD** with the **Parrinello-Rahman Lagrangian** is
-   performed [parrah]_ [parrah2]_. With the additional keyword a
+   performed [parrah]_ [parrah2]_. With the additional keyword **NPT** a
    **constant NPT MD** using the method of Martyna, Tobias, and
-   Klein [Martyna94]_.
+   Klein [Martyna94]_ is performed.
 
    If this keyword is used together with other run options like OPTIMIZE
    WAVEFUNCTIONS, calculations with different reference cells can be performed.
 
    With the additional keyword **SHOCK** a MD simulation using the multiscale
    shock method [shock]_ is performed.
+
+   With ``TOLKINC=tolkinc``, the wavefunction is quenched to the
+   Born-Oppenheimer surface (and the electronic velocities are set to zero)
+   whenever the fictitious kinetic energy of the electrons exceeds
+   ``tolkinc`` (in a.u.) during a Car-Parrinello MD with variable cell. By
+   **default** this check is off.
+
+   The keyword can also be written as two words, ``PARRINELLO RAHMAN``.
 
 .. keyword:: PATH INTEGRAL
    :section: &CPMD
@@ -2572,6 +2815,8 @@ Keywords
    calculation [Marx94]_ [Marx96]_.
 
    This keyword requires further input in the section &PIMD ... &END.
+
+   The plural form ``PATH INTEGRALS`` is also accepted.
 
 .. keyword:: PATH MINIMIZATION
    :section: &CPMD
@@ -2629,7 +2874,7 @@ Keywords
 
 .. keyword:: PRFO
    :section: &CPMD
-   :alternatives: [MODE, MDLOCK, TRUSTP, OMIN, PRJHES, DISPLACEMENT, HESSTYPE]
+   :alternatives: [MODE, MDLOCK, TRUSTP, OMIN, PRJHES, DISPL, HESSTYPE]
 
    Use the partitioned rational function optimizer (P-RFO) with a quasi-Newton
    method for **optimization** of the **ionic positions**. For more information,
@@ -2656,7 +2901,8 @@ Keywords
 
    *TRUSTP:*
 
-   Maximum and initial **trust radius**. Default is 0.2 atomic units.
+   Maximum **trust radius**; the initial trust radius is 0.2*TRUSTP. Default
+   is 0.2 atomic units (initial value 0.04).
 
    *OMIN:*
 
@@ -2665,10 +2911,11 @@ Keywords
    trust radius is reduced until this requirement is fulfilled. The default is
    0.5.
 
-   *DISPLACEMENT:*
+   *DISPL:*
 
    Finite-difference **displacement** for initial partial Hessian. The default is
-   0.02.
+   0.02. Note that the option must be written ``DISPL``; ``PRFO DISPLACEMENT``
+   is not recognized.
 
    *HESSTYPE:*
 
@@ -2678,7 +2925,7 @@ Keywords
 
    It can be useful to combine these keywords with the keywords
    :kw:`CONVERGENCE` ENERGY, :kw:`RESTART` LSSTAT,
-   :kw:`RESTART` PHESS, :kw:`PRFO` NSVIB, :kw:`PRINT`
+   :kw:`RESTART` PHES, :kw:`PRFO` NSVIB, :kw:`PRINT`
    LSCAL ON and others.
 
 .. keyword:: PRFO
@@ -2717,7 +2964,7 @@ Keywords
    It can be useful to combine these keywords with the keywords
    :kw:`LBFGS`, :kw:`CONVERGENCE` ADAPT,
    :kw:`CONVERGENCE` ENERGY, :kw:`RESTART` LSSTAT,
-   :kw:`RESTART` PHESS, :kw:`PRFO NSVIB`,
+   :kw:`RESTART` PHES, :kw:`PRFO NSVIB`,
    :kw:`PRINT` LSCAL ON, the other suboptions of PRFO, and others.
 
 .. keyword:: PRFO NSVIB
@@ -2731,7 +2978,7 @@ Keywords
 .. keyword:: PRINT
    :section: &CPMD
    :options: {ON,OFF}
-   :alternatives: [INFO, EIGENVALUES, COORDINATES, LSCAL, FORCES, WANNIER]
+   :alternatives: [INFO, EIGENVALUES, COORDINATES, LSCAL, FORCES, WANNIER, ALL]
 
    A **detailed output** is printed every *IPRINT* iterations. Either only
    different contribution to the energy or in addition the atomic coordinates and
@@ -2741,12 +2988,21 @@ Keywords
    **Default** is **only energies** after the first step and at the end of the
    run. OFF switches the output off.
 
+   The option ``ALL`` selects ``INFO``, ``EIGENVALUES``, ``COORDINATES``,
+   ``FORCES`` and ``WANNIER`` at once.
+
 .. keyword:: PRINT ENERGY
    :section: &CPMD
    :options: {ON, OFF}
-   :alternatives: [EKIN, ELECTROSTATIC, ESR, ESELF, EFREE, EBAND, ENTROPY, EPSEU, EHEP, EHEE, EHII, ENL, EXC, VXC, EGC, EBOGO]
+   :alternatives: [EKIN, ELECTROSTATIC, ESR, ESELF, EFREE, EBAND, ENTROPY, EPSEU, EHEP, EHEE, EHII, ENL, EXCH, VXC, EGC, EBOGO, ETOT1, ETOT2, ECAS, EPEN, ETDDFT, EHUB]
 
    Display or not information about energies.
+
+   The exchange-correlation energy is selected with ``EXCH`` (``EXC`` is not
+   recognized). Together with ``ELECTROSTATIC`` the options ``ELEC1`` and
+   ``ELEC2`` select the two parts of the electrostatic energy. As for
+   :kw:`PRINT`, the print interval is read from the next line if neither
+   ``ON`` nor ``OFF`` is given.
 
 .. keyword:: PRNGSEED
    :section: &CPMD
@@ -2842,7 +3098,7 @@ Keywords
 .. keyword:: PROPERTIES
    :section: &CPMD
 
-   Calculate some properties.
+   Calculate some properties. The alias ``PROPERTY`` is also accepted.
 
    This keyword requires further input in the section &PROP …&END.
 
@@ -2921,6 +3177,9 @@ Keywords
    The program stores as many wavefunctions as possible within the given memory
    allocation.
 
+   The keyword is recognized as ``REALSPACE WFN`` or ``REAL SPACE WFN``. If
+   ``KEEP`` is not given, the real-space wavefunctions are not kept.
+
 .. keyword:: RESCALE OLD VELOCITIES
    :section: &CPMD
 
@@ -2987,17 +3246,23 @@ Keywords
    LATEST
       Restart from the **latest restart** file as indicated in file *LATEST*.
 
-   PHESS
+   PHES
       Read partial Hessian (Hessian of the reaction core) for **transition state
       search** or **vibrational analysis** from restart file. Useful with the
       keywords :kw:`PRFO` or :kw:`HESSIAN`
       [DISCO,SCHLEGEL,UNIT] PARTIAL.
 
+      .. warning::
+
+         Due to the way the line is parsed, the option must be written
+         ``PHES``; the spelling ``PHESS`` used in older versions of this
+         manual is not recognized and is silently ignored.
+
    LSSTAT
       Read all **status information** of the **linear scaling optimizers** (L-BFGS
       and P-RFO) including L-BFGS history but excluding partial Hessian for P-RFO
       from restart file. The **partial Hessian** is read separately using
-      **RESTART PHESS**. Useful with the keywords :kw:`LBFGS` and/or
+      **RESTART PHES**. Useful with the keywords :kw:`LBFGS` and/or
       :kw:`PRFO`.
 
    ADPTTL
@@ -3009,6 +3274,7 @@ Keywords
       Use the information on finite differences stored in the file *FINDIF*. This
       option requires a valid restart file for the wavefunctions, even when
       wavefunctions and coordinates are recalculated or read from the input file.
+      The alias ``VIBANA`` is also accepted.
 
    POTENTIAL
       Read an old potential from the restart file. This applies to restarts for
@@ -3032,13 +3298,30 @@ Keywords
 
    EXTRAP
       Restart from a previously saved wavefunction history. See :kw:`EXTRAPOLATE WFN` for details.
+      The alias ``EXTRAPOLATION`` is also accepted.
 
    CVDFT
       Read CDFT multiplier :math:`V` from ``CDFT_RESTART``, for HDA run read
       :math:`V` and wavefunction of the appropriate state.
 
+   ORBHA
+      (alias ``HARDNESS``) Restart an orbital hardness calculation (the
+      finite-difference or linear-response data already stored in file
+      ``FINDIF`` are reused).
+
+   LINRES
+      Restart with the old linear-response vectors read from the restart file.
+
+   NOREST
+      (alias ``NORESTART``) Do not read the restart file: the wavefunction is
+      initialized as in a fresh run (only ``GEOFILE`` is honored), and in
+      molecular dynamics the wavefunction velocities are quenched.
+
    ALL
-      Restart with all fields of RESTART file
+      Restart with all fields of RESTART file. ``ALL`` switches on all options
+      listed above (including ``GEOFILE``, ``LATEST``, ``VIBANALYSIS``,
+      ``ORBHA`` and ``LINRES``) except ``PHES``, ``LSSTAT``, ``ADPTTL`` and
+      ``NOREST``.
 
 .. keyword:: RESTFILE
    :section: &CPMD
@@ -3049,6 +3332,18 @@ Keywords
    The restart files are written in turn. **Default is 1**. If you specify e.g. 3,
    then the files RESTART.1, RESTART.2, RESTART.3 are used in rotation.
 
+   The alias ``RESTFILES`` is also accepted. With the option ``SAMPLE``
+   (``RESTFILE SAMPLE``) the number of restart files (at most 10) is followed
+   by the list of step numbers at which the restart files are written (free
+   format, may span several lines); restart files are then written only at
+   these steps instead of every *ISTORE* steps (see :kw:`STORE`).
+
+   Example::
+
+      RESTFILE SAMPLE
+        3
+        1000 2000 3000
+
 .. keyword:: REVERSE VELOCITIES
    :section: &CPMD
 
@@ -3056,13 +3351,14 @@ Keywords
    setup of an MD run. This way one can, e.g., go “backwards” from a given
    :kw:`RESTART` to improve sampling of a given MD “path”.
 
-.. keyword:: RFO ORDER=nsorder
+.. keyword:: RFO
    :section: &CPMD
+   :alternatives: [ORDER=nsorder]
 
    Rational function approximation combined with a quasi-Newton method (using
    BFGS) for **optimization** of the **ionic positions** is
    used [Banerjee85]_. A saddle point of order nsorder is searched
-   for.
+   for. ``ORDER=nsorder`` is optional; **default** is 0, i.e. a minimum.
 
 .. keyword:: RHOOUT
    :section: &CPMD
@@ -3242,7 +3538,7 @@ Keywords
 
 .. keyword:: ROKS
    :section: &CPMD
-   :alternatives: {SINGLET, TRIPLET},{DELOCALIZED, LOCALIZED, GOEDECKER}
+   :alternatives: {SINGLET, TRIPLET},{DELOCALIZED, LOCALIZED, GOEDECKER, EXPERT}
 
    Calculates the first excited state using Restricted Open-shell Kohn-Sham
    theory [Frank98]_. By default, the singlet state is calculated
@@ -3252,11 +3548,21 @@ Keywords
    using the :kw:`LSE <LOW SPIN EXCITATION>` input). See :ref:`hints:roks`
    for further information.
 
-.. keyword:: RUNGE_KUTTA
-   :target: RUNGE-KUTTA
+   With the option ``EXPERT``, the twelve parameters of the generalized
+   Goedecker-Umrigar scheme are read (list-directed) from the next line in
+   the order :math:`a_{AC}, b_{AC}, a_{BC}, b_{BC}, a_{CA}, b_{CA}, a_{CB},
+   b_{CB}, a_{BA}, b_{BA}, a_{AB}, b_{AB}`. ``GOEDECKER``, ``EXPERT`` and
+   ``LOCALIZED`` are mutually exclusive (checked in this order).
+
+.. keyword:: RUNGE-KUTTA
    :section: &CPMD
 
-   Defines the integration schemes used in the Ehrenfest :kw:`MOLECULAR DYNAMICS`. Always used this option.
+   Defines the integration scheme used together with :kw:`CAYLEY` in the
+   Ehrenfest :kw:`MOLECULAR DYNAMICS` (``EH``); recommended
+   for EH dynamics. It is ignored (switched off) for
+   :kw:`PROPAGATION SPECTRA` and :kw:`PROPAGATION DISTRUB`. The form
+   ``RUNGE KUTTA`` (two words) is also accepted; ``RUNGE_KUTTA`` is not
+   recognized.
 
 .. keyword:: SCALED MASSES
    :section: &CPMD
@@ -3280,6 +3586,12 @@ Keywords
    subtracted again at the end of the main loop, restoring back the original
    :math:`V_{\rm pot}({\bf r})` that remains basically unaffected once that the
    calculation is completed.
+
+   .. warning::
+
+      In the current code the value is read with a character format into a
+      real variable, so it is not read correctly: depending on the compiler
+      the read fails silently and the shift keeps its default value 0.
 
 .. keyword:: SINR
    :section: &CPMD
@@ -3321,23 +3633,17 @@ Keywords
 
 .. source: src/control_utils.mod.F90:2899
 
-.. keyword:: SOC
-   :section: &CPMD
-
-   Compute the spin-orbit coupling (SOC) elements between the two states specified
-   in the next line. To be used together with the principal keyword SPECTRA. The
-   calculation is based on the Auxiliary Many-Electron Wavefunction Approach for
-   TDDFT developed in Ref. [taver]_. For more information see
-   Ref. [SOC]_.
-
 .. keyword:: SPIN-ORBIT COUPLING
    :section: &CPMD
 
    Computes spin-orbit coupling (SOC) matrix elements between singlet and
    triplet TDDFT states. This is a main run option; it cannot be combined with
    other run options such as :kw:`ELECTRONIC SPECTRA`. The calculation is
-   based on the auxiliary many-electron wavefunction approach for TDDFT; see
-   the references given for this method in the current manual entry ``SOC``.
+   based on the auxiliary many-electron wavefunction approach for TDDFT
+   developed in Ref. [taver]_. For more information see Ref. [SOC]_.
+
+   Note that the keyword must be written ``SPIN-ORBIT COUPLING``; the short
+   form ``SOC`` used in older versions of this manual is not recognized.
 
    Two integers are read from the next line: the index of the singlet state
    ``ISOCS`` (0 denotes the ground state) and the index of the triplet state
@@ -3382,7 +3688,21 @@ Keywords
    interpolation whenever needed. This option may be useful to save time during
    the initialization phase and memory in the case of Vanderbilt pseudopotentials
    when the number of shells is not much smaller than the total number of plane
-   waves, i.e. for all cell symmetries except simple cubic and fcc.
+   waves, i.e. for all cell symmetries except simple cubic and fcc. This is
+   selected with the option **QFUNCTION**.
+
+   With **RANGE** a factor is read from the next line; if it is larger than 1,
+   the spline grid is extended beyond the cutoff by this factor (**default**
+   1). **INIT** is accepted but corresponds to the default behavior.
+
+   **POINTS** must be given on its own ``SPLINE`` line: options written after
+   ``POINTS`` on the same line are ignored, because they are looked for in the
+   line containing the number of points. For example::
+
+      SPLINE POINTS
+        3000
+      SPLINE QFUNCTION RANGE
+        1.5
 
 .. keyword:: SPREAD RSPACE
    :section: &CPMD
@@ -3442,7 +3762,8 @@ Keywords
 
    NOPRECONDITIONING works only for electrons and LINE only for ions. Use the
    method of **steepest descent** for the **optimization** of wavefunction and/or
-   atomic positions and/or cell.
+   atomic positions and/or cell. The singular forms ``ELECTRON`` and ``ION``
+   and the short form ``NOPREC`` are also accepted.
 
    If both options are specified in a geometry optimization run, a simultaneous
    optimization is performed.
@@ -3473,7 +3794,7 @@ Keywords
 .. keyword:: STORE
    :section: &CPMD
    :options: {OFF}
-   :alternatives: [WAVEFUNCTIONS, DENSITY, POTENTIAL]
+   :alternatives: [WAVEFUNCTION, DENSITY, POTENTIAL]
 
    The :kw:`RESTART` file is **updated** every *ISTORE* steps. *ISTORE*
    is read from the next line. **Default** is at the **end of the run**.
@@ -3483,15 +3804,31 @@ Keywords
    file. If OFF is specified , do not store wavefunctions and/or density (*ISTORE*
    is not necessary).
 
+   Note that wavefunction and density are stored by default; the options are
+   therefore mainly useful together with ``OFF``, e.g. ``STORE OFF DENSITY``.
+
+   .. warning::
+
+      The wavefunction option is only recognized in the singular form
+      ``WAVEFUNCTION`` (the parser also accepts the misspelling
+      ``WAVEFUNCUNCTIONS``); ``STORE OFF WAVEFUNCTIONS`` does **not** switch
+      off storing the wavefunction.
+
 .. keyword:: STRESS TENSOR
    :target: STRESS TENSOR CPMD
    :section: &CPMD
+   :alternatives: [VIRIAL]
 
    Calculate the **stress tensor** every *NSTEP* iteration in a constant volume
    MD.
 
    *NSTEP* is read from the next line. Works also for wavefunction or geometry
    optimisation. In this case NSTEP is meaningless.
+
+   The option ``VIRIAL`` only affects path-integral runs with staging or
+   normal-mode transformation: the stress tensor is then evaluated with the
+   virial estimator (using the forces on the beads) instead of the default
+   estimator based on the harmonic spring terms.
 
 .. keyword:: STRUCTURE
    :section: &CPMD
@@ -3513,10 +3850,10 @@ Keywords
    If COMVEL is selected, the total momentum of the system is removed, if ROTVEL
    is selected the global angular momentum of the system is removed. Both options
    can be used separately and simultaneously. The subtraction is done each
-   **ncomv** or **nrotv** steps, where the value is read in the next line.
-
-   If this key is activated but no number provided, the **default** is
-   :math:`10000` steps.
+   **ncomv** or **nrotv** steps; the value is read from the next line and is
+   mandatory (a missing number stops the program with "ERROR WHILE READING
+   VALUE"). If both COMVEL and ROTVEL are given on the same line, a single
+   value is read and used for both.
 
    **Note**: The use of these keywords is strongly recommended for long runs (e.g.
    :math:`t>10` ps) and/or low density systems (e.g. isolated molecules, gas phase
@@ -3537,11 +3874,23 @@ Keywords
 
 .. keyword:: SURFACE HOPPING
    :section: &CPMD
+   :alternatives: [NEW, RESTART, SHIFT=eshift]
 
    Nonadiabatic dynamics involving the ground state and a :kw:`ROKS`
    excited state\ [surfhop]_. Do NOT use this keyword together with
    :kw:`T-SHTDDFT`, which invokes the surface hopping MD scheme based
    on TDDFT [TDDFT-SH]_ (see :kw:`T-SHTDDFT`).
+
+   Options:
+
+   * ``NEW`` uses the new version of the Runge-Kutta integrator for the state
+     populations (the old one is the **default**).
+   * ``RESTART`` reads the surface hopping data (current surface and state
+     populations) from the :kw:`RESTART` file. Without it, and if no file
+     ``RESH`` is present, the run starts on the excited state surface with
+     population 1.
+   * ``SHIFT=eshift`` adds the constant ``eshift`` (in eV) to the energy of
+     the excited (ROKS) state. **Default** is 0.
 
 .. keyword:: TASKGROUPS
    :section: &CPMD
@@ -3621,12 +3970,19 @@ Keywords
 
    **Default** is :math:`1000`\ K.
 
+   The spelling ``TEMPERATURE ELECTRONS`` is also accepted.
+
 .. keyword:: TIMESTEP
    :section: &CPMD
 
    The time step in atomic units is read from the next line.
 
    **Default** is a time step of **5 a.u.** (:math:`1\, a.u. = 0.0241888428` fs).
+
+   ``TIMESTEP`` sets both the time step of the ions and of the electrons, as
+   does ``TIMESTEP IONS ELECTRONS`` (both words). The singular forms ``ION``
+   and ``ELECTRON`` are also accepted in :kw:`TIMESTEP IONS` and
+   :kw:`TIMESTEP ELECTRONS`.
 
 .. keyword:: TIMESTEP ELECTRONS
    :section: &CPMD
@@ -3645,8 +4001,9 @@ Keywords
    :section: &CPMD
    :alternatives: [ALL,MASTER]
 
-   Activate the tracing of the procedures. *ALL* specifies that all the mpi tasks
-   are traced. *ALL* specifies that only the master is traced.
+   Activate the tracing of the procedures. *ALL* specifies that all the MPI
+   tasks are traced, *MASTER* that only the master is traced. ``TRACE``
+   without one of these options switches tracing off.
 
 .. keyword:: TRACE_MAX_CALLS
    :target: TRACE MAX CALLS
@@ -3669,7 +4026,7 @@ Keywords
 
 .. keyword:: TRAJECTORY
    :section: &CPMD
-   :alternatives: [OFF, XYZ, DCD, SAMPLE, BINARY, RANGE, FORCES]
+   :alternatives: [OFF, XYZ, DCD, SAMPLE, BINARY, RANGE, FORCES, FIXFORCE, SMALL]
 
    Store the atomic positions, velocities and optionally forces at every *NTRAJ*
    time step on file *TRAJECTORY*. This is the **default for MD runs**. With the
@@ -3689,8 +4046,18 @@ Keywords
    largest index of atoms is read from the next line. If both, SAMPLE and RANGE
    are given, the RANGE parameters have to come before the SAMPLE parameter.
 
+   The aliases ``TRAJ`` (for ``TRAJECTORY``) and ``BIN`` (for ``BINARY``) are
+   accepted. With ``SMALL`` only the first atoms are written to the trajectory
+   files; their number is read from the line following the ``SAMPLE`` value
+   (it is only read if ``SAMPLE`` is present; **default** 1). With
+   ``FIXFORCE`` an additional file ``FTRAJECTORY_FIX`` is written that
+   contains the positions and the ionic forces before the components of fixed
+   atoms or coordinates are removed. The order of the extra input lines is:
+   ``RANGE`` line, ``SAMPLE`` line, ``SMALL`` line.
+
 .. keyword:: TROTTER FACTOR
    :section: &CPMD
+   :alternatives: [N=n]
 
    Solve :math:`e^{-H/k_BT}` directly using **Trotter approximation**
 
@@ -3701,6 +4068,13 @@ Keywords
    The Trotter factor is read from the next line (typically 0.001 is very
    accurate).
 
+   With ``TROTTER FACTOR N=n``, ``n`` lines are read instead of one, each with
+   a threshold density and a Trotter factor, so that the Trotter factor can be
+   changed during the self-consistent iterations (as for
+   :kw:`ANDERSON MIXING` ``N=n``). The first Trotter factor is used at the
+   start. This form only works with the word ``FACTOR`` (not
+   ``FACTORIZATION``).
+
 .. keyword:: TROTTER FACTORIZATION OFF
    :section: &CPMD
 
@@ -3710,6 +4084,13 @@ Keywords
    effect. Note: this keyword has *nothing* to do with path integral MD as
    activated by the keyword PATH INTEGRAL and as specified in the section &PIMD
    ... &END.
+
+   .. warning::
+
+      In the current code this keyword does not switch off the Trotter
+      factorization; it only switches off the Bogoliubov correction. Like
+      :kw:`TROTTER FACTOR`, it reads the Trotter factor from the next line,
+      which therefore must be present.
 
 .. keyword:: TUNE_FFT_BATCHSIZE
    :section: &CPMD
@@ -3947,6 +4328,10 @@ Keywords
    options, EMPIRICAL CORRECTION and WANNIER CORRECTION are mutually exclusive.
    See :kw:`VDW PARAMETERS` for more details.
 
+   The empirical correction cannot be combined with
+   :kw:`KOHN-SHAM ENERGIES`; the run stops with ``vdWc incompatible with KS``
+   if ``KOHN-SHAM ENERGIES`` appears earlier in the &CPMD section.
+
 .. keyword:: VDW WANNIER
    :section: &CPMD
 
@@ -3955,7 +4340,8 @@ Keywords
    which maximally localized Wannier functions (WF) and centers (WFC) have been
    previously computed. The file WANNIER-CENTER generated upon WFC calculation
    must be present. This activates the reading procedure of the corresponding
-   parameters from the &VDW ... &END section.
+   parameters from the &VDW ... &END section. ``VDW WANNIER OFF`` switches the
+   correction off.
 
 .. keyword:: VERBOSE
    :target: VERBOSE CPMD
@@ -3993,11 +4379,17 @@ Keywords
 
    For :kw:`CDFT` runs read the inverse of the gradient optimiser step
    size (:math:`1/dx`) from the next line. The standard value of **10.0** should
-   be fine in most situations.
+   be fine in most situations. The value must be positive.
+
+   Optionally, a second value ``MAXVMOV`` is read from the same line. In the
+   ``NEWTON`` scheme of :kw:`CDFT`, if the Newton step for :math:`V` would be
+   larger than ``MAXVMOV``, the gradient step defined by the first value is
+   used instead. If ``MAXVMOV`` is missing or not positive, the **default**
+   0.1 is used.
 
 .. keyword:: VIBRATIONAL ANALYSIS
    :section: &CPMD
-   :alternatives: [FD, LR, IN], [GAUSS, SAMPLE, ACLIMAX]
+   :alternatives: [FD, LR, IN], [GAUSS, SAMPLE, ACLIMAX, MODE=n]
 
    Calculate harmonic frequencies by finite differences of first derivatives
    **(FD)** (see also keyword :kw:`FINITE DIFFERENCES`), by
@@ -4014,8 +4406,13 @@ Keywords
    (https://www.isis.stfc.ac.uk/Pages/Tosca-software.aspx). If a section
    **&PROP** is present with the keyword :kw:`DIPOLE MOMENT`\ [BERRY] or :kw:`DIPOLE MOMENT`\ [RS], the Born charge tensor is calculated on the
    fly. See also the block &LINRES ... &END and the keywords
-   :kw:`RESTART` PHESS and :kw:`HESSIAN`
+   :kw:`RESTART` PHES and :kw:`HESSIAN`
    {DISCO,SCHLEGEL,UNIT} PARTIAL.
+
+   With ``MODE=n``, the atomic positions and the ``n``-th eigenvector of the
+   Hessian are printed to the standard output (in atomic units). Note that
+   this uses the same internal variable as :kw:`PRFO` ``MODE``; the keyword
+   :kw:`VIBRATIONAL ANALYSIS` resets it to 0 if ``MODE=n`` is not given.
 
 .. keyword:: VMIRROR
    :section: &CPMD
@@ -4043,18 +4440,29 @@ Keywords
 
    Does not work with :kw:`MOLECULAR DYNAMICS` CP.
 
+   .. warning::
+
+      In the current version this keyword is not recognized by the input
+      parser (typo in the keyword test in ``control_utils.mod.F90``); the
+      line is reported as an unknown keyword and has no effect.
+
 .. keyword:: WANNIER NPROC
    :section: &CPMD
 
    Set the number of mpi tasks to be used for localization. Default is to use all
    the tasks available. The number of tasks is read from the next line and shall
-   be a divisor of the number of tasks in a parallel run.
+   be a divisor of the number of tasks in a parallel run. If the value is
+   larger than the number of tasks or not positive, a warning is printed and
+   all tasks are used.
 
 .. keyword:: WANNIER OPTIMIZATION
    :section: &CPMD
    :options: {SD,JACOBI,SVD}
 
    Use steepest descent or Jacobi rotation method for the orbital localization.
+   With ``SVD`` the localization uses a singular value decomposition of the
+   overlap between the orbitals and the atomic pseudo-orbitals (not
+   implemented for LSD).
 
    Default are Jacobi rotations.
 
@@ -4064,9 +4472,11 @@ Keywords
    *W_STEP, W_EPS, W_RAN, W_MAXS* are read from the next line. *W_STEP* is the
    step size of the steepest descent algorithm used in the optimization procedure
    (default value 0.1). *W_EPS* the convergence criteria for the gradient (default
-   value :math:`1.e-7`). *W_RAN* the amplitude for the initial random rotation of
-   the states (default value 0.0). *W_MAXS* is the maximum steps allowed in the
-   optimization (default value 200).
+   value :math:`10^{-8}`). *W_RAN* the amplitude for the initial random rotation
+   of the states (default value 0.0). *W_MAXS* is the maximum steps allowed in the
+   optimization (default value 2000).
+
+   The alias ``WANNIER PARAMETERS`` is also accepted.
 
 .. keyword:: WANNIER RECOMPUTE_DIPOLE_MATRICES_EVERY
    :section: &CPMD
@@ -4132,7 +4542,7 @@ Keywords
 
 .. keyword:: WANNIER WFNOUT
    :section: &CPMD
-   :alternatives: [ALL,PARTIAL,LIST,DENSITY]
+   :alternatives: [ALL,PARTIAL,LIST,SPREAD,DENSITY]
 
    Controls the printing of Wannier functions. Either all or only some of the
    functions can be printed. This will be done at the end of each calculation of
@@ -4144,6 +4554,13 @@ Keywords
 
                   WANNIER WFNOUT PARTIAL
                      5  8
+
+   With ``SPREAD`` a spread threshold is read from the next line: if it is
+   positive, only the Wannier functions with a spread larger than this value
+   are printed; if it is negative, only those with a spread smaller than its
+   absolute value. Unless ``ALL`` is given, one of ``PARTIAL``, ``LIST`` or
+   ``SPREAD`` must be present, otherwise the run stops with
+   ``ERROR IN WANNIER PARAMETERS``.
 
    .. figure:: ../fig/b2h6-wannier.png
       :width: 40%
@@ -4213,8 +4630,11 @@ Keywords
 
 .. keyword:: TSDE, TSDP, TSDC
    :section: &CPMD
-   :alternatives: [NOPRECONDITIONING]
-   :notes: NOPRECONDITIONING only electrons
+   :alternatives: [NOPRECONDITIONING], [LINE]
+   :notes: NOPRECONDITIONING only electrons, LINE only ions
 
    Short forms for the different :kw:`STEEPEST DESCENT`
-   options.
+   options. ``TSDP LINE`` performs a line minimization along the steepest
+   descent direction for the ions. ``NOPREC`` is accepted for
+   ``NOPRECONDITIONING``. See also :kw:`TCGP` for the conjugate gradient
+   short form.
