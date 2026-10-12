@@ -7,7 +7,7 @@ MODULE io_utils
   USE string_utils,                    ONLY: int2str
 
 #ifdef __PARALLEL
-  USE mpi
+  USE mpi_f08
 #endif
 
 
@@ -44,12 +44,17 @@ CONTAINS
 
     CHARACTER(256)                           :: file_name, iomsg
     INTEGER                                  :: ierr, iostat
+#if defined(__PARALLEL)
+    TYPE(MPI_File)                           :: fh
+#endif
 
     iostat=0
     iomsg=''
 #if defined(__PARALLEL)
     IF (use_mpi) THEN
-       CALL mpi_file_close(unit,ierr)
+       fh%MPI_VAL = unit
+       CALL mpi_file_close(fh,ierr)
+       unit = fh%MPI_VAL
     ELSE
 #endif
 #if ! defined(HASNT_F03_FEATURES)
@@ -86,11 +91,18 @@ CONTAINS
     RETURN
   END SUBROUTINE file_close
   SUBROUTINE file_open(file_name,form,status,action,&
-       is_stream,use_mpi,grp,unit)
+       is_stream,use_mpi,unit,grp)
+    ! With USE_MPI the file is opened with MPI-IO on the communicator GRP,
+    ! and UNIT returns the integer value (MPI_VAL) of the MPI file handle.
     CHARACTER(*)                             :: file_name, form, status, &
                                                 action
     LOGICAL                                  :: is_stream, use_mpi
-    INTEGER                                  :: grp, unit
+    INTEGER                                  :: unit
+#if defined(__PARALLEL)
+    TYPE(MPI_Comm), OPTIONAL                 :: grp
+#else
+    INTEGER, OPTIONAL                        :: grp
+#endif
 
     CHARACTER(*), PARAMETER                  :: procedureN = 'file_open'
 
@@ -98,8 +110,8 @@ CONTAINS
     INTEGER                                  :: iostat
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr,mode
+    TYPE(MPI_File) :: fh
 #endif
     iostat=0
     iomsg=''
@@ -107,7 +119,7 @@ CONTAINS
        WRITE(6,*) procedureN,' opening file: NAME=',TRIM(FILE_NAME), &
             ' FORM=',TRIM(FORM),' STATUS=',TRIM(STATUS), & 
             ' ACTION=',TRIM(ACTION),' IS_STREAM=',IS_STREAM, &
-            ' USE_MPI=',USE_MPI,' GRP=',GRP
+            ' USE_MPI=',USE_MPI
     ENDIF
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (is_stream) THEN
@@ -121,8 +133,11 @@ CONTAINS
              CALL stopgm(procedureN,'invalid ACTION',& 
                   __LINE__,__FILE__)
           END SELECT
+          IF (.NOT.PRESENT(grp)) CALL stopgm(procedureN,&
+               'MPI-IO needs a communicator',__LINE__,__FILE__)
           CALL mpi_file_open(grp,file_name,mode,MPI_INFO_NULL,&
-               unit,ierr)
+               fh,ierr)
+          unit = fh%MPI_VAL
        ELSE
 #endif
 
@@ -172,15 +187,16 @@ CONTAINS
     INTEGER(int_8)                           :: offset
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
     INTEGER(kind=MPI_OFFSET_KIND) :: offset_tmp
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
        offset_tmp = offset
-       CALL mpi_file_seek(unit,offset_tmp,MPI_SEEK_SET,ierr)
+       fh%MPI_VAL = unit
+       CALL mpi_file_seek(fh,offset_tmp,MPI_SEEK_SET,ierr)
 #else
        READ(unit,pos=offset)
 #endif
@@ -197,14 +213,15 @@ CONTAINS
     INTEGER(int_8)                           :: offset
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
     INTEGER(kind=MPI_OFFSET_KIND) :: offset_tmp
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_get_position(unit,offset_tmp,ierr)
+       fh%MPI_VAL = unit
+       CALL mpi_file_get_position(fh,offset_tmp,ierr)
        offset = offset_tmp
 #else
        INQUIRE(unit,pos=offset)
@@ -221,13 +238,14 @@ CONTAINS
     LOGICAL                                  :: DATA(*), use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_write(unit,DATA,n,MPI_LOGICAL,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_write(fh,DATA,n,MPI_LOGICAL,&
             MPI_STATUS_IGNORE,ierr)
 #else
        WRITE(unit) DATA(1:n)
@@ -245,13 +263,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_write(unit,DATA,n,MPI_CHARACTER,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_write(fh,DATA,n,MPI_CHARACTER,&
             MPI_STATUS_IGNORE,ierr)
 #else
        WRITE(unit) DATA(1:n)
@@ -268,13 +287,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_write(unit,DATA,n,MPI_INTEGER,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_write(fh,DATA,n,MPI_INTEGER,&
             MPI_STATUS_IGNORE,ierr)
 #else
        WRITE(unit) DATA(1:n)
@@ -292,13 +312,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_write(unit,DATA,n,MPI_DOUBLE_PRECISION,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_write(fh,DATA,n,MPI_DOUBLE_PRECISION,&
             MPI_STATUS_IGNORE,ierr)
 #else
        WRITE(unit) DATA(1:n)
@@ -316,13 +337,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_write(unit,DATA,n,MPI_DOUBLE_COMPLEX,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_write(fh,DATA,n,MPI_DOUBLE_COMPLEX,&
             MPI_STATUS_IGNORE,ierr)
 #else
        WRITE(unit) DATA(1:n)
@@ -339,13 +361,14 @@ CONTAINS
     LOGICAL                                  :: DATA(*), use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_read(unit,DATA,n,MPI_LOGICAL,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_read(fh,DATA,n,MPI_LOGICAL,&
             MPI_STATUS_IGNORE,ierr)
 #else
        READ(unit) DATA(1:n)
@@ -363,13 +386,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_read(unit,DATA,n,MPI_CHARACTER,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_read(fh,DATA,n,MPI_CHARACTER,&
             MPI_STATUS_IGNORE,ierr)
 #else
        READ(unit) DATA(1:n)
@@ -386,13 +410,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_read(unit,DATA,n,MPI_INTEGER,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_read(fh,DATA,n,MPI_INTEGER,&
             MPI_STATUS_IGNORE,ierr)
 #else
        READ(unit) DATA(1:n)
@@ -410,13 +435,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_read(unit,DATA,n,MPI_DOUBLE_PRECISION,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_read(fh,DATA,n,MPI_DOUBLE_PRECISION,&
             MPI_STATUS_IGNORE,ierr)
 #else
        READ(unit) DATA(1:n)
@@ -434,13 +460,14 @@ CONTAINS
     LOGICAL                                  :: use_mpi
 
 #if defined(__PARALLEL) && ! defined(_HASNT_BF_STREAM_IO)
-    !    INCLUDE 'mpif.h'
     INTEGER :: ierr
+    TYPE(MPI_File) :: fh
 #endif
 #if ! defined(_HASNT_BF_STREAM_IO)
     IF (use_mpi) THEN
 #if defined(__PARALLEL)
-       CALL mpi_file_read(unit,DATA,n,MPI_DOUBLE_COMPLEX,&
+       fh%MPI_VAL = unit
+       CALL mpi_file_read(fh,DATA,n,MPI_DOUBLE_COMPLEX,&
             MPI_STATUS_IGNORE,ierr)
 #else
        READ(unit) DATA(1:n)

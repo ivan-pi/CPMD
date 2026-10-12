@@ -170,7 +170,7 @@ CONTAINS
        ENDIF
 
        CALL file_open(filnam,'UNFORMATTED','OLD','READ',&
-            cntl%is_in_stream,.FALSE.,0,nr)
+            cntl%is_in_stream,.FALSE.,nr)
 
     ENDIF
 
@@ -2483,7 +2483,7 @@ CONTAINS
     ENDIF
     ! ==--------------------------------------------------------------==
     CALL file_open(filnam,'UNFORMATTED','OLD','READ',cntl%is_in_stream,&
-         .FALSE.,0,nr)
+         .FALSE.,nr)
     READ(nr) str
     IF (INDEX(str,'STUTTGART VERSION 3.0').EQ.0) THEN
        CALL stopgm('RDKPOINTS',&

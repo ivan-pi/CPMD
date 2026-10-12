@@ -174,7 +174,7 @@ CONTAINS
        ENDIF
 
        CALL file_open(filnam,'UNFORMATTED','UNKNOWN',&
-            'READWRITE',cntl%is_out_stream,.FALSE.,0,nw)
+            'READWRITE',cntl%is_out_stream,.FALSE.,nw)
 
     ENDIF ! IO_PARENT
 

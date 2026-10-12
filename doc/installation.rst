@@ -17,8 +17,8 @@ Prerequisites
 * A recent Fortran compiler (e.g. GNU gfortran, Intel
   ifx/ifort, NVIDIA/PGI, Cray, Fujitsu, ...) and a C compiler.
 * BLAS and LAPACK (e.g. OpenBLAS, Intel MKL, ESSL).
-* An MPI library for parallel runs. Without MPI (no ``-D__PARALLEL``) a
-  serial version is built.
+* An MPI library with the ``mpi_f08`` module for parallel runs. Without MPI
+  (no ``-D__PARALLEL``) a serial version is built.
 * Optional: FFTW3 (otherwise the built-in FFT is used), `libxc
   <https://libxc.gitlab.io/>`_ for additional exchange-correlation
   functionals, CUDA for the GPU code, MINPACK, and the Gromos sources for the
@@ -200,13 +200,14 @@ last total energy of each with a reference value: a smoke test in ``tests/``
 and the regression tests used by CI in ``.github/tests/`` (registered in
 ``.github/tests/tests.cmake``, pseudopotentials in ``.github/tests/pseudo/``).
 They cover wavefunction optimisation (ODIIS, PCG, LSD, PBE, k-points, CP
-groups), restarting, geometry optimisation, BO and CP molecular dynamics
-and, with ``CPMD_ENABLE_VDWLIB``, the Grimme D3 correction. MPI builds run
-them with ``mpiexec -n 2``; set ``MPIEXEC_EXECUTABLE``, ``MPIEXEC_PREFLAGS``
-or ``CPMD_TEST_NPROCS`` to change that, and ``CPMD_TEST_NTHREADS`` for the
-number of OpenMP threads per process (default 1). These tests check that the
-build works and that results do not change; they are not a replacement for
-the CPMD regression test suite (https://github.com/CPMD-code/Regtests).
+groups), restarting (also with MPI-IO), geometry optimisation, BO and CP
+molecular dynamics and, with ``CPMD_ENABLE_VDWLIB``, the Grimme D3
+correction. MPI builds run them with ``mpiexec -n 2``; set
+``MPIEXEC_EXECUTABLE``, ``MPIEXEC_PREFLAGS`` or ``CPMD_TEST_NPROCS`` to change
+that, and ``CPMD_TEST_NTHREADS`` for the number of OpenMP threads per process
+(default 1). These tests check that the build works and that results do not
+change; they are not a replacement for the CPMD regression test suite
+(https://github.com/CPMD-code/Regtests).
 
 FFTW3 builds take much longer to run the tests (about a minute each) because
 CPMD creates its FFTW plans with ``FFTW_EXHAUSTIVE``.
@@ -214,7 +215,8 @@ CPMD creates its FFTW plans with ``FFTW_EXHAUSTIVE``.
 The GitHub Actions workflow ``.github/workflows/cmake.yml`` builds CPMD with
 the gfortran versions of the Ubuntu runner (native configuration with MPI,
 with FFTW3, with the scratch and vdW libraries and two OpenMP threads,
-without MPI, and one ``configure/`` file) and runs the tests.
+without MPI, and one ``configure/`` file) and runs the tests. A separate job
+checks that MPI is only used through the ``mpi_f08`` module.
 
 Layout of the build
 ~~~~~~~~~~~~~~~~~~~

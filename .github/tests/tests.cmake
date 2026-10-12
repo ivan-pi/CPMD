@@ -24,18 +24,22 @@ cpmd_add_test(h2o_wfopt_pbe h2o_wfopt_pbe/input.inp
   ENERGY -16.78776004 TOLERANCE 0.000001 ${_pp})
 cpmd_add_test(h2_kpoints h2_kpoints/input.inp
   ENERGY -1.12385552 TOLERANCE 0.000001 ${_pp})
-# CP groups split the MPI processes into 2 groups
+# Restart from the files of a previous run
+cpmd_add_test(h2o_restart h2o_restart/step1.inp h2o_restart/step2.inp
+  ENERGY -16.68988805 TOLERANCE 0.000001 ${_pp})
+
+# CP groups split the MPI processes into 2 groups; with them, stream
+# restart files are written and read with MPI-IO
 if(CPMD_ENABLE_MPI)
   math(EXPR _odd "${CPMD_TEST_NPROCS} % 2")
 endif()
 if(CPMD_ENABLE_MPI AND NOT _odd)
   cpmd_add_test(h2o_wfopt_cp_groups h2o_wfopt_cp_groups/input.inp
     ENERGY -16.68988805 TOLERANCE 0.000001 ${_pp})
+  cpmd_add_test(h2o_restart_mpi_io
+    h2o_restart_mpi_io/step1.inp h2o_restart_mpi_io/step2.inp
+    ENERGY -16.68988805 TOLERANCE 0.000001 ${_pp})
 endif()
-
-# Restart from the files of a previous run
-cpmd_add_test(h2o_restart h2o_restart/step1.inp h2o_restart/step2.inp
-  ENERGY -16.68988805 TOLERANCE 0.000001 ${_pp})
 
 # Geometry optimisation and molecular dynamics
 cpmd_add_test(h2o_geoopt h2o_geoopt/input.inp
