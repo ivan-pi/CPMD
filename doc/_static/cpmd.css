@@ -1,0 +1,5 @@
+/* Keyword entries: keep the argument summary readable. */
+dl.cpmd.keyword > dt { font-family: var(--font-stack--monospace, monospace); }
+dl.cpmd.keyword > dt .sig-name { font-weight: bold; }
+p.kw-section { font-size: 0.9em; }
+table.kw-summary td p { margin: 0; }

@@ -1,0 +1,140 @@
+.. _about:
+
+About this manual
+=================
+
+Many members of the CPMD consortium (http://www.cpmd.org/) contributed to this
+manual. This version of the manual is based on a compilation by Barbara
+Kirchner, Ari P. Seitsonen and Jürg Hutter working at the Physical Chemistry
+Institute of the University of Zurich. Recent updates by Mauro Boero,
+Alessandro Curioni, Jürg Hutter, Axel Kohlmeyer, Nisanth Nair and Wolfram
+Quester.
+
+If you want to contribute or have constructive criticism please contact
+cpmd@cpmd.org.
+
+.. _citation:
+
+Citation
+========
+
+Publications of results obtained with CPMD should acknowledge its use by an
+appropriate citation of the following kind:
+
+*CPMD, http://www.cpmd.org/,
+Copyright IBM Corp 1990-2019,
+Copyright MPI für Festkörperforschung Stuttgart 1997-2001*.
+
+Important constants and conversion factors
+==========================================
+
+Input and output are in Hartree atomic units (a.u.), unless otherwise
+explicitly mentioned.
+
+IMPORTANT NOTICE:
+~~~~~~~~~~~~~~~~~
+
+As of CPMD version 3.15.1 all constants and conversion factors have been
+consolidated and updated to the CODATA 2006 data
+set\ [codata2006]_. For details see the file ``cnst.inc`` and
+http://physics.nist.gov/constants.
+
++-------------------+---------------------------------------------------------+
+| *quantity*        | *conversion factor*                                     |
++-------------------+---------------------------------------------------------+
+| time step         | 1 a.u. = 0.02418884326505 fs                            |
++-------------------+---------------------------------------------------------+
+| coordinates       | 1 Bohr = 1 a\ :math:`_0` = 0.52917720859 Å              |
++-------------------+---------------------------------------------------------+
+| velocity          | 1 a.u. = 1 Bohr / 1 a.t.u. = 2187691.2541 m/s           |
++-------------------+---------------------------------------------------------+
+| energy            | 1 Ha = 27.21138386 eV = 627.5094706 kcal/mol =          |
+|                   | 2625.4996251 kJ/mol                                     |
++-------------------+---------------------------------------------------------+
+| plane wave cutoff | 1 Ry = 1/2 Ha = 13.60569193 eV                          |
++-------------------+---------------------------------------------------------+
+| dipole moment     | 1 a.u. = 2.5417462289 Debye                             |
++-------------------+---------------------------------------------------------+
+| atomic mass       | 1 a.u. = 0.00054857990943 a.m.u                         |
++-------------------+---------------------------------------------------------+
+
+.. _intro:further:
+
+Recommendations for further reading
+===================================
+
+-  **General Introduction to Theory and Methods**
+
+   Jorge Kohanoff, "Electronic Structure Calculation for Solids and Molecules",
+
+   Cambridge University Press, 2006, ISBN-13 978-0-521-81591-8
+
+   http://www.cambridge.org/9780521815918
+
+-  **General introduction to Car-Parrinello simulation**
+
+   D. Marx and J. Hutter, "Ab Initio Molecular Dynamics - Basic Theory and
+   Advanced Methods”,
+
+   Cambridge University Press, 2009
+
+   D. Marx and J. Hutter, "Modern Methods and Algorithms of Quantum Chemistry",
+
+   Forschungszentrum Jülich, NIC Series, Vol. 1 (2000), 301-449
+
+   W. Andreoni and A. Curioni,
+
+   "New Advances in Chemistry and Material Science with CPMD and Parallel
+   Computing",
+
+   *Parallel Computing*, 26 (2000) 819.
+
+-  **Electronic Structure Theory**
+
+   Richard M. Martin, "Electronic Structure: Basic Theory and Practical
+   Methods’",
+
+   Cambridge University Press, 2004, ISBN-13: 978-0-521-78285-2
+
+   http://electronicstructure.org
+
+-  **General overview about quantum simulation techniques**
+
+   J. Grotendorst, D. Marx, and A. Muramatsu, *Quantum Simulations of Complex
+   Many–Body Systems: From Theory to Algorithms*, (John von Neumann Institute
+   for Computing, Forschungszentrum Jülich 2002); Printed Version: ISBN
+   3–00–009057–6 Electronic Version:
+   http://www.fz-juelich.de/nic-series/volume10/ Audio–Visual Version:
+   http://www.fz-juelich.de/video/wsqs/
+
+-  **Molecular dynamics simulation**
+
+   M. P. Allen and D. J. Tildesley, *Computer Simulation of Liquids* (Clarendon
+   Press, Oxford, 1987; reprinted 1990).
+
+   D. Frenkel and B. Smit, *Understanding Molecular Simulation – From
+   Algorithms to Applications* (Academic Press, San Diego, 1996).
+
+   M. E. Tuckerman and G. J. Martyna, J. Phys. Chem. B **104** 159 (2000).
+
+-  **Pseudopotentials**
+
+   http://www.cpmd.org/documentation/useful-links
+
+   http://www.cpmd.org/cpmd_download.html
+
+   http://cvs.berlios.de/cgi-bin/viewcvs.cgi/cp2k/potentials/Goedecker/cpmd/
+
+   http://www.fhi-berlin.mpg.de/th/fhi98md/fhi98PP/
+
+   http://www.physics.rutgers.edu/~dhv/uspp/
+
+   http://www.pwscf.org/pseudo.htm
+
+-  **Parallelization & Performance**
+
+   J. Hutter and A. Curioni, Parallel Computing **31**, 1 (2005).
+
+   J. Hutter and A. Curioni, ChemPhysChem **6**, 1788-1793 (2005).
+
+   C. Bekas and A.Curioni, Comp. Phys. Comm.\ **181**, 1057 (2010).

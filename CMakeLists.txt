@@ -11,7 +11,7 @@
 #   cmake -B build -DCPMD_CONFIG=LINUX-X86_64-GFORTRAN-MPI -DCPMD_ENABLE_OPENMP=ON
 #   CPMD_CONFIG=LINUX-X86_64-GFORTRAN-MPI cmake -B build      # same, via environment
 #
-# See doc/cmake.md for all options.
+# See doc/installation.rst for all options.
 #
 cmake_minimum_required(VERSION 3.18)
 
