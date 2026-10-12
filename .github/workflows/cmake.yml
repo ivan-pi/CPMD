@@ -18,16 +18,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Native CMake configuration (find_package for MPI, OpenMP, LAPACK)
+          # Native CMake configuration (find_package for MPI, OpenMP, LAPACK).
+          # Serial builds (CPMD_ENABLE_MPI=OFF) do not compile with the
+          # current sources: mp_interface uses MPI types unconditionally.
+          - name: gfortran-12, MPI
+            gcc: 12
+            cmake-args: -DCPMD_ENABLE_OPENMP=OFF
           - name: gfortran-13, MPI + OpenMP
             gcc: 13
-            cmake-args: -DCPMD_ENABLE_MPI=ON -DCPMD_ENABLE_OPENMP=ON
-          - name: gfortran-12, serial
-            gcc: 12
-            cmake-args: -DCPMD_ENABLE_MPI=OFF
-          - name: gfortran-14, serial + OpenMP
+            cmake-args: -DCPMD_ENABLE_OPENMP=ON
+          - name: gfortran-14, MPI + OpenMP
             gcc: 14
-            cmake-args: -DCPMD_ENABLE_MPI=OFF -DCPMD_ENABLE_OPENMP=ON
+            cmake-args: -DCPMD_ENABLE_OPENMP=ON
           # Machine configuration from configure/ (mpif90 wrapper, gfortran-13)
           - name: configure/CRAY-HPE-GFORTRAN-AMDEPYC
             gcc: 13

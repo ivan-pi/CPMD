@@ -94,7 +94,7 @@ Notes:
 | Option                     | Default   | Meaning                                                   |
 |----------------------------|-----------|-----------------------------------------------------------|
 | `CPMD_CONFIG`              | `$CPMD_CONFIG` | machine configuration (name in `configure/` or path) |
-| `CPMD_ENABLE_MPI`          | `ON`      | parallel version (`-D__PARALLEL`); taken from `CPPFLAGS` with a configuration |
+| `CPMD_ENABLE_MPI`          | `ON`      | parallel version (`-D__PARALLEL`); taken from `CPPFLAGS` with a configuration. Serial builds currently fail to compile (`mp_interface.mod.F90` uses MPI types without `__PARALLEL`) |
 | `CPMD_ENABLE_OPENMP`       | `OFF`     | OpenMP                                                    |
 | `CPMD_FFT`                 | `DEFAULT` | `DEFAULT` (built-in) or `FFTW3`; without a configuration  |
 | `CPMD_ENABLE_LIBXC`        | `OFF`     | libxc functionals (`-D__HAS_LIBXC`); without a configuration |
