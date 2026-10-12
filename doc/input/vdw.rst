@@ -26,6 +26,97 @@ Keywords
    the desired parameters are not available in the internally coded library,
    *e.g.* for an exotic xc functional.
 
+.. keyword:: EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION
+   :section: &VDW
+
+   Block with the parameters of the empirical van der Waals correction. It is
+   only read if :kw:`VDW CORRECTION` is set in the ``&CPMD`` section. The block
+   ends at the first line containing the word ``END``. Unknown lines inside the
+   block are silently ignored. The following sub-keywords are recognised:
+
+   ``ALL DFT-D2``
+      Use Grimme's DFT-D2 correction with the built-in :math:`C_6` and
+      :math:`R_0` tables for all pairs of species (elements H to Rn; heavier
+      elements up to Z=99 give a zero contribution with a warning).
+   ``ALL DFT-D3``
+      Use Grimme's DFT-D3 correction (see the ``DFT-D3 ...`` sub-keywords).
+   ``CUSTOM``
+      The number of pairs ``NVDW`` is read from the next line, followed by
+      ``NVDW`` lines ``TYPE ia ib C6 R0 d`` where ``ia``, ``ib`` are species
+      indices (order of the ``&ATOMS`` section) and ``TYPE`` is ``C6`` (damped
+      dispersion of Elstner et al.), ``TANH`` or ``DFT-D2``. For ``DFT-D2`` the
+      three numbers may be omitted to use the built-in values. ``DFT-D3`` is not
+      allowed here.
+   ``CUTOFF`` (alias ``VDW-CUTOFF``)
+      Short-range cutoff, read from the next line. **Default** :math:`10^{-2}`.
+   ``CELL`` (alias ``VDW-CELL``)
+      Three integers ``NX NY NZ`` (number of additional cells in each direction
+      for the real-space sum) are read from the next line. **Default** 0 0 0.
+   ``S6GRIMME``
+      Functional label for the DFT-D2 global scaling factor :math:`s_6`, read
+      from the next line: ``BLYP`` (1.20), ``B3LYP`` (1.05), ``BP86`` (1.05),
+      ``TPSS`` (1.00), ``PBE`` (0.75), ``REVPBE`` (1.25), ``PBE0`` (0.60). If not
+      given, :math:`s_6` is taken from the functional of the ``&DFT`` section;
+      the program stops if this is not one of the labels above.
+   ``DFT-D3 PARAMETERS [THREEBODY] [NUMGRAD]``
+      The real-space cutoffs for the dispersion energy and for the coordination
+      numbers are read from the next line (Bohr, or Angstrom with
+      :kw:`ANGSTROM`). **Defaults** :math:`\sqrt{9000}` and :math:`\sqrt{1600}`
+      Bohr. ``THREEBODY`` adds the three-body term, ``NUMGRAD`` uses numerical
+      gradients.
+   ``DFT-D3 FUNCTIONAL [VERSION=n] [TZ]``
+      The functional name as understood by the DFT-D3 library (e.g. ``b-lyp``,
+      ``b3-lyp``, ``pbe``, ``pbe0``) is read from the next line. ``VERSION``
+      selects the damping: 2 (Fermi-type), 3 or 5 (zero damping), 4 or 6
+      (Becke-Johnson damping). ``TZ`` selects the special TZ parameter set.
+      **Default** is ``VERSION=4`` and the functional derived from the
+      ``&DFT`` section (BLYP, B3LYP, BP86, TPSS, PBE, REVPBE, PBE0, HSE06,
+      REVPBE0, CAM-B3LYP, HCTH, PW91, OLYP, PBES, OPBE; otherwise the program
+      stops).
+   ``DFT-D3 NO_CONTRIBUTION``
+      Species indices that are excluded from the DFT-D3 correction are read from
+      the next line.
+
+   Example::
+
+      &VDW
+       EMPIRICAL CORRECTION
+        ALL DFT-D3
+        DFT-D3 FUNCTIONAL VERSION=4
+         pbe
+       END EMPIRICAL CORRECTION
+      &END
+
+   .. todo::
+
+      MISSING: functional form of the TANH type; meaning of the TZ parameter
+      set and of VERSION 5 and 6 beyond the damping family printed by the code.
+
+.. source: src/vdwin_utils.mod.F90:143 (sub-parser empvdwin, 410-760;
+.. s6 table set_s6 1285; D3 mapping dftd3func 1325; damping report 316-330)
+
+.. keyword:: GRIMME CORRECTION
+   :section: &VDW
+
+   Read the input for the external Grimme van der Waals library. Only available
+   if CPMD was built with that library (CMake option ``CPMD_ENABLE_VDWLIB``,
+   ``configure.sh`` option for vdW, preprocessor flag ``__HAS_LIBGRIMMEVDW``) and
+   only read if :kw:`VDW CORRECTION` is set in the ``&CPMD`` section. The lines
+   following the keyword are parsed by the library routine
+   ``vdw_grimme_read_input``; the functional passed to the library is ``PBE`` or
+   ``revPBE`` if the corresponding exchange gradient correction is used, and the
+   functional label of the ``&DFT`` section otherwise. When present, this input
+   replaces the built-in :kw:`EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION`
+   scheme.
+
+   .. todo::
+
+      MISSING: input format of the library (vdw_grimme_read_input is not part of
+      the CPMD source tree), terminating keyword, literature reference.
+
+.. source: src/vdwin_utils.mod.F90:155 (guarded by #ifdef _HAS_LIBGRIMMEVDW;
+.. macro mapping src/cpmd_global.h:89)
+
 .. keyword:: INCLUDE_METALS
    :target: INCLUDE METALS
    :section: &VDW

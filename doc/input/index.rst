@@ -110,8 +110,16 @@ ignored.
        **Required** if the :kw:`QMMM` keyword is given in the ``&CPMD`` section.
    * - :doc:`&CLASSIC <classic>`
      - Simple classical code interface.
-   * - ``&EXTE``
-     - External field definition for the EGO QM/MM interface.
+   * - :doc:`&EXTE <exte>`
+     - External field definition for the EGO and Gromacs QM/MM interfaces.
+   * - :doc:`&EAM <eam>`
+     - Parameters of embedded-atom model (EAM) potentials, read if a species
+       carries the ``_EAM_`` label.
+   * - :doc:`&VECTORS <vectors>`
+     - User-defined displacement vectors for non-adiabatic couplings
+       (:kw:`COUPLINGS` ``LINRES NVECT=n SPECIFY``).
+   * - :doc:`&MOLSTATES <molstates>`
+     - Partitioning into molecules for :kw:`MOLECULAR STATES` in ``&TDDFT``.
    * - :doc:`&VDW <vdw>`
      - Settings associated with van der Waals correction schemes. Only
        evaluated if one of :kw:`DCACP`, :kw:`VDW CORRECTION` or
@@ -127,7 +135,8 @@ ignored.
 
 All keywords are also listed in the :ref:`keyword index <cpmd-kwindex>`.
 Additional components of CPMD input files that do not fit into the keyword
-lists are explained in :doc:`details`.
+lists are explained in :doc:`details`, and the format of the pseudopotential
+files in :doc:`pseudopotential-files`.
 
 .. toctree::
    :hidden:
@@ -148,3 +157,8 @@ lists are explained in :doc:`details`.
    mts
    pimd
    path
+   eam
+   exte
+   vectors
+   molstates
+   pseudopotential-files

@@ -123,6 +123,52 @@ Keywords
 
    **Default** is to use the real-space algorithm.
 
+.. keyword:: EFG
+   :section: &PROP
+
+   Calculates electric field gradient tensors at the nuclei. The total
+   valence density (stored after the SCF) plus the Gaussian ionic charges,
+   minus the ionic charge of the atom itself, is converted into a potential
+   via :math:`4\pi/G^2`, and its second derivatives at each nucleus are
+   evaluated in reciprocal space; the tensor is made traceless. The
+   elements (1,1) (2,2) (3,3) (1,2) (1,3) (2,3) and the electric field
+   are appended to the file ``EFG`` and the tensor eigenvalues to
+   ``EV_EFG``. The calculation is performed at the end of a wavefunction
+   optimization and at every step of a Car-Parrinello MD run (not with
+   broken-symmetry runs); it is not part of a :kw:`PROPERTIES` run.
+
+   .. todo::
+
+      MISSING: units of the printed tensors and fields, literature
+      reference, and whether core (PAW-like) corrections are needed for
+      quantitative results.
+
+.. source: src/propin_utils.mod.F90:540
+
+.. keyword:: EPR
+   :target: EPR PROP
+   :section: &PROP
+
+   Calculates the anisotropic spin-dipole coupling tensors at the nuclei
+   from the spin density :math:`\rho_\alpha-\rho_\beta`. The keyword is
+   only active together with :kw:`LSD`; otherwise it is ignored silently.
+   The spin density (stored after the SCF) is converted into a potential
+   via :math:`4\pi/G^2`, and its second derivatives at each nucleus are
+   evaluated in reciprocal space. The elements (1,1) (2,2) (3,3) (1,2)
+   (1,3) (2,3) and the spin density at the nucleus are appended to the
+   file ``EPR`` and the tensor eigenvalues to ``EV_EPR``. The calculation
+   is performed at the end of a wavefunction optimization and at every step
+   of a Car-Parrinello MD run (not with broken-symmetry runs); it is not
+   part of a :kw:`PROPERTIES` run. Not to be confused with the EPR option
+   of the ``&RESP`` section.
+
+   .. todo::
+
+      MISSING: units of the printed tensors, conversion to hyperfine
+      coupling constants, and literature reference.
+
+.. source: src/propin_utils.mod.F90:537
+
 .. keyword:: EXCITED DIPOLE
    :section: &PROP
 
@@ -135,6 +181,36 @@ Keywords
    the method used for the **DIPOLE MOMENT** option and the same restrictions
    apply. If the **LOCAL DIPOLE** option is specified the dipole moment
    differences are calculated within the same boxes.
+
+.. keyword:: G_SPACE_LOC
+   :section: &PROP
+   :alternatives: [ALL, PART, LIST]
+
+   Localizes the orbitals in reciprocal space (routines ``g_loc_dr*``)
+   within a :kw:`PROPERTIES` run. The states to be localized are chosen by
+   the option:
+
+   - ``ALL`` (**default**, also used when no option is given): all states;
+   - ``PART``: the first and last state index of a contiguous range are
+     read from the next line;
+   - ``LIST``: the number of states is read from the next line and the
+     state indices from the following line(s).
+
+   The localization functional and its parameters are controlled by
+   ``&CPMD`` keywords such as ``GLOCALIZATION PARAMETERS``,
+   ``GFUNCTIONAL TYPE``, ``G_REAL``/``G_COMPLEX`` and ``GLOC WFNOUT``.
+
+   Example::
+
+      G_SPACE_LOC PART
+        5 12
+
+   .. todo::
+
+      MISSING: description of the localization functional and literature
+      reference; output files produced.
+
+.. source: src/propin_utils.mod.F90:543
 
 .. keyword:: LDOS
    :section: &PROP
@@ -207,6 +283,41 @@ Keywords
    has to specify the number of atomic orbitals that are used in the analysis. For
    each species one has to give this number in a separate line. An input example
    for a water molecule is given in the hints section :ref:`hints:pop`.
+
+.. keyword:: PROJECT HARMONICS
+   :section: &PROP
+   :options: {RADIAL, SPREAD}
+
+   Projects the Kohn-Sham orbitals (after orthogonalization) on real
+   spherical harmonics centred at a given point. The next line contains the
+   number of spherical harmonics ``ny`` and the three coordinates of the
+   centre (used without unit conversion, i.e. in Bohr); the maximum angular
+   momentum is :math:`l_{max}=\mathrm{INT}(\sqrt{ny-1})`, so ``ny`` should be
+   :math:`(l_{max}+1)^2`. The overlap coefficients are written to the file
+   ``YLMCOEF``.
+
+   With ``RADIAL`` a further line with ``rmax nmax`` is read: the radius of
+   integration and the number of equidistant radial grid points (increased
+   by one if odd); the radial parts are written to the unformatted file
+   ``RADIAL``. With ``SPREAD`` an additional line ``spr_min spr_max`` is
+   read; it only takes effect together with ``RADIAL``: the spreads are read
+   from the file ``SPREAD`` (fifth column) and only states whose spread lies
+   strictly between ``spr_min`` and ``spr_max`` are analysed (without
+   ``SPREAD`` the window -1.0 to 10.0 is used with all spreads set to 0).
+
+   Example::
+
+      PROJECT HARMONICS RADIAL
+        16 0.0 0.0 0.0
+        8.0 100
+
+   .. todo::
+
+      MISSING: the physical purpose of the analysis, the format of
+      ``YLMCOEF`` and ``RADIAL``, and the expected format of ``SPREAD``
+      (written by which keyword).
+
+.. source: src/propin_utils.mod.F90:243
 
 .. keyword:: PROJECT WAVEFUNCTION
    :section: &PROP

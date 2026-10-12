@@ -88,6 +88,31 @@ Keywords
    The state for which the forces are calculated is read from the next line.
    Default is for state 1.
 
+.. keyword:: ISC-SHTDDFT
+   :section: &TDDFT
+
+   Non-adiabatic surface hopping dynamics including intersystem crossing
+   (ISC) through spin-orbit coupling (SOC). Two integers are read from the
+   next line: ``nskip socskip``. ``nskip`` is the interval (in MD steps) at
+   which the ISC step (``do_tsh_isc``, Landau-Zener type hopping between
+   spin manifolds) is performed, ``socskip`` the interval at which the
+   spin-orbit couplings are recomputed; both are also performed whenever a
+   surface hop occurs. **Defaults** are 1 and 1. The keyword implies
+   :kw:`T-SHTDDFT` (Tully surface hopping) and requires singlet and triplet
+   response states to be computed.
+
+   Example::
+
+      ISC-SHTDDFT
+       1 1
+
+   .. todo::
+
+      MISSING: required companion keywords (e.g. :kw:`STATES` with SINGLET
+      and TRIPLET, SOC settings in ``&CPMD``), physical reference.
+
+.. source: src/lr_in_utils.mod.F90:795
+
 .. keyword:: LOCALIZATION
    :section: &TDDFT
 
@@ -118,6 +143,52 @@ Keywords
 
    Calculate and group Kohn–Sham orbitals into molecular states for a TDDFT
    calculation.
+
+.. keyword:: NACV_FULL
+   :section: &TDDFT
+
+   For the calculation of non-adiabatic coupling vectors (``NACV`` in
+   ``&CPMD``) include the linear-response contribution. By default only the
+   direct term is computed. No further input is read.
+
+   .. todo::
+
+      MISSING: formula/reference for the two contributions and the cost
+      implications.
+
+.. source: src/lr_in_utils.mod.F90:793
+
+.. keyword:: OSCILLATOR STRENGTH
+   :section: &TDDFT
+   :options: {QP, BF, BFH, BERRY}
+
+   Requests oscillator strengths. Options on the same line: ``QP`` (only
+   Kohn-Sham oscillator strengths, no TDDFT), ``BF`` (transition dipoles by
+   Bessel-function integration), ``BFH`` ("Hutter-Bessel" variant; switches
+   off ``BF``) and ``BERRY`` (generalized Berry-phase formula; switches off
+   the other options). The selection is echoed in the TDDFT summary of the
+   output.
+
+   In the current code the flags set by this keyword are only used to print
+   that summary; they are not referenced anywhere else.
+
+   .. todo::
+
+      MISSING: whether this keyword has any effect on the calculation; how
+      oscillator strengths are actually computed and printed.
+
+.. source: src/lr_in_utils.mod.F90:767
+
+.. keyword:: OUTPUT
+   :target: OUTPUT TDDFT
+   :section: &TDDFT
+   :alternatives: [NORMAL, FULL, MINIMAL]
+
+   Print level of the TDDFT routines used for excited-state forces
+   (optimization, molecular dynamics, finite-difference checks):
+   ``NORMAL`` (**Default**), ``FULL`` or ``MINIMAL``.
+
+.. source: src/lr_in_utils.mod.F90:781
 
 .. keyword:: PCG PARAMETER
    :section: &TDDFT
@@ -178,6 +249,33 @@ Keywords
    number of iterations (default 50), the convergence criteria (default
    :math:`10^{-6}`) and the step size (default 0.5) have to be given.
 
+.. keyword:: SH_LCT
+   :section: &TDDFT
+
+   Local control theory (LCT) applied to TDDFT surface hopping: an external
+   field is constructed on the fly to drive the population towards a target
+   state. Five values are read from the next line:
+   ``seed_t seed_m lct_l adir lct_state``. Up to the time ``seed_t`` a
+   constant seed field of amplitude ``seed_m`` is applied; afterwards the
+   field amplitude is ``-lct_l`` times the transition dipole of the target
+   state times the imaginary part of the product of the amplitudes of the
+   ground and target states. ``adir`` selects the polarization (1 = x,
+   2 = y, 3 = z, 4 = all components) and ``lct_state`` the target excited
+   state. **Defaults** are 100, 1, 100, (none) and 1. The field is written
+   to ``SH_LCON.dat``.
+
+   Example::
+
+      SH_LCT
+       100.0 0.001 100.0 3 1
+
+   .. todo::
+
+      MISSING: units of the parameters (time presumably in a.u.), whether
+      :kw:`T-SHTDDFT` must be given explicitly, literature reference.
+
+.. source: src/lr_in_utils.mod.F90:813
+
 .. keyword:: STATES
    :target: STATES TDDFT
    :section: &TDDFT
@@ -187,6 +285,16 @@ Keywords
    state *SINGLET, TRIPLET* can be given for non-spinpolarized calculations.
    Default is to calculate one singlet state for LDA and 1 mixed state for LSD
    calculations.
+
+.. keyword:: STORE_V_AB
+   :section: &TDDFT
+
+   For TDDFT with hybrid functionals, store the exchange pair potentials
+   :math:`v_{ab}` computed for the response kernel in memory (an array of
+   size grid points :math:`\times` states :math:`\times` states) so that they
+   are not recomputed. No further input is read. See also :kw:`WRITE_V_AB`.
+
+.. source: src/lr_in_utils.mod.F90:696
 
 .. keyword:: T-SHTDDFT
    :section: &TDDFT
@@ -241,3 +349,32 @@ Keywords
    This functional does not affect the choice of functional used in the TDDFT
    kernel. The kernel functional is set in the &DFT section. It is either the
    standard functional or the functional defined by the keyword :kw:`LR KERNEL`.
+
+.. keyword:: USE_LIN_LIN
+   :section: &TDDFT
+
+   Use the Lin Lin scheme (adaptively compressed exchange) to speed up the
+   exact-exchange part of the TDDFT response kernel. No further input is
+   read. Not implemented for :kw:`LSD` (the program stops). During the
+   Davidson part of the calculation the scheme is temporarily switched off.
+
+   .. todo::
+
+      MISSING: literature reference, accuracy/performance considerations.
+
+.. source: src/lr_in_utils.mod.F90:703
+
+.. keyword:: WRITE_V_AB
+   :section: &TDDFT
+
+   Like :kw:`STORE_V_AB`, but the exchange pair potentials are written to
+   (and read back from) an unformatted scratch file per MPI task (Fortran
+   unit ``2000+rank``) instead of being kept in memory. No further input is
+   read.
+
+   .. todo::
+
+      MISSING: the actual file names (compiler-dependent default names for
+      unit 2000+rank) and disk-space requirements.
+
+.. source: src/lr_in_utils.mod.F90:699

@@ -23,6 +23,39 @@ Keywords
 
    **Default** value is **0.9**
 
+.. keyword:: ALL2ALL_BATCHSIZE
+   :section: &CPMD
+
+   Target message size for the all-to-all communication of the batched
+   (multi-state) parallel FFT selected with :kw:`USE_BATCHFFT`. The value
+   (an integer) is read from the next line. During the FFT setup the number of
+   states transformed per all-to-all call is chosen such that the data each
+   MPI task sends in one call does not exceed approximately this size; the code
+   converts the value as ``a2a_msgsize*1024/(nproc*16)`` complex numbers per
+   destination task, i.e. the value is interpreted in units of 1024 bytes. At
+   least one state per batch is always used. The resulting number of batches
+   and states per batch are printed as ``FFTPRP| BATCH FFT NUMBER ALLTOALL
+   CALLS`` and ``FFTPRP| BATCH FFT NUMBER OF STATES PER CALL``.
+
+   **Default** is 1000.
+
+   The keyword has an effect only together with :kw:`USE_BATCHFFT`. If
+   :kw:`TUNE_FFT_BATCHSIZE` is active, the batch size derived from this value
+   is the upper limit of the batch sizes that are tested.
+
+   Example::
+
+      USE_BATCHFFT
+      ALL2ALL_BATCHSIZE
+        2000
+
+   .. todo::
+
+      MISSING: the read value is not checked for errors; recommended values
+      depend on the network and are not given in the source.
+
+.. source: src/control_utils.mod.F90:3750
+
 .. keyword:: ALLTOALL
    :section: &CPMD
    :options: {SINGLE,DOUBLE}
@@ -139,6 +172,64 @@ Keywords
    DYNAMICS. Other MD types BO, EH, PT, CLASSICAL or FILE as well as runtypes
    QMMM, path integral or surface hopping are not supported.
 
+.. keyword:: BLAS_N_DEVICES_PER_TASK
+   :section: &CPMD
+
+   Number of CUDA devices (GPUs) used by each MPI task for the cuBLAS-based
+   code paths enabled with :kw:`USE_CUBLAS`. The integer is read from the next
+   line.
+
+   **Default** is 1.
+
+   Devices are assigned cyclically to the MPI tasks of a node: device
+   ``i`` (``i = 0 ... n-1``) of node-local task ``t`` is the GPU with index
+   ``MOD(t*n + i, number_of_GPUs_on_node)``. If the number of node-local tasks
+   times this value exceeds the number of GPUs available, a warning is printed
+   and devices are shared. If the value is ``<= 0``, :kw:`USE_CUBLAS` is reset
+   to false (``CONTROL| USE_BLAS is set to TRUE, but the
+   BLAS_N_DEVICES_PER_TASK <= 0``). The product of this value and
+   :kw:`BLAS_N_STREAMS_PER_DEVICE` must not exceed the number of OpenMP
+   threads, otherwise the run stops with ``the total number of streams
+   requested exceeds the number of available threads``.
+
+   Requires a CPMD binary built with CUDA support (see :kw:`USE_CUBLAS`).
+
+   Example::
+
+      USE_CUBLAS
+      BLAS_N_DEVICES_PER_TASK
+        1
+
+.. source: src/control_utils.mod.F90:2951
+
+.. keyword:: BLAS_N_STREAMS_PER_DEVICE
+   :section: &CPMD
+
+   Number of CUDA streams per device used by the cuBLAS-based code paths
+   enabled with :kw:`USE_CUBLAS`. The integer is read from the next line.
+   Each stream is driven by its own OpenMP thread (the code uses nested OpenMP
+   parallelism), so the total number of streams per MPI task,
+   ``BLAS_N_STREAMS_PER_DEVICE * BLAS_N_DEVICES_PER_TASK``, must not exceed the
+   number of OpenMP threads.
+
+   **Default** is 1.
+
+   If the value is ``<= 0``, :kw:`USE_CUBLAS` is reset to false. If the value
+   exceeds the number of OpenMP threads it is reset to the number of threads;
+   in a binary built without OpenMP a value larger than 1 is reset to 1
+   (``CONTROL| BLAS_N_STREAMS_PER_DEVICE ... is greater than one and CPMD was
+   not compiled with -omp``).
+
+   Requires a CPMD binary built with CUDA support (see :kw:`USE_CUBLAS`).
+
+   Example::
+
+      USE_CUBLAS
+      BLAS_N_STREAMS_PER_DEVICE
+        2
+
+.. source: src/control_utils.mod.F90:2941
+
 .. keyword:: BLOCKSIZE STATES
    :section: &CPMD
 
@@ -150,6 +241,30 @@ Keywords
    linear algebra calculations.
 
    **Default** is to equally distribute states over all processors.
+
+.. keyword:: BLOCKSIZE_USPP
+   :section: &CPMD
+
+   Block size used when building the augmentation part of the density for
+   Vanderbilt ultrasoft pseudopotentials in the large-memory code path
+   (routine ``prep_bigmem_rhov`` in ``rhov_utils.mod.F90``). The integer is
+   read from the next line. The G vectors of the density are processed in
+   blocks; internally the value is rounded up to a multiple of 64 elements
+   (plus a padding of 8 elements) and multiplied by the number of OpenMP
+   threads, and it is limited to the number of G vectors.
+
+   **Default** is 1200.
+
+   Example::
+
+      BLOCKSIZE_USPP
+        2400
+
+   .. todo::
+
+      MISSING: guidance on suitable values (purely a performance parameter).
+
+.. source: src/control_utils.mod.F90:3718
 
 .. keyword:: BOGOLIUBOV CORRECTION
    :section: &CPMD
@@ -177,6 +292,43 @@ Keywords
    conservation.
 
    This feature is **disabled by default**
+
+.. keyword:: BROKEN SYMMETRY
+   :section: &CPMD
+
+   Use the broken-symmetry (Noodleman) approach for spin-coupled systems.
+   Only the word ``BROKEN`` is checked by the parser, so ``BROKEN`` alone is
+   also accepted.
+
+   With this keyword the multiplicity given with :kw:`MULTIPLICITY` in the
+   &SYSTEM section is taken as the multiplicity of the high-spin (HS) state;
+   the low-spin state is assumed to have spin 0 (the code sets the
+   multiplicity of the broken-symmetry state to 0). Both the broken-symmetry
+   (BS) and the high-spin wavefunctions are kept in memory and optimized
+   (wavefunction optimization is done in ``bs_wfo``); the output reports the
+   numbers of HS alpha and beta states. The run stops if the number of
+   electrons is incompatible with the HS multiplicity.
+
+   Restrictions found in the code: only wavefunction optimization and
+   Born-Oppenheimer molecular dynamics are supported (``CURRENTLY ONLY WF
+   OPTIMIZATION AND BO MOLECULAR DYNAMICS ARE IMPLEMENTED FOR BROKEN
+   SYMMETRY``); path integrals, path minimization, k points, LSE (ROKS-type
+   low-spin excitation), Kohn-Sham diagonalization schemes, surface hopping,
+   properties calculations, and vibrational analysis from a stored Hessian or
+   with linear response are not supported. The code also prints ``WARNING:
+   PARALLEL BS CODE IS UNDER CONSTRUCTION!``.
+
+   Example::
+
+      BROKEN SYMMETRY
+
+   .. todo::
+
+      MISSING: literature reference for the implementation, how the BS/HS
+      energies are combined into the reported energy and exchange coupling
+      constant, and whether LSD must be specified explicitly.
+
+.. source: src/control_utils.mod.F90:4171
 
 .. keyword:: BROYDEN MIXING
    :section: &CPMD
@@ -294,6 +446,39 @@ Keywords
    The center of mass is moved/not moved to the center of the computational box in
    a calculation with the cluster option. This is only done when the coordinates
    are read from the input file.
+
+.. keyword:: CHEBY
+   :section: &CPMD
+
+   Selects the Chebyshev scheme for the real-time propagation of the
+   Kohn-Sham orbitals in :kw:`MOLECULAR DYNAMICS` ``EH`` (Ehrenfest dynamics),
+   :kw:`PROPAGATION SPECTRA` and :kw:`PROPAGATION DISTRUB`. It is the
+   alternative to :kw:`CAYLEY`; the two keywords exclude each other and the one
+   that appears last in the input wins. No further input is read.
+
+   When :kw:`CHEBY` is active, the parameter ``NUMBER_ZEROS`` of the
+   ``&PTDDFT`` section is printed as "number of zeros" in the propagation
+   setup.
+
+   .. warning::
+
+      In the current source code, all calls to the Chebyshev propagator
+      (``td_cheby``) in ``ehrenfest_utils.mod.F90`` are commented out. With
+      :kw:`CHEBY` the orbitals are therefore **not propagated** at all, with or
+      without :kw:`RUNGE-KUTTA`. Use :kw:`CAYLEY`, which is currently the only
+      working propagation scheme. If neither :kw:`CAYLEY` nor :kw:`CHEBY` is
+      given, the run stops with "choose an integration method".
+
+   Example::
+
+      CHEBY
+
+   .. todo::
+
+      MISSING: whether the Chebyshev propagator is planned to be restored, and
+      the meaning and recommended values of NUMBER_ZEROS for this scheme.
+
+.. source: src/control_utils.mod.F90:931
 
 .. keyword:: CHECK MEMORY
    :section: &CPMD
@@ -518,6 +703,44 @@ Keywords
    Very verbose output concerning the calculation of each contribution to the
    forces for debugging purpose.
 
+.. keyword:: DEBUG HUBBARD
+   :section: &CPMD
+
+   Prints additional progress messages from the Hubbard U (DFT+U) routines,
+   e.g. ``add_hubbardu``, ``hubbardUcorrection`` and the start of the Hubbard
+   U correction, to the standard output. This is only useful together with
+   :kw:`HUBBARD` in the ``&DFT`` section. No further input is read.
+
+   The ``DEBUG`` keyword accepts several options on the same line
+   (``FORCES``, ``FILE``, ``IO``, ``NOACC``, ``HUBBARD``), each of which is
+   evaluated independently.
+
+   Example::
+
+      DEBUG HUBBARD
+
+.. source: src/control_utils.mod.F90:974
+
+.. keyword:: DEBUG IO
+   :section: &CPMD
+
+   Verbose output about input and restart-file I/O for debugging purposes.
+   When reading or writing the :kw:`RESTART` file, the program prints which
+   section is being read or written ("READ SECTION n", "WRITE SECTION n").
+   In addition, every search for an input section prints whether the section
+   was found ("INSCAN| FOUND SECTION: ...", with unit and line number) or not
+   ("INSCAN| NO SECTION: ..."). The control output lists this option as
+   "DEBUG RESTART (READ AND WRITE)". No further input is read.
+
+   Several ``DEBUG`` options (``FORCES``, ``FILE``, ``IO``, ``NOACC``,
+   ``HUBBARD``) can be given on the same line.
+
+   Example::
+
+      DEBUG IO
+
+.. source: src/control_utils.mod.F90:965
+
 .. keyword:: DEBUG MEMORY
    :section: &CPMD
 
@@ -571,10 +794,60 @@ Keywords
    and WANNIER_DOS. The localization procedure is controlled by the following
    keywords.
 
+.. keyword:: DISORTHO_BSIZE
+   :section: &CPMD
+
+   Block size (number of states per block) used by the blocked
+   Gram-Schmidt orthogonalization selected with :kw:`LINALG NEWORTHO` (CPU and
+   CUDA versions, routine ``disortho_new``). The integer is read from the next
+   line. The effective block size is ``MIN(DISORTHO_BSIZE, number of
+   states)``.
+
+   **Default** is 0, which means that the block size is derived from the
+   distribution of states over the MPI tasks (see :kw:`BLOCKSIZE STATES`).
+
+   The value is also used to size the GPU buffers when :kw:`USE_CUBLAS` is
+   active. It has no effect on the older distributed orthogonalization used by
+   :kw:`DISTRIBUTED LINALG` without :kw:`LINALG NEWORTHO`.
+
+   Example::
+
+      LINALG NEWORTHO ON
+      DISORTHO_BSIZE
+        64
+
+.. source: src/control_utils.mod.F90:4190
+
 .. keyword:: DISTRIBUTE FNL
    :section: &CPMD
 
    The array ``FNL`` is distributed in parallel runs.
+
+.. keyword:: DISTRIBUTE FNL ROT
+   :section: &CPMD
+   :options: {ON, OFF}
+
+   Selects how the wavefunction coefficients and the projector overlaps
+   ``FNL`` are rotated for Vanderbilt ultrasoft pseudopotentials. With ``ON``
+   the rotation of the coefficients and of ``FNL`` is done together in a
+   distributed routine (``rotate_c0_fnl`` in the force calculation and
+   ``rottr_c0_fnl`` in the Gram-Schmidt orthogonalization ``rgsvan``); with
+   ``OFF`` the coefficients and ``FNL`` are rotated separately (``rotate`` /
+   ``rottr`` followed by ``rotate_fnl`` / ``rottr_fnl``).
+
+   The spelling ``DISTRIBUTED`` is also accepted, and the words may be given
+   in any order on the line (the parser requires ``DISTRIBUTE`` or
+   ``DISTRIBUTED`` and ``ROT``; a line with ``FNL`` but without ``ROT`` is
+   :kw:`DISTRIBUTE FNL`). Without ``ON`` or ``OFF`` the setting is not
+   changed.
+
+   **Default** is ``ON``.
+
+   Example::
+
+      DISTRIBUTE FNL ROT OFF
+
+.. source: src/control_utils.mod.F90:3924
 
 .. keyword:: DISTRIBUTED LINALG
    :section: &CPMD
@@ -679,6 +952,60 @@ Keywords
    With the additional keyword **STORE** the wavefunction history is also written
    to restart files. See :kw:`RESTART` for how to read it back.
 
+.. keyword:: FFT_N_DEVICES_PER_TASK
+   :section: &CPMD
+
+   Number of CUDA devices (GPUs) used by each MPI task for the cuFFT-based
+   code paths enabled with :kw:`USE_CUFFT`. The integer is read from the next
+   line.
+
+   **Default** is 1.
+
+   Devices are assigned cyclically to the MPI tasks of a node, as described
+   for :kw:`BLAS_N_DEVICES_PER_TASK`; a warning is printed if more devices are
+   requested than are available. If the value is ``<= 0``, :kw:`USE_CUFFT`
+   is reset to false. The product of this value and
+   :kw:`FFT_N_STREAMS_PER_DEVICE` (the number of streams per MPI task) must not
+   exceed the number of OpenMP threads, otherwise the run stops.
+
+   Requires a CPMD binary built with CUDA support (see :kw:`USE_CUFFT`).
+
+   Example::
+
+      USE_CUFFT
+      FFT_N_DEVICES_PER_TASK
+        1
+
+.. source: src/control_utils.mod.F90:2971
+
+.. keyword:: FFT_N_STREAMS_PER_DEVICE
+   :section: &CPMD
+
+   Number of CUDA streams per device used for the cuFFT-based calculation of
+   the density and of the local potential applied to the wavefunctions
+   (``rhoofr`` and ``vpsi``) when :kw:`USE_CUFFT` is active. The integer is
+   read from the next line. States are processed concurrently on the streams;
+   each stream is driven by its own OpenMP thread, and the remaining threads
+   are distributed as nested threads. The number of streams per MPI task,
+   ``FFT_N_STREAMS_PER_DEVICE * FFT_N_DEVICES_PER_TASK``, must not exceed the
+   number of OpenMP threads.
+
+   **Default** is 1.
+
+   If the value is ``<= 0``, :kw:`USE_CUFFT` is reset to false. If it exceeds
+   the number of OpenMP threads it is reset to the number of threads; in a
+   binary built without OpenMP a value larger than 1 is reset to 1.
+
+   Requires a CPMD binary built with CUDA support (see :kw:`USE_CUFFT`).
+
+   Example::
+
+      USE_CUFFT
+      FFT_N_STREAMS_PER_DEVICE
+        4
+
+.. source: src/control_utils.mod.F90:2961
+
 .. keyword:: FILE FUSION
    :section: &CPMD
 
@@ -686,6 +1013,67 @@ Keywords
    :kw:`ROKS` excited state and writes them into a single restart file.
 
    Required to start :kw:`SURFACE HOPPING` calculations.
+
+.. keyword:: FILE MERGE
+   :section: &CPMD
+
+   Builds the initial wavefunction by merging the orbitals stored in two
+   different restart files. Four further lines are read:
+
+   1. the name of the first restart file,
+   2. the name of the second restart file,
+   3. three integers ``mnst1 mnst2 mortho``,
+   4. three real numbers ``mshift(1) mshift(2) mshift(3)``.
+
+   The first ``mnst1`` orbitals are read from the first file and the following
+   ``mnst2`` orbitals from the second file. The orbitals of the second file are
+   multiplied by the plane-wave phase factor
+   :math:`\exp(-i\,\mathbf{G}\cdot\mathbf{s})` with
+   :math:`\mathbf{s}` = ``mshift``, i.e. translated by the vector ``mshift``
+   (atomic units, since the phase is computed from the G vectors in units of
+   :math:`2\pi/a`). If ``mortho`` is 1, the merged set of orbitals is
+   Gram-Schmidt orthogonalized. The density is then computed from the merged
+   orbitals. The merge is done in place of reading a normal restart file
+   during the initialization.
+
+   Example::
+
+      FILE MERGE
+      RESTART.A
+      RESTART.B
+        10  5  1
+        0.0  0.0  5.0
+
+   .. todo::
+
+      MISSING: which other data (coordinates, velocities) are taken from which
+      file, whether mnst1+mnst2 must equal the number of states in &SYSTEM,
+      and the intended application.
+
+.. source: src/control_utils.mod.F90:3937
+
+.. keyword:: FILE SEPARATION
+   :section: &CPMD
+
+   Splits a combined restart file containing the ground-state (S0) and the
+   excited-state (S1) wavefunctions, as used for :kw:`SURFACE HOPPING`, into
+   two separate restart files. It is the inverse operation of
+   :kw:`FILE FUSION`. The base names of the S0 and the S1 restart files are
+   read from the next two lines. The fused file is read with
+   ``nst_s0 + nst_s1`` states; the first ``nst_s0`` states are written to the
+   S0 file and the next ``nst_s1`` states to the S1 file.
+
+   The keyword only has an effect in molecular dynamics runs with
+   :kw:`SURFACE HOPPING`; the separation is performed instead of the dynamics.
+
+   Example::
+
+      SURFACE HOPPING
+      FILE SEPARATION
+      RESTART_S0
+      RESTART_S1
+
+.. source: src/control_utils.mod.F90:3986
 
 .. keyword:: FILEPATH
    :section: &CPMD
@@ -711,6 +1099,26 @@ Keywords
    (default is 1.0d-2 a.u.). The (optional) coordinates of the center and the
    radius are read in either Angstrom or Bohr, depending on whether the
    :kw:`ANGSTROM` keyword is specified or not.
+
+.. keyword:: FIXRHO LOOP
+   :section: &CPMD
+
+   Sets the minimum and the maximum number of DIIS iterations of each
+   wavefunction optimization at fixed density in a :kw:`FIXRHO UPWFN` run.
+   The two integers are read from the next line in the order ``MINLDIIS``
+   ``MAXLDIIS``. The values are used only together with :kw:`FIXRHO UPWFN`.
+
+   **Default** is 4 and 20; a value of 0 also selects the default.
+
+   This is a separate keyword: it must be written as ``FIXRHO LOOP`` on its
+   own line, not as an option on the :kw:`FIXRHO UPWFN` line.
+
+   Example::
+
+      FIXRHO LOOP
+       4 30
+
+.. source: src/control_utils.mod.F90:1096
 
 .. keyword:: FIXRHO UPWFN
    :section: &CPMD
@@ -745,6 +1153,52 @@ Keywords
    the density. As the density improves (when the density updates become smaller),
    also the wavefunction convergence criterion is set to its final value.
 
+.. keyword:: FIXRHO VECT
+   :section: &CPMD
+
+   Sets the number of DIIS vectors used for the wavefunction optimization at
+   fixed density in a :kw:`FIXRHO UPWFN` run. The integer is read from the
+   next line. The value is limited to a maximum of 20. It is used only together
+   with :kw:`FIXRHO UPWFN`, where it replaces the number of vectors given by
+   :kw:`ODIIS`.
+
+   **Default** is 4.
+
+   This is a separate keyword: it must be written as ``FIXRHO VECT`` on its
+   own line, not as an option on the :kw:`FIXRHO UPWFN` line.
+
+   Example::
+
+      FIXRHO VECT
+       6
+
+.. source: src/control_utils.mod.F90:1087
+
+.. keyword:: FIXRHO WFTOL
+   :section: &CPMD
+
+   Sets the convergence tolerance for the wavefunction optimization at fixed
+   density in a :kw:`FIXRHO UPWFN` run. The real number is read from the next
+   line. The value is used only together with :kw:`FIXRHO UPWFN`.
+
+   The actual tolerance is adjusted automatically: it is multiplied by 500, 50
+   or 5 when the change of the density is larger than 10, 5 or 2 times the
+   orbital convergence criterion (:kw:`CONVERGENCE` ``ORBITALS``),
+   respectively, and the given value is used once the density change is
+   smaller.
+
+   **Default** is :math:`10^{-7}`; a value of 0 also selects the default.
+
+   This is a separate keyword: it must be written as ``FIXRHO WFTOL`` on its
+   own line, not as an option on the :kw:`FIXRHO UPWFN` line.
+
+   Example::
+
+      FIXRHO WFTOL
+       1.0E-6
+
+.. source: src/control_utils.mod.F90:1112
+
 .. keyword:: FORCEMATCH
    :section: &CPMD
 
@@ -765,6 +1219,78 @@ Keywords
    factorization** and **Bogoliubov correction**. If the number of states is not
    specified, use :math:`N_{electrons}/2+4`.
 
+.. keyword:: GAUGEFIELD
+   :section: &CPMD
+
+   Couples the electrons to an external laser field described by a
+   time-dependent vector potential (velocity gauge) during the real-time
+   propagation of the Kohn-Sham orbitals (:kw:`PROPAGATION SPECTRA`,
+   :kw:`MOLECULAR DYNAMICS` ``EH``). The field frequency (``GFREQ``) is read
+   from the next line. The keyword also switches on :kw:`GAUGEPULSE`.
+
+   The vector potential :math:`A(t)` enters the application of the
+   Hamiltonian through the terms :math:`A\,(k+G)_d` and :math:`A^2/2`, where
+   :math:`d` is the direction set with ``PERT_DIRECTION`` in ``&PTDDFT``
+   (values larger than 3 are reset to 3). The amplitude :math:`E_0` is the
+   perturbation amplitude of ``&PTDDFT`` (e.g. ``PERT_AMPLI``). The default
+   pulse has the shape :math:`E(t) = E_0 \sin^2(\pi t/T)\sin(\omega t)`, where
+   :math:`1/T` and the switching time are read with ``GAUGEFIELD PARA`` in
+   ``&PTDDFT`` (defaults: switching time 250, :math:`1/T = 0.00025`). With
+   ``PIPULSE`` in ``&PTDDFT`` a different pulse form is used (see subroutine
+   ``gaugepot_laser`` in ``td_utils.mod.F90``).
+
+   The vector potential is written as a function of time to the file
+   ``gaugefield_laser.dat``; if this file exists at start-up, the last line is
+   read to restart the field.
+
+   Example::
+
+      PROPAGATION SPECTRA
+      CAYLEY
+      GAUGEFIELD
+       0.057
+
+   .. todo::
+
+      MISSING: units of GFREQ (it is used as an angular frequency in a.u. in
+      ``gaugepot_laser`` but multiplied by :math:`2\pi` in
+      ``gaugepot_laser_circ_pol``), meaning of the third ``GAUGEFIELD PARA``
+      parameter (``gimax``), physical validation and literature reference.
+      The read value is not checked for errors.
+
+.. source: src/control_utils.mod.F90:1195
+
+.. keyword:: GAUGEPULSE
+   :section: &CPMD
+
+   Adds a constant external vector potential (gauge field) to the Hamiltonian
+   during the real-time propagation of the Kohn-Sham orbitals
+   (:kw:`PROPAGATION SPECTRA`, :kw:`MOLECULAR DYNAMICS` ``EH``). The vector
+   potential acts along the direction ``PERT_DIRECTION`` of the ``&PTDDFT``
+   section (values larger than 3 are reset to 3); its initial value is the
+   perturbation amplitude of ``&PTDDFT`` (e.g. ``PERT_AMPLI``). No further
+   input is read in ``&CPMD``. The keyword is switched on automatically by
+   :kw:`GAUGEFIELD`.
+
+   The time series of the (induced) vector potential is written to the file
+   ``gaugefield_ind.dat``; if this file exists at start-up, the last line is
+   read to restart the field.
+
+   Example::
+
+      PROPAGATION SPECTRA
+      CAYLEY
+      GAUGEPULSE
+
+   .. todo::
+
+      MISSING: the update of the induced field (``gaugepot_ind``) is
+      commented out in ``td_cayley_utils.mod.F90``, so the vector potential
+      appears to stay constant. Purpose of ``GAUGEPULSE PARA`` (``nperiod``)
+      in ``&PTDDFT``, physical validation and literature reference.
+
+.. source: src/control_utils.mod.F90:1192
+
 .. keyword:: GDIIS
    :section: &CPMD
 
@@ -775,11 +1301,202 @@ Keywords
 
    GDIIS with **5 vectors** is the **default** method in optimization runs.
 
+.. keyword:: GFUNCTIONAL TYPE
+   :section: &CPMD
+   :alternatives: [GSPREAD, ZETANUMBER]
+
+   Selects the spread functional minimized in the localization of orbitals in
+   reciprocal space (``G_SPACE_LOC`` in &PROP):
+
+   * ``GSPREAD``: :math:`\sum_{n,i}\left[\langle n|G_i^2|n\rangle - \langle n|G_i|n\rangle^2\right]`,
+   * ``ZETANUMBER``: :math:`\sum_{n,i}\left[1 - |\langle n|\exp(i G_i r_0)|n\rangle|^2\right]`.
+
+   (The formulas are those printed by the code.)
+
+   **Default** is ``ZETANUMBER``.
+
+   Example::
+
+      GFUNCTIONAL TYPE GSPREAD
+
+.. source: src/control_utils.mod.F90:4063
+
+.. keyword:: GLOC WFNOUT
+   :section: &CPMD
+   :options: {REAL}
+   :alternatives: [ALL, PARTIAL, LIST]
+
+   Print orbitals localized in reciprocal space (``G_SPACE_LOC`` in &PROP);
+   the starting and the optimized orbitals are written to separate files
+   (``WFN_<n>``). With ``REAL`` the orbitals are additionally written in real
+   space (files ``RWFN_<n>``).
+
+   The orbitals to be printed are selected as for :kw:`WANNIER WFNOUT`:
+
+   * ``ALL``: all orbitals;
+   * ``PARTIAL`` (alias ``PART``): the indices of the first and the last
+     orbital are read from the next line;
+   * ``LIST``: the number of orbitals is read from the next line, followed by
+     their indices (free format, may span several lines).
+
+   Example::
+
+      GLOC WFNOUT PARTIAL
+        5  8
+
+.. source: src/control_utils.mod.F90:4132
+
+.. keyword:: GLOCALIZATION OPTIMIZATION
+   :section: &CPMD
+   :alternatives: [SD INTEGRATION, ALMO IDENTITY]
+
+   Selects the optimization procedure for the localization of orbitals in
+   reciprocal space (``G_SPACE_LOC`` in &PROP):
+
+   * ``SD INTEGRATION``: the unitary matrix U is updated by steepest descent
+     and the orbitals are updated at the end (output: ``U UPDATE BY STEEPEST
+     DESCENT``);
+   * ``ALMO IDENTITY``: U is kept close to the identity and the orbitals are
+     updated at each step, assuming small rotations (output: ``U NEAR TO 1,
+     WFN UPDATE EACH STEP``).
+
+   Both words of an option have to be present; note that the parser checks
+   the word ``ALMO``, not ``ALMOST``. The keyword also sets the internal flag
+   that activates the G-space localization.
+
+   **Default** is ``ALMO IDENTITY``.
+
+   Example::
+
+      GLOCALIZATION OPTIMIZATION SD INTEGRATION
+
+.. source: src/control_utils.mod.F90:4057
+
+.. keyword:: GLOCALIZATION PARAMETER
+   :section: &CPMD
+
+   Parameters for the localization of orbitals in reciprocal space
+   (``G_SPACE_LOC`` in &PROP). Five numbers are read from the next line, in
+   this order:
+
+   * ``GLOC_STEP``: step size of the optimization (**default** 0.1),
+   * ``GLOC_EPS``: convergence criterion (**default** :math:`10^{-12}`),
+   * ``GLOC_RAN``: amplitude of the random distortion of the initial unitary
+     matrix (**default** 0.0, no distortion),
+   * ``GLOC_MAXS``: maximum number of optimization steps (**default** 20000),
+   * ``GLOC_INIT``: initial step counter, used when continuing a previous
+     optimization (**default** 0; the output prints ``INITIAL STEP`` as
+     ``GLOC_INIT+1``).
+
+   All five values have to be given. The alias ``GLOCALIZATION PARAMETERS``
+   is also accepted.
+
+   Example::
+
+      GLOCALIZATION PARAMETER
+        0.05  1.0E-10  0.0  5000  0
+
+.. source: src/control_utils.mod.F90:4018
+
 .. keyword:: GSHELL
    :section: &CPMD
 
    Write a file **GSHELL** with the information on the plane waves for further use
    in S(q) calculations.
+
+.. keyword:: G_ANTISYM
+   :section: &CPMD
+   :options: {PENALTY}
+
+   Option for the localization of orbitals in reciprocal space (activated with
+   ``G_SPACE_LOC`` in the &PROP section). A penalty function for wavefunctions
+   that are symmetric with respect to :math:`\mathbf{G}=0` is calculated (the
+   output states ``PENALTY FUNCTION FOR SYMMETRIC WFN CALCULATED FOR FIRST 100
+   STEPS``) and written to the file ``PENALTY_<k>.dat``. With the additional
+   option ``PENALTY`` the penalty term is also added to the gradient
+   (``PENALTY IMPOSED IN THE GRADIENT (ADDED TERM)``).
+
+   Example::
+
+      G_ANTISYM PENALTY
+
+   .. todo::
+
+      MISSING: definition of the penalty function and its weight.
+
+.. source: src/control_utils.mod.F90:4118
+
+.. keyword:: G_COMPLEX
+   :section: &CPMD
+
+   Option for the localization of orbitals in reciprocal space (``G_SPACE_LOC``
+   in &PROP). Declares that the starting orbitals are already complex in real
+   space (source comment: ``starting C0 already complex in real space``).
+   This is the default; see :kw:`G_REAL` for the alternative.
+
+   Example::
+
+      G_COMPLEX
+
+.. source: src/control_utils.mod.F90:4123
+
+.. keyword:: G_KICK
+   :section: &CPMD
+
+   Option for the localization of orbitals in reciprocal space (``G_SPACE_LOC``
+   in &PROP). Before the optimization a random unitary transformation is
+   applied to the orbitals (output: ``FIRST RANDOM ROTATION``), and the
+   centers and spreads after this rotation are printed.
+
+   **Default** is no initial random rotation.
+
+   Example::
+
+      G_KICK
+
+   .. todo::
+
+      MISSING: amplitude of the random rotation (compare the randomization
+      amplitude of :kw:`GLOCALIZATION PARAMETER`).
+
+.. source: src/control_utils.mod.F90:4121
+
+.. keyword:: G_REAL
+   :section: &CPMD
+
+   Option for the localization of orbitals in reciprocal space (``G_SPACE_LOC``
+   in &PROP). Declares that the starting orbitals are real in real space and
+   have to be expanded (source comment: ``starting C0 real in real space, to be
+   expanded``); the real-orbital driver ``g_loc_dr_real`` is then used instead
+   of ``g_loc_dr_comp``.
+
+   **Default** is the complex driver (:kw:`G_COMPLEX`).
+
+   Example::
+
+      G_REAL
+
+.. source: src/control_utils.mod.F90:4125
+
+.. keyword:: G_STEP TUNE
+   :section: &CPMD
+
+   Accepted by the parser for the reciprocal-space localization (``G_SPACE_LOC``
+   in &PROP): a line containing the words ``G_STEP`` and ``TUNE`` sets the
+   flag ``tg_tune_st`` (source comment: ``tuning the step on the size of the
+   gradient``).
+
+   Example::
+
+      G_STEP TUNE
+
+   .. todo::
+
+      MISSING: the flag ``glocal%tg_tune_st`` is not used anywhere in the
+      current source, so this keyword has no effect. To be confirmed by the
+      developers whether it should be removed from the parser.
+
+.. source: src/control_utils.mod.F90:4129
 
 .. keyword:: HAMILTONIAN CUTOFF
    :section: &CPMD
@@ -849,6 +1566,46 @@ Keywords
    any atom species.
 
    **Default** is to use the **atomic pseudo-wavefunctions**.
+
+.. keyword:: INR PARAMETER
+   :section: &CPMD
+   :options: {N=nreg}
+
+   Gradient regions and convergence thresholds for the implicit Newton-Raphson
+   geometry optimizer (:kw:`IMPLICIT NEWTON RAPHSON`). The parser requires the
+   word ``INR`` (alias ``TURBOCICCIO``) and the word ``PARAMETER`` (alias
+   ``PARAMETERS``) on the same line. The number of regions ``nreg`` is given
+   with ``N=nreg`` on the keyword line (``n=nreg`` is also accepted); it must
+   be between 1 and 5, otherwise the run stops (``WRONG NREG NUMBER``). Then
+   ``nreg`` lines follow, each containing two real numbers ``gnx_inr(i)
+   tolx_inr(i)``.
+
+   At each geometry step the regions are scanned in input order and the first
+   region ``i`` for which the largest component of the ionic gradient is larger
+   than ``gnx_inr(i)`` is selected; ``tolx_inr(i)`` is then used as the
+   residual threshold for convergence of the inner linear-response (DFPT)
+   iterations of the INR step. The boundaries should therefore be given in
+   decreasing order.
+
+   **Default** is ``nreg`` = 5 with ``gnx_inr`` = ``tolx_inr`` =
+   :math:`5\cdot10^{-3}`, :math:`10^{-3}`, :math:`5\cdot10^{-4}`,
+   :math:`10^{-4}`, :math:`5\cdot10^{-5}`. If ``N=`` is omitted, the current
+   value of ``nreg`` (5 by default) is used and that many lines are read.
+
+   Note: the form ``IMPLICIT NEWTON RAPHSON PARAMETERS N=nreg`` given in the
+   comment header of the source does **not** work; it is parsed as
+   :kw:`IMPLICIT NEWTON RAPHSON`.
+
+   Example::
+
+      IMPLICIT NEWTON RAPHSON
+        50
+      INR PARAMETERS N=3
+        1.0E-2  1.0E-2
+        1.0E-3  1.0E-3
+        0.0     1.0E-4
+
+.. source: src/control_utils.mod.F90:2094
 
 .. keyword:: INTERFACE
    :section: &CPMD
@@ -982,7 +1739,7 @@ Keywords
    the same directory in which the program is run. Optionally, the static
    covariance for the GLE dynamics can be provided in the file ``GLE-C``, so as to
    generate **non-canonical sampling**. A library of GLE parameters can be
-   downloaded from http://gle4md.berlios.de/
+   downloaded from https://gle4md.org/
 
    |
    | A few **presets** are provided, and are activated by the keywords:
@@ -1030,6 +1787,42 @@ Keywords
    automatically determined depending on the frequency of its associated harmonic
    potential representing the quantum kinetic energy term.
 
+.. keyword:: LANGEVIN_DYNAMICS
+   :section: &CPMD
+
+   Requests ionic dynamics with a Langevin thermostat (integration
+   coefficients after Chem. Phys. 236 (1998) 243-252, as cited in subroutine
+   ``LANG_CONS`` in ``hfx_utils.mod.F90``). Two numbers are read
+   (list-directed) from the next line: the friction coefficient
+   :math:`\gamma` in atomic units (a.u.\ :sup:`-1`) and the target
+   temperature in Kelvin. The control output prints a block "TEMPERATURE
+   CONTROL (LANGEVIN THERMOSTAT)" with these two values.
+
+   This keyword is unrelated to :kw:`LANGEVIN`, which activates the
+   generalized Langevin equation (GLE) thermostat.
+
+   Example::
+
+      MOLECULAR DYNAMICS BO
+      LANGEVIN_DYNAMICS
+       0.001 300.0
+
+   .. warning::
+
+      In the current source code the integration coefficients are set up in
+      :kw:`MOLECULAR DYNAMICS` (``md_driver.mod.F90``), but the Langevin
+      position and velocity updates (``posupi_lan``, ``velupi_lan1``,
+      ``velupi_lan2``) are never called. The keyword therefore has no effect
+      on the dynamics. Read errors on the parameter line are not checked.
+
+   .. todo::
+
+      MISSING: intended use (the code was added as part of the SCDM
+      exact-exchange work), which MD types are meant to be supported, and
+      whether the integrator is meant to be enabled.
+
+.. source: src/control_utils.mod.F90:1227
+
 .. keyword:: LBFGS
    :section: &CPMD
    :alternatives: [NREM, NTRUST, NRESTT, TRUSTR]
@@ -1068,6 +1861,38 @@ Keywords
    :kw:`PRFO`, :kw:`CONVERGENCE` ADAPT,
    :kw:`RESTART` LSSTAT, :kw:`PRINT` LSCAL ON and others.
 
+.. keyword:: LINALG NEWORTHO
+   :section: &CPMD
+   :options: {ON, OFF}
+
+   Switch the orthogonalization of the wavefunctions to the cache-optimized
+   blocked Gram-Schmidt algorithm with a distributed overlap matrix (source
+   comment: C. Bekas and A. Curioni, Comp. Phys. Comm. (2010)), routine
+   ``disortho_new``. If :kw:`USE_CUBLAS` is also active, the GPU version of
+   this algorithm is used. The block size is set with :kw:`DISORTHO_BSIZE`.
+
+   The line must contain ``LINALG`` and ``NEWORTHO`` (for example
+   ``DISTRIBUTED LINALG NEWORTHO ON`` is also recognized as this keyword and
+   not as :kw:`DISTRIBUTED LINALG`). Without ``ON`` or ``OFF`` the setting is
+   not changed.
+
+   **Default** is ``OFF``.
+
+   Restrictions: not implemented for Lowdin orthogonalization, ultrasoft
+   pseudopotentials and k points (the run stops with ``DISTRIBUTED
+   LINALG``).
+
+   Example::
+
+      LINALG NEWORTHO ON
+
+   .. todo::
+
+      MISSING: full literature reference (volume/page) for Bekas and
+      Curioni (2010).
+
+.. source: src/control_utils.mod.F90:4183
+
 .. keyword:: LINEAR RESPONSE
    :section: &CPMD
 
@@ -1075,6 +1900,30 @@ Keywords
    input in the &RESP section. In the latter, one of the possible perturbation
    types (PHONONS, LANCZOS, RAMAN, FUKUI, KPERT, NMR, EPR, see section
    :ref:`sec:resp-section`) can be chosen, accompanied by further options.
+
+.. keyword:: LOCAL POTENTIAL
+   :section: &CPMD
+
+   Write the local potential
+   :math:`\Delta V_\mathrm{loc}(\mathbf{r}) + V_\mathrm{xc}(\mathbf{r}) + V_\mathrm{Ht}(\mathbf{r}) + V_\mathrm{core}(\mathbf{r})`
+   (as printed by the code) on the real-space grid to the file
+   ``LOCPOT.cube`` at the end of a wavefunction optimization. The file has a
+   Gaussian-cube-like layout (two title lines, number of atoms, grid
+   dimensions and grid vectors, atomic numbers and coordinates, then the
+   values).
+
+   Example::
+
+      OPTIMIZE WAVEFUNCTION
+      LOCAL POTENTIAL
+
+   .. todo::
+
+      MISSING: units of the potential; the grid vectors written to the file
+      use only the diagonal elements of the cell vectors, so the file is only
+      correct for orthorhombic cells (to be confirmed).
+
+.. source: src/control_utils.mod.F90:4234
 
 .. keyword:: LOCAL SPIN DENSITY
    :section: &CPMD
@@ -1259,6 +2108,157 @@ Keywords
 
    **Default** is **not** to write a movie file.
 
+.. keyword:: NABDY_REDISTR_AMPLI
+   :section: &CPMD
+
+   Option for the NABDY dynamics (:kw:`MOLECULAR DYNAMICS` ``BD``). After each
+   step, fluid elements with an amplitude below :math:`10^{-5}` are
+   redistributed: each such element is moved to a random position near the
+   center of the distribution of the fluid elements of the same atom (Gaussian
+   displacement of width 0.05 a.u., keeping a minimum distance to the other
+   elements) and is given the amplitude "mean + standard deviation" of the
+   amplitudes of that atom. The number of redistributed elements is printed.
+
+   **Default** is no redistribution.
+
+   Example::
+
+      NABDY_REDISTR_AMPLI
+
+   .. todo::
+
+      MISSING: description of the NABDY method and literature reference.
+      Note that the routine selects the atoms by comparing the mass of the
+      species with :kw:`NABDY_ZMAX`, while all other NABDY routines compare the
+      atomic number; to be checked by the developers.
+
+.. source: src/control_utils.mod.F90:2544
+
+.. keyword:: NABDY_SCALEP
+   :section: &CPMD
+
+   Option for the NABDY dynamics (:kw:`MOLECULAR DYNAMICS` ``BD``). The
+   velocities of the NABDY atoms (atomic number up to :kw:`NABDY_ZMAX`) of all
+   fluid elements are rescaled at every step by the factor
+   :math:`\sqrt{E_\mathrm{ref}/E}`, where :math:`E` is the amplitude-weighted
+   sum over the fluid elements of their kinetic energies and
+   :math:`E_\mathrm{ref}` its value at the first step.
+
+   **Default** is no rescaling.
+
+   Example::
+
+      NABDY_SCALEP
+
+   .. todo::
+
+      MISSING: physical motivation and literature reference.
+
+.. source: src/control_utils.mod.F90:2546
+
+.. keyword:: NABDY_SOFT
+   :section: &CPMD
+
+   Option for the NABDY dynamics (:kw:`MOLECULAR DYNAMICS` ``BD``). Use a
+   softened (screened) quantum force on the fluid elements: the denominator
+   :math:`g` of the quantum force is replaced by
+   :math:`\sqrt{g^2 + \epsilon}`. The softening parameter :math:`\epsilon`
+   (a real number) is read from the next line.
+
+   **Default** is no softening.
+
+   Example::
+
+      NABDY_SOFT
+        1.0E-6
+
+   .. todo::
+
+      MISSING: meaning and units of the softening parameter, recommended
+      values, literature reference.
+
+.. source: src/control_utils.mod.F90:2534
+
+.. keyword:: NABDY_THERMO
+   :section: &CPMD
+
+   Option for the NABDY dynamics (:kw:`MOLECULAR DYNAMICS` ``BD``). Activates
+   a Berendsen-like velocity rescaling of the NABDY atoms. Two real numbers are
+   read from the next line: the target temperature ``natempcm`` (in Kelvin,
+   compared with the current temperature of the NABDY atoms) and a time
+   constant ``natempbp`` (in atomic units, used as
+   :math:`\lambda = \sqrt{1 + \tfrac{\Delta t}{2\,\tau}(T_0/T - 1)}`).
+   A second scaling based on the momentum dispersion of the fluid elements
+   uses the time constant ``5*natempbp``. Information is written to the file
+   ``nabdy_thermostat``.
+
+   **Default** is no thermostat.
+
+   Example::
+
+      NABDY_THERMO
+        300.0  100.0
+
+   .. todo::
+
+      MISSING: physical meaning of the dispersion-based scaling and
+      literature reference.
+
+.. source: src/control_utils.mod.F90:2548
+
+.. keyword:: NABDY_ZMAX
+   :section: &CPMD
+
+   Option for the NABDY dynamics (:kw:`MOLECULAR DYNAMICS` ``BD``). The
+   integer read from the next line is the largest atomic number of the species
+   that are treated with the NABDY (fluid element) scheme; species with a
+   larger atomic number are skipped by the NABDY routines.
+
+   **Default** is 1 (only hydrogen).
+
+   Example::
+
+      MOLECULAR DYNAMICS BD
+        10
+      NABDY_ZMAX
+        1
+
+   .. todo::
+
+      MISSING: description of the NABDY method (the number on the line after
+      ``MOLECULAR DYNAMICS BD`` is the number of trajectories / fluid elements
+      per atom) and literature reference. The keyword :kw:`MOLECULAR DYNAMICS`
+      entry does not mention the ``BD`` option either.
+
+.. source: src/control_utils.mod.F90:2384
+
+.. keyword:: NACV
+   :section: &CPMD
+
+   Computes non-adiabatic coupling vectors between the states of a TDDFT
+   calculation. This keyword is used together with :kw:`ELECTRONIC SPECTRA`;
+   the vectors are computed after the TDDFT excitations (``&LINRES`` and
+   ``&TDDFT`` sections). No further input is read.
+
+   The coupling vectors are printed to the standard output and written to
+   the file ``NACV.log`` (``NACVa.log`` and ``NACVb.log`` for :kw:`LSD`) in a
+   Gaussian-like format that can be read by visualization programs like
+   MOLDEN or MOLEKEL. As the file header states, this is a "faked" output and
+   contains no intensities.
+
+   Example::
+
+      ELECTRONIC SPECTRA
+      NACV
+
+   .. todo::
+
+      MISSING: exactly which pairs of states are coupled (the code loops over
+      ``nroot*(nroot+1)/2`` sets), units of the output, restrictions (e.g.
+      Tamm-Dancoff, functionals) and literature reference.
+
+.. source: src/control_utils.mod.F90:1202
+
 .. keyword:: NOGEOCHECK
    :section: &CPMD
 
@@ -1388,6 +2388,39 @@ Keywords
 
    **If the keyword is used all parameters have to be specified.**
 
+.. keyword:: NO_RESET
+   :section: &CPMD
+
+   Number of steps between resets of the ODIIS history in case of poor
+   convergence. The integer is read from the next line. This is the
+   stand-alone form of the option ``NO_RESET=nreset`` of :kw:`ODIIS` and sets
+   the same variable.
+
+   **Default** is 0.
+
+   Example::
+
+      NO_RESET
+        5
+
+   .. todo::
+
+      MISSING: the meaning of 0 and of negative values (see :kw:`ODIIS`). A
+      comment in the source says that this stand-alone keyword should be
+      removed.
+
+.. source: src/control_utils.mod.F90:4007
+
+.. keyword:: N_STREAMS
+   :section: &CPMD
+
+   Obsolete. The keyword is still recognized, but the run stops immediately
+   with the message ``The N_STREAMS keyword is deprecated``. The number of
+   CUDA streams is now set with :kw:`FFT_N_STREAMS_PER_DEVICE` and
+   :kw:`BLAS_N_STREAMS_PER_DEVICE`.
+
+.. source: src/control_utils.mod.F90:2981
+
 .. keyword:: ODIIS
    :section: &CPMD
    :alternatives: [NOPRECONDITIONING,NO_RESET=nreset]
@@ -1405,6 +2438,45 @@ Keywords
    **reset** on poor progress, is the number of DIIS vectors. With **ODIIS
    NO_RESET**, this number can be changed, or DIIS resets can be **disabled**
    altogether with a value of -1.
+
+.. keyword:: OPTIMIZE COMBINED
+   :section: &CPMD
+   :options: {XYZ, SAMPLE}
+
+   Requests a geometry optimization with a combined (simultaneous)
+   wavefunction and geometry scheme. The control output prints "COMBINED
+   GEOMETRY/WAVEFUNCTION SCHEME". The alias ``COMBINED OPTIMIZATION`` is also
+   accepted.
+
+   The keyword also switches on :kw:`HARMONIC REFERENCE SYSTEM` and
+   :kw:`SCALED MASSES`. These can be switched off again with the ``OFF``
+   option of these keywords placed after :kw:`OPTIMIZE COMBINED`.
+
+   The options ``XYZ`` and ``SAMPLE`` work as for :kw:`OPTIMIZE GEOMETRY`:
+   ``XYZ`` writes the optimization path also in xyz format to
+   ``GEO_OPT.xyz``; with ``SAMPLE`` the output interval ``NGXYZ`` is read from
+   the next line (**Default** is 1).
+
+   Example::
+
+      OPTIMIZE COMBINED XYZ
+      STEEPEST DESCENT ELECTRONS IONS
+
+   .. warning::
+
+      The combined scheme itself is not implemented: the geometry optimizer
+      stops with "SIMUL NOT WORKING" unless simultaneous steepest descent of
+      electrons and ions is selected (:kw:`STEEPEST DESCENT` ``ELECTRONS
+      IONS``, or :kw:`TSDE` and :kw:`TSDP`), which is handled before the
+      combined scheme, or :kw:`IMPLICIT NEWTON RAPHSON` is used, which
+      disables the combined scheme.
+
+   .. todo::
+
+      MISSING: description of the intended combined algorithm and whether it
+      is planned to be implemented.
+
+.. source: src/control_utils.mod.F90:907
 
 .. keyword:: OPTIMIZE GEOMETRY
    :section: &CPMD
@@ -1529,6 +2601,31 @@ Keywords
    searches are performed to improve the preconditioning.
 
    The preconditioning is controlled by the keyword :kw:`HAMILTONIAN CUTOFF`. Optionally preconditioning can be disabled.
+
+.. keyword:: PIPPO
+   :section: &CPMD
+   :alternatives: [LAGRANGE=eps maxit, ORTHO, APPROX]
+
+   Selects how the unitarity of the transformation is imposed in the
+   localization of orbitals in reciprocal space (``G_SPACE_LOC`` in &PROP).
+   The keyword name ``PIPPO`` is literally what the parser checks (the source
+   comment calls it ``UNITARITY CONSTRAINT``):
+
+   * ``LAGRANGE=eps maxit``: Lagrange multipliers; the tolerance ``eps``
+     (**default** :math:`10^{-6}`) and the maximum number of iterations
+     ``maxit`` (**default** 20) are read from the same line after
+     ``LAGRANGE=``;
+   * ``ORTHO``: exact orthogonalization by :math:`S^{-1/2}`;
+   * ``APPROX``: approximation :math:`U = 1 + iA` with :math:`A` Hermitian,
+     followed by orthogonalization of the orbitals.
+
+   **Default** is Lagrange multipliers.
+
+   Example::
+
+      PIPPO LAGRANGE=1.0E-7 50
+
+.. source: src/control_utils.mod.F90:4089
 
 .. keyword:: PRFO
    :section: &CPMD
@@ -1664,6 +2761,39 @@ Keywords
    This keyword is controlling the calculation of the constraint force in
    optimization runs.
 
+.. keyword:: PROPAGATION DISTRUB
+   :section: &CPMD
+
+   Real-time propagation of the Kohn-Sham orbitals under the perturbation of
+   a time-dependent external point charge. This is a main run option, like
+   :kw:`PROPAGATION SPECTRA`. The keyword must be spelled ``DISTRUB`` exactly
+   as shown; ``DISTURB`` is not recognized. No further input is read in
+   ``&CPMD``.
+
+   The keyword sets complex wavefunctions and steepest descent for the
+   electrons (as :kw:`TSDE`). The parameters of the propagation are read from
+   the ``&PTDDFT`` section; the point charge must be defined there with
+   ``POINT_CHARGE`` (otherwise the program stops with "PROP DISTURBANCE WITH
+   POINTCHARGE PERTURBATION"). The orbitals are propagated with :kw:`CAYLEY`,
+   which must be given; :kw:`RUNGE-KUTTA` is switched off ("NO RUNGE-KUTTA
+   WITH SPECTRA CALCULATION"). The keyword cannot be used together with
+   :kw:`QMMM`. The times at which the point charge acts are written to the
+   file ``Time.dat``.
+
+   Example::
+
+      PROPAGATION DISTRUB
+      RESTART WAVEFUNCTION COORDINATES LATEST
+      CAYLEY
+
+   .. todo::
+
+      MISSING: documentation of ``POINT_CHARGE`` in ``&PTDDFT`` (seven values:
+      ``pcht0 pchdt pchint pchfx pchfy pchfz pchwr``), the output files and
+      quantities that are analysed, and a literature reference.
+
+.. source: src/control_utils.mod.F90:1186
+
 .. keyword:: PROPAGATION SPECTRA
    :section: &CPMD
 
@@ -1759,6 +2889,26 @@ Keywords
    from the next line.
 
    **Defaults** are 30 and :math:`10^{-6}`.
+
+.. keyword:: READ MATRIX
+   :section: &CPMD
+
+   Option for the localization of orbitals in reciprocal space (``G_SPACE_LOC``
+   in &PROP). The first unitary transformation is read from an unformatted
+   file named ``MATRIX_<k>`` (the file must exist and must contain the same
+   number of states) and applied to the orbitals before the optimization
+   (output: ``FIRST UNITARY TRANSFORMATION READ FROM FILE``).
+
+   Example::
+
+      READ MATRIX
+
+   .. todo::
+
+      MISSING: which run writes the ``MATRIX_<k>`` file and the meaning of the
+      index ``<k>`` (0 for the Gamma point in the code path inspected).
+
+.. source: src/control_utils.mod.F90:4127
 
 .. keyword:: REAL SPACE WFN KEEP
    :section: &CPMD
@@ -1938,6 +3088,158 @@ Keywords
    every *nrhoout* steps during an MD trajectory. The corresponding time step
    number will be appended to the filename.
 
+.. keyword:: RNLSM1_BLOCKCOUNT
+   :section: &CPMD
+
+   Number of buffers into which the atoms are split in the calculation of the
+   nonlocal projector overlaps ``FNL`` (routine ``rnlsm1``), so that the
+   communication of one buffer overlaps with the computation of the next. The
+   integer is read from the next line.
+
+   **Default** is 3.
+
+   The value is only used together with :kw:`USE_OVERLAPPING_COMM_COMP`;
+   otherwise a single buffer is used. It can be set automatically with
+   :kw:`RNLSM_AUTOTUNE`.
+
+   Example::
+
+      USE_OVERLAPPING_COMM_COMP
+      RNLSM1_BLOCKCOUNT
+        4
+
+.. source: src/control_utils.mod.F90:3768
+
+.. keyword:: RNLSM1_BLOCKSIZE1
+   :section: &CPMD
+
+   Fraction of the work assigned to the first buffer in the calculation of
+   ``FNL`` (routine ``rnlsm1``) when the atoms are split into
+   :kw:`RNLSM1_BLOCKCOUNT` buffers. The real number is read from the next
+   line.
+
+   **Default** is 0.5.
+
+   Only used together with :kw:`USE_OVERLAPPING_COMM_COMP`; can be set
+   automatically with :kw:`RNLSM_AUTOTUNE`.
+
+   Example::
+
+      RNLSM1_BLOCKSIZE1
+        0.4
+
+.. source: src/control_utils.mod.F90:3802
+
+.. keyword:: RNLSM1_BLOCKSIZE2
+   :section: &CPMD
+
+   Fraction of the work assigned to each of the remaining buffers (all buffers
+   except the first) in the calculation of ``FNL`` (routine ``rnlsm1``) when
+   the atoms are split into :kw:`RNLSM1_BLOCKCOUNT` buffers. The real number is
+   read from the next line.
+
+   **Default** is 0.3.
+
+   Only used together with :kw:`USE_OVERLAPPING_COMM_COMP`; can be set
+   automatically with :kw:`RNLSM_AUTOTUNE`.
+
+   Example::
+
+      RNLSM1_BLOCKSIZE2
+        0.2
+
+.. source: src/control_utils.mod.F90:3811
+
+.. keyword:: RNLSM2_BLOCKCOUNT
+   :section: &CPMD
+
+   Number of buffers into which the atoms are split in the calculation of the
+   derivatives ``DFNL`` of the nonlocal projector overlaps (routine
+   ``rnlsm2``), so that communication and computation overlap. The integer is
+   read from the next line.
+
+   **Default** is 3.
+
+   Only used together with :kw:`USE_OVERLAPPING_COMM_COMP`; can be set
+   automatically with :kw:`RNLSM_AUTOTUNE`.
+
+   Example::
+
+      RNLSM2_BLOCKCOUNT
+        4
+
+.. source: src/control_utils.mod.F90:3776
+
+.. keyword:: RNLSM2_BLOCKSIZE1
+   :section: &CPMD
+
+   Fraction of the work assigned to the first buffer in the calculation of
+   ``DFNL`` (routine ``rnlsm2``) when the atoms are split into
+   :kw:`RNLSM2_BLOCKCOUNT` buffers. The real number is read from the next
+   line.
+
+   **Default** is 0.5.
+
+   Only used together with :kw:`USE_OVERLAPPING_COMM_COMP`; can be set
+   automatically with :kw:`RNLSM_AUTOTUNE`.
+
+   Example::
+
+      RNLSM2_BLOCKSIZE1
+        0.4
+
+.. source: src/control_utils.mod.F90:3784
+
+.. keyword:: RNLSM2_BLOCKSIZE2
+   :section: &CPMD
+
+   Fraction of the work assigned to each of the remaining buffers (all buffers
+   except the first) in the calculation of ``DFNL`` (routine ``rnlsm2``) when
+   the atoms are split into :kw:`RNLSM2_BLOCKCOUNT` buffers. The real number is
+   read from the next line.
+
+   **Default** is 0.3.
+
+   Only used together with :kw:`USE_OVERLAPPING_COMM_COMP`; can be set
+   automatically with :kw:`RNLSM_AUTOTUNE`.
+
+   Example::
+
+      RNLSM2_BLOCKSIZE2
+        0.2
+
+.. source: src/control_utils.mod.F90:3793
+
+.. keyword:: RNLSM_AUTOTUNE
+   :section: &CPMD
+   :options: {OFF}
+
+   Automatic tuning of the buffer parameters :kw:`RNLSM1_BLOCKCOUNT`,
+   :kw:`RNLSM1_BLOCKSIZE1`, :kw:`RNLSM1_BLOCKSIZE2`,
+   :kw:`RNLSM2_BLOCKCOUNT`, :kw:`RNLSM2_BLOCKSIZE1` and
+   :kw:`RNLSM2_BLOCKSIZE2` used to overlap communication and computation in
+   the calculation of the nonlocal projector overlaps (``FNL``, routine
+   ``rnlsm1``) and their derivatives (``DFNL``, routine ``rnlsm2``). Unless
+   ``OFF`` is given, the number of tuning iterations is read from the next
+   line. Timings are collected during these iterations and the buffer
+   parameters are then set from the measured communication and computation
+   times.
+
+   **Default** is no autotuning.
+
+   Autotuning only takes place together with
+   :kw:`USE_OVERLAPPING_COMM_COMP`. If the third value of :kw:`BENCHMARK` is 1,
+   the tuning iterations are performed in a separate autotuning phase before
+   the first force calculation.
+
+   Example::
+
+      USE_OVERLAPPING_COMM_COMP
+      RNLSM_AUTOTUNE
+        20
+
+.. source: src/control_utils.mod.F90:3820
+
 .. keyword:: ROKS
    :section: &CPMD
    :alternatives: {SINGLET, TRIPLET},{DELOCALIZED, LOCALIZED, GOEDECKER}
@@ -1979,6 +3281,46 @@ Keywords
    :math:`V_{\rm pot}({\bf r})` that remains basically unaffected once that the
    calculation is completed.
 
+.. keyword:: SINR
+   :section: &CPMD
+
+   Use the stochastic isokinetic Nose-Hoover RESPA thermostat for the ions
+   (output: ``STOCHASTIC ISO-KINETIC NOSE-HOOVER(RESPA) IS USED``). Four
+   numbers are read from the next line, in this order:
+
+   * ``tau``: thermostat time scale in atomic units,
+   * ``gamma``: friction coefficient in atomic units,
+   * ``T``: target temperature in Kelvin,
+   * ``L``: number of thermostats (length of the thermostat chain attached to
+     each degree of freedom).
+
+   All four values are required. The thermostat masses are set to
+   :math:`k_B T\,\tau^2`. The integration of the thermostat variables uses the
+   Suzuki-Yoshida parameters of the Nose-Hoover thermostats (see
+   :kw:`NOSE PARAMETERS`). The number of nuclear degrees of freedom used is
+   :math:`3N_\mathrm{atoms}`. If a file ``RESTART_SINR`` exists at the start
+   of the run, the thermostat variables are read from it; otherwise they are
+   initialized randomly and the ionic velocities are scaled to satisfy the
+   isokinetic constraint. The thermostat variables are written to
+   ``RESTART_SINR`` during the run.
+
+   The thermostat is implemented in the Born-Oppenheimer molecular dynamics
+   driver (also for QM/MM).
+
+   Example::
+
+      MOLECULAR DYNAMICS BO
+      SINR
+        100.0  0.0005  300.0  4
+
+   .. todo::
+
+      MISSING: literature reference for the SIN(R) method, recommended values
+      for tau, gamma and L, and compatibility with :kw:`USE_MTS` and with
+      constraints.
+
+.. source: src/control_utils.mod.F90:2899
+
 .. keyword:: SOC
    :section: &CPMD
 
@@ -1987,6 +3329,37 @@ Keywords
    calculation is based on the Auxiliary Many-Electron Wavefunction Approach for
    TDDFT developed in Ref. [taver]_. For more information see
    Ref. [SOC]_.
+
+.. keyword:: SPIN-ORBIT COUPLING
+   :section: &CPMD
+
+   Computes spin-orbit coupling (SOC) matrix elements between singlet and
+   triplet TDDFT states. This is a main run option; it cannot be combined with
+   other run options such as :kw:`ELECTRONIC SPECTRA`. The calculation is
+   based on the auxiliary many-electron wavefunction approach for TDDFT; see
+   the references given for this method in the current manual entry ``SOC``.
+
+   Two integers are read from the next line: the index of the singlet state
+   ``ISOCS`` (0 denotes the ground state) and the index of the triplet state
+   ``JSOCT``. The program reads the ``&LINRES`` and ``&TDDFT`` sections,
+   computes the singlet and the triplet excitations, and prints the
+   components (Sx, Sy, Sz) of the SOC matrix element between the selected
+   states and its total value, all in cm\ :sup:`-1`. In addition, the
+   elements between all singlets (including the ground state) and all
+   triplets are computed and printed as a matrix (rows: singlets, columns:
+   triplets).
+
+   Example::
+
+      SPIN-ORBIT COUPLING
+       1 1
+
+   .. todo::
+
+      MISSING: required restart files and ``&TDDFT`` settings, restrictions
+      (e.g. closed-shell reference, Tamm-Dancoff approximation).
+
+.. source: src/control_utils.mod.F90:1162
 
 .. keyword:: SPLINE
    :section: &CPMD
@@ -2010,6 +3383,34 @@ Keywords
    the initialization phase and memory in the case of Vanderbilt pseudopotentials
    when the number of shells is not much smaller than the total number of plane
    waves, i.e. for all cell symmetries except simple cubic and fcc.
+
+.. keyword:: SPREAD RSPACE
+   :section: &CPMD
+   :options: {RSPACE=w_g w_r}
+
+   Option for the localization of orbitals in reciprocal space (``G_SPACE_LOC``
+   in &PROP): the spread functional in real space (Wannier-type) is also
+   calculated (output: ``THE SPREAD FUNCTIONAL IN REAL SPACE IS ALSO
+   CALCULATED``). Optionally two weights are given on the same line after
+   ``RSPACE=``: the weight of the G-space functional ``W_GFUN``
+   (**default** 1.0) and the weight of the real-space functional ``W_RFUN``
+   (**default** 0.0).
+
+   The run stops with ``REAL SPACE LOC. ONLY WITH GLOC_OPT=1, GLOC_TYPE=2``
+   unless :kw:`GLOCALIZATION OPTIMIZATION` ``SD INTEGRATION`` or
+   :kw:`GFUNCTIONAL TYPE` ``ZETANUMBER`` (the default) is used.
+
+   Example::
+
+      SPREAD RSPACE=1.0 0.5
+
+   .. todo::
+
+      MISSING: in the code, if both weights are non-zero they are both reset
+      to 1.0 and mass ratios are computed; the exact weighting scheme should be
+      documented by the developers.
+
+.. source: src/control_utils.mod.F90:4066
 
 .. keyword:: SSIC
    :section: &CPMD
@@ -2052,6 +3453,22 @@ Keywords
 
    For ions optimization, the step length is controlled by the keywords
    **TIMESTEP** and **EMASS**.
+
+.. keyword:: STEP TUNING
+   :section: &CPMD
+
+   Option for the localization of orbitals in reciprocal space (``G_SPACE_LOC``
+   in &PROP): the time step of the optimization is tuned by a search along the
+   line (output: ``TIME STEP TUNING BY SEARCH ALONG THE LINE``; source comment:
+   ``tuning of the time step by 3 points method``).
+
+   **Default** is a fixed step (see :kw:`GLOCALIZATION PARAMETER`).
+
+   Example::
+
+      STEP TUNING
+
+.. source: src/control_utils.mod.F90:4116
 
 .. keyword:: STORE
    :section: &CPMD
@@ -2125,6 +3542,41 @@ Keywords
    excited state\ [surfhop]_. Do NOT use this keyword together with
    :kw:`T-SHTDDFT`, which invokes the surface hopping MD scheme based
    on TDDFT [TDDFT-SH]_ (see :kw:`T-SHTDDFT`).
+
+.. keyword:: TASKGROUPS
+   :section: &CPMD
+   :options: {CARTESIAN}
+
+   Obsolete. The number of (old-style) task groups is read from the next line
+   (alias ``TASKGROUP``). The density and potential routines stop with ``OLD
+   TASK GROUPS NOT SUPPORTED ANYMORE`` if a value larger than 1 is used, so
+   only the default value 1 is usable. The option ``CARTESIAN`` is accepted
+   but the corresponding flag is not used anywhere in the code. The options
+   ``MAXI`` and ``MINI`` stop the run with ``TASKGROUPS/MAXI has been removed``
+   and ``TASKGROUPS/MINI has been removed``.
+
+   **Default** is 1.
+
+   See :kw:`CP_GROUPS` for the group parallelization that is currently
+   supported.
+
+.. source: src/control_utils.mod.F90:3895
+
+.. keyword:: TCGP
+   :section: &CPMD
+
+   Short form of :kw:`CONJUGATE GRADIENT` ``IONS``: the ionic positions in a
+   geometry optimization are relaxed with a conjugate gradient scheme with
+   line minimization (the steepest descent machinery for the ions is used, as
+   with :kw:`TSDP`). The control output prints "GEOMETRY OPTIMIZATION BY
+   CONJUGATE GRADIENT". No further input is read.
+
+   Example::
+
+      OPTIMIZE GEOMETRY
+      TCGP
+
+.. source: src/control_utils.mod.F90:1847
 
 .. keyword:: TDDFT
    :section: &CPMD
@@ -2259,6 +3711,180 @@ Keywords
    activated by the keyword PATH INTEGRAL and as specified in the section &PIMD
    ... &END.
 
+.. keyword:: TUNE_FFT_BATCHSIZE
+   :section: &CPMD
+   :options: {OFF}
+
+   Automatic tuning of the number of states per batch in the batched FFT
+   (:kw:`USE_BATCHFFT`). Unless ``OFF`` is given, an integer ``n`` is read from
+   the next line: each tested batch size is timed during ``n+1`` FFT
+   iterations, the first of which is discarded, and the average is used.
+   Starting from the batch size derived from :kw:`ALL2ALL_BATCHSIZE`, the
+   batch size is decreased step by step, and the fastest batch size is kept for
+   the rest of the run.
+
+   **Default** is no tuning; the internal default for the number of timed
+   iterations per batch size corresponds to ``n`` = 1.
+
+   Only effective with :kw:`USE_BATCHFFT`. If the third value of
+   :kw:`BENCHMARK` is 1, the tuning is performed in a separate autotuning phase
+   before the first force calculation; otherwise during the first iterations.
+
+   Example::
+
+      USE_BATCHFFT
+      TUNE_FFT_BATCHSIZE
+        2
+
+.. source: src/control_utils.mod.F90:3753
+
+.. keyword:: USE_BATCHFFT
+   :section: &CPMD
+   :options: {OFF}
+
+   Use the batched parallel FFT algorithm for the calculation of the density
+   (``rhoofr_batchfft``) and of the local potential applied to the
+   wavefunctions (``vpsi_batchfft``): several states are transformed together,
+   so that fewer and larger all-to-all messages are sent. The batch size is
+   controlled with :kw:`ALL2ALL_BATCHSIZE` and can be tuned with
+   :kw:`TUNE_FFT_BATCHSIZE`. With :kw:`USE_OVERLAPPING_COMM_COMP` the
+   communication of one batch overlaps with the computation of another (at
+   least 2 or 3 batches are then used). ``USE_BATCHFFT OFF`` switches it off.
+
+   **Default** is ``OFF``.
+
+   The batched FFT is not used for k-point calculations.
+
+   Example::
+
+      USE_BATCHFFT
+
+.. source: src/control_utils.mod.F90:3744
+
+.. keyword:: USE_CUBLAS
+   :section: &CPMD
+
+   Use NVIDIA GPUs through cuBLAS for the blocked Gram-Schmidt
+   orthogonalization selected with :kw:`LINALG NEWORTHO` (routine
+   ``disortho_new``); this is currently the only code path controlled by this
+   keyword. The number of GPUs and of CUDA streams per MPI task are set with
+   :kw:`BLAS_N_DEVICES_PER_TASK` and :kw:`BLAS_N_STREAMS_PER_DEVICE`.
+
+   **Default** is not to use cuBLAS.
+
+   Prerequisites: CPMD must be built with CUDA support, i.e. with the
+   preprocessor flag ``-D__HAS_CUDA``. With CMake this is done with
+   ``-DCPMD_ENABLE_CUDA=ON`` (requires the CUDA toolkit; links cudart, cuFFT,
+   cuBLAS and cuSOLVER); with the classic build use a machine configuration
+   that sets ``-D__HAS_CUDA`` and ``NVCC`` (e.g. the ``*-CUDA`` files in
+   ``configure/``). In a binary without CUDA support the keyword is ignored
+   with the message ``CONTROL| cannot use cublas because CPMD was not compiled
+   with the -D__HAS_CUDA``. Since each CUDA stream is driven by an OpenMP
+   thread, an OpenMP build (``-DCPMD_ENABLE_OPENMP=ON`` or ``configure.sh
+   -omp``) and enough threads are needed for more than one stream or device per
+   task. The CUDA driver and runtime versions and the cuBLAS version are
+   printed at start-up.
+
+   Example::
+
+      LINALG NEWORTHO ON
+      USE_CUBLAS
+      BLAS_N_DEVICES_PER_TASK
+        1
+      BLAS_N_STREAMS_PER_DEVICE
+        2
+
+.. source: src/control_utils.mod.F90:2937
+
+.. keyword:: USE_CUFFT
+   :section: &CPMD
+
+   Use NVIDIA GPUs through cuFFT for the 3D FFTs of the wavefunctions, in
+   particular in the calculation of the electron density (``rhoofr``) and of
+   the local potential applied to the wavefunctions (``vpsi``), where several
+   states are processed concurrently on CUDA streams. The number of GPUs and of
+   streams per MPI task are set with :kw:`FFT_N_DEVICES_PER_TASK` and
+   :kw:`FFT_N_STREAMS_PER_DEVICE`. The FFT grid sizes must be acceptable both
+   for the CPU and the GPU FFT; otherwise the run stops with ``no easy match
+   between GPU and CPU input size``.
+
+   **Default** is not to use cuFFT.
+
+   Prerequisites: as for :kw:`USE_CUBLAS`, a binary built with CUDA support
+   (``-D__HAS_CUDA``, CMake option ``-DCPMD_ENABLE_CUDA=ON``) is required; in a
+   binary without CUDA support the keyword is ignored with the message
+   ``CONTROL| cannot use cufft because CPMD was not compiled with the
+   -D__HAS_CUDA``. More than one stream or device per task requires an OpenMP
+   build with at least as many threads as streams per task. The cuFFT version
+   is printed at start-up.
+
+   Example::
+
+      USE_CUFFT
+      FFT_N_DEVICES_PER_TASK
+        1
+      FFT_N_STREAMS_PER_DEVICE
+        4
+
+.. source: src/control_utils.mod.F90:2939
+
+.. keyword:: USE_ELPA
+   :section: &CPMD
+   :options: {OFF}
+
+   Use the ELPA library to solve the eigenvalue problem in the unitary rotation
+   of the wavefunctions (routine ``crotwf``, used with
+   :kw:`NONORTHOGONAL ORBITALS` when the overlap condition exceeds the limit);
+   the overlap matrix is then also symmetrized. Unless ``OFF`` is given, the
+   number of MPI tasks to be used by ELPA is read from the next line. The
+   tasks form a square process grid of ``INT(SQRT(n))`` x ``INT(SQRT(n))``
+   tasks (``n`` is limited to the total number of tasks); with ``-1`` the grid
+   size is chosen automatically (1 x 1 for fewer than 100 states or fewer than
+   4 tasks, 2 x 2 for fewer than 400 states, otherwise
+   ``MIN(16, INT(SQRT(number of tasks)))`` per dimension). The number of active
+   ELPA ranks is printed (``ELPA: active MPI Ranks``).
+
+   **Default** is ``OFF``.
+
+   Prerequisites: CPMD must be compiled with ``-D__HAS_LIBELPA`` and linked
+   against ELPA (there is no dedicated CMake option; the flag has to be passed
+   through the ``CPPFLAGS`` of a machine configuration). In a binary without
+   ELPA support ``USE_ELPA`` cannot be switched on, and the number on the next
+   line is then not read but treated as an (unknown) input line.
+
+   Example::
+
+      USE_ELPA
+        -1
+
+   .. todo::
+
+      MISSING: ELPA version requirements (the code uses API version
+      20180525).
+
+.. source: src/control_utils.mod.F90:3726
+
+.. keyword:: USE_ELPA_AUTOTUNE
+   :section: &CPMD
+   :options: {OFF}
+
+   Run the ELPA autotuning before the first ELPA eigenvector calculation (see
+   :kw:`USE_ELPA`). Without autotuning, ELPA is set up with the two-stage
+   solver (and QR decomposition if available) for matrices with 1000 or more
+   states. ``USE_ELPA_AUTOTUNE OFF`` switches it off.
+
+   **Default** is ``OFF``.
+
+   Requires :kw:`USE_ELPA` and a binary built with ELPA support.
+
+   Example::
+
+      USE_ELPA
+        -1
+      USE_ELPA_AUTOTUNE
+
+.. source: src/control_utils.mod.F90:3738
+
 .. keyword:: USE_IN_STREAM
    :target: USE IN STREAM
    :section: &CPMD
@@ -2287,6 +3913,28 @@ Keywords
    Specify that the RESTART file shall be written in the stream mode. This allows
    for parallel restarting (to be used with *USE_MPI_IO*).
 
+.. keyword:: USE_OVERLAPPING_COMM_COMP
+   :section: &CPMD
+   :options: {OFF}
+
+   Enable algorithms that overlap MPI communication with computation. This
+   affects the calculation of the nonlocal projector overlaps and their
+   derivatives (the atoms are split into buffers, see
+   :kw:`RNLSM1_BLOCKCOUNT`, :kw:`RNLSM2_BLOCKCOUNT` and
+   :kw:`RNLSM_AUTOTUNE`), the batched FFT (:kw:`USE_BATCHFFT`, which then uses
+   at least 3 batches, or 2 if the real-space wavefunctions are kept), and
+   further routines (``spsi``, ``nlforce``, ``rotate``). ``OFF`` switches it
+   off.
+
+   **Default** is ``OFF``.
+
+   Example::
+
+      USE_OVERLAPPING_COMM_COMP
+      USE_BATCHFFT
+
+.. source: src/control_utils.mod.F90:3712
+
 .. keyword:: VDW CORRECTION
    :section: &CPMD
    :options: [ON,OFF]
@@ -2308,6 +3956,37 @@ Keywords
    previously computed. The file WANNIER-CENTER generated upon WFC calculation
    must be present. This activates the reading procedure of the corresponding
    parameters from the &VDW ... &END section.
+
+.. keyword:: VERBOSE
+   :target: VERBOSE CPMD
+   :section: &CPMD
+   :options: {FORCES, POSITIONS, VELOCITIES}
+
+   Debug output of ionic quantities. Each option prints the corresponding
+   array for all atoms (three Cartesian components, atom index and species
+   index per line), after summation over all processes:
+
+   - ``FORCES``: the ionic forces after several force contributions (e.g. in
+     the routines for the local and nonlocal pseudopotential, the core
+     correction, the ion-ion interaction and the van der Waals correction),
+     with the header ``DEBUG FORCES <routine>``.
+   - ``POSITIONS``: the ionic positions in the position update, with the
+     header ``DEBUG POSITIONS <routine>``.
+   - ``VELOCITIES``: the ionic velocities in the velocity update and in the
+     Nose thermostat routines, with the header ``DEBUG VELOCITIES <routine>``.
+
+   Several options can be given on the same line. ``VERBOSE`` without an
+   option has no effect. No further input is read.
+
+   Note that any ``&CPMD`` input line containing the word ``VERBOSE`` is taken
+   as this keyword; in particular, the ``VERBOSE`` option of
+   :kw:`IMPLICIT NEWTON RAPHSON` cannot be given on the same line.
+
+   Example::
+
+      VERBOSE FORCES VELOCITIES
+
+.. source: src/control_utils.mod.F90:942
 
 .. keyword:: VGFACTOR
    :section: &CPMD
@@ -2332,7 +4011,7 @@ Keywords
    is written. The **default** value is 1. If the option ACLIMAX is specified,
    additional output is written on the file VIB.aclimax which contains the modes
    in a style readable by aClimax
-   (http://www.isis.rl.ac.uk/molecularspectroscopy/aclimax/). If a section
+   (https://www.isis.stfc.ac.uk/Pages/Tosca-software.aspx). If a section
    **&PROP** is present with the keyword :kw:`DIPOLE MOMENT`\ [BERRY] or :kw:`DIPOLE MOMENT`\ [RS], the Born charge tensor is calculated on the
    fly. See also the block &LINRES ... &END and the keywords
    :kw:`RESTART` PHESS and :kw:`HESSIAN`
@@ -2388,6 +4067,31 @@ Keywords
    value :math:`1.e-7`). *W_RAN* the amplitude for the initial random rotation of
    the states (default value 0.0). *W_MAXS* is the maximum steps allowed in the
    optimization (default value 200).
+
+.. keyword:: WANNIER RECOMPUTE_DIPOLE_MATRICES_EVERY
+   :section: &CPMD
+
+   Recompute the position (dipole) matrices used in the Wannier localization
+   only every ``n``-th call of the localization; the integer ``n`` is read from
+   the next line. When the matrices are recomputed the code prints
+   ``RECOMPUTE DIPOLE MATRICES``. At the end of a wavefunction optimization
+   with :kw:`DIPOLE DYNAMICS` (or Wannier-function screening for HFX) a final
+   Jacobi localization with recomputed matrices is always done.
+
+   **Default** is 1 (recompute at every call).
+
+   Example::
+
+      WANNIER RELOCALIZE_IN_SCF
+      WANNIER RECOMPUTE_DIPOLE_MATRICES_EVERY
+        5
+
+   .. todo::
+
+      MISSING: accuracy implications of reusing the dipole matrices and
+      recommended values.
+
+.. source: src/control_utils.mod.F90:3408
 
 .. keyword:: WANNIER REFERENCE
    :section: &CPMD
@@ -2467,8 +4171,47 @@ Keywords
 
    WSTEP **1** is the grid point step size for the output.
 
-.. keyword:: {[TSDE, TSDP, TSDC]}
-   :target: TSDE, TSDP, TSDC
+.. keyword:: XFMQC
+   :section: &CPMD
+
+   Activates the exact-factorization-based mixed quantum-classical
+   (XF-MQC) correction to the TDDFT-based surface hopping dynamics. The
+   number of coupled trajectories ``N_XFTRAJ`` is read from the next line.
+
+   Each trajectory is run as a separate walker (using the multiple-walker
+   infrastructure), so ``N_XFTRAJ`` must not exceed the number of MPI
+   processes; otherwise it is reset to that number with the warning "NWALK
+   must be at most CP_NPROC". The keyword switches
+   on Tully's fewest-switches surface hopping in the TDDFT part (the output
+   shows "EXACT FACTORIZATION CORRECTION"), and is used together with
+   :kw:`MOLECULAR DYNAMICS` ``BO`` and :kw:`TDDFT` (with the ``&TDDFT``
+   section, e.g. ``T-SHTDDFT``). The trajectories interact through quantum
+   momenta, which are computed from Gaussians centred on the positions of all
+   trajectories.
+
+   Walker-specific files carry the walker number as suffix, e.g.
+   ``RESTART_1.1``, ``RESTART_2.1``, ``GEOMETRY_1``, ``SH_COEFC_1.dat``,
+   ``SH_WAVEFUNCTIONS_1``.
+
+   **Default** is ``N_XFTRAJ`` = 1.
+
+   Example::
+
+      MOLECULAR DYNAMICS BO
+      XFMQC
+       2
+      TDDFT
+
+   .. todo::
+
+      MISSING: description of the method, the meaning of the internal
+      thresholds (Gaussian width threshold 0.25, coupling threshold 0.01),
+      how the initial conditions of the trajectories are prepared, and a
+      literature reference.
+
+.. source: src/control_utils.mod.F90:806
+
+.. keyword:: TSDE, TSDP, TSDC
    :section: &CPMD
    :alternatives: [NOPRECONDITIONING]
    :notes: NOPRECONDITIONING only electrons

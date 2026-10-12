@@ -70,3 +70,35 @@ Keywords
    scheme will be calculated every 4 steps, i.e. every **60 a.u.** **Default** is
    a factor of 1, i.e. the MD will be identical to a Velocity-Verlet MD with the
    high level forces.
+
+.. keyword:: USE_ACE
+   :section: &MTS
+
+   Switches on the ACE formulation of the Hartree-Fock exchange (projector
+   operator built in ``build_ace_proj``, ``src/hfx_utils.mod.F90``) within
+   the multiple-time-step scheme. It sets the flag ``use_ace`` in module
+   ``ace_hfx``; during the MTS loop the low-level DFT force evaluation is
+   then flagged with ``status_ace=.TRUE.`` and the high-level one with
+   ``status_ace=.FALSE.``, and the exchange operator is applied through the
+   ACE projectors. With ``use_ace`` and :kw:`EXTRAPOLATE WFN` active, the
+   extrapolation of the high-level wavefunction is replaced by a copy of
+   the current wavefunction. The section is only read when :kw:`USE_MTS` is given in
+   ``&CPMD``. **Default** is not to use ACE. The value is printed as
+   ``USING ACE APPROACH`` in the MTS summary.
+
+   Example::
+
+      &MTS
+        TIMESTEP_FACTOR
+          4
+        USE_ACE
+      &END
+
+   .. todo::
+
+      MISSING: meaning of the acronym ACE, literature reference, which
+      combinations of :kw:`LOW_LEVEL_FORCES`/:kw:`HIGH_LEVEL_FORCES` and
+      hybrid functionals are supported, and whether the SCDM localization
+      used in ``hfx_utils`` must be enabled separately.
+
+.. source: src/mts_utils.mod.F90:130

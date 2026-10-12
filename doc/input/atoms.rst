@@ -45,7 +45,6 @@ Keywords
       1 2 +1
       6 8 -1
 
-
 .. keyword:: CONFINEMENT POTENTIAL
    :section: &ATOMS
 
@@ -139,6 +138,73 @@ Keywords
 
    The types are read from the next line. Values from 0 to 5 were allowed in the
    original MOVIE format.
+
+.. keyword:: SADDLE POINT ... END SADDLE
+   :section: &ATOMS
+
+   Start the shooting-from-a-saddle procedure (commitment analysis): MD
+   trajectories are restarted from the same coordinates with random velocities
+   and the collective variables (CV) are compared every ``STEPCHECK`` steps with
+   the values of known minima. The block is terminated by a line containing
+   ``END`` and ``SADDLE``. Inside the block the following sub-keywords are read:
+
+   ``DEFINE VARIABLES ... END DEFINE``
+      Definition of the collective variables, in the same format as for
+      metadynamics (:kw:`METADYNAMICS ... END METADYNAMICS`). Must precede
+      ``KNOWN_MINIMA`` and ``SADDLE TOLERANCES``.
+   ``KNOWN_MINIMA [EXTENDED]``
+      The number of known minima is read from the next line, followed by one line
+      per minimum with the CV values. With ``EXTENDED`` each line also contains
+      one tolerance per CV.
+   ``SADDLE TOLERANCES``
+      One tolerance per CV is read from the next line (used when ``EXTENDED`` is
+      not given; otherwise built-in defaults per CV type apply).
+   ``MAXSEARCH``
+      Maximum number of trial trajectories, read from the next line.
+      **Default** 1000.
+   ``STEPCHECK``
+      Number of MD steps between two checks, read from the next line.
+      **Default** 10.
+   ``MAXCHECKS``
+      Maximum number of checks per trial, read from the next line.
+      **Default** 1.
+
+   See the section "Shooting from a Saddle" for details.
+
+   Example::
+
+      SADDLE POINT
+      DEFINE VARIABLES
+       1
+       DIST 1 2
+      END DEFINE
+      KNOWN_MINIMA
+       2
+       2.0
+       4.5
+      SADDLE TOLERANCES
+       0.2
+      MAXSEARCH
+       50
+      END SADDLE
+
+   Inside ``DEFINE VARIABLES`` the number of CVs is read first, followed by
+   one line per CV (e.g. ``DIST i j`` for the distance between atoms ``i`` and
+   ``j``); the CV types recognised by the parser include ``STRETCH``, ``BEND``,
+   ``TORSION``, ``DIST``, ``DIFFER``, ``OUTP``, ``COORD``, ``COORSP``,
+   ``COOR_RF``, ``BNSWT``, ``TOT_COOR``, ``RMSD_AB``, ``PLNANG`` and ``DIFCOOR``.
+
+   .. todo::
+
+      MISSING: full per-CV syntax inside DEFINE VARIABLES (not audited here);
+      units of the tolerances.
+
+.. source: src/ratom_utils.mod.F90:580 (parser src/tst2min_inp_utils.mod.F90:31,
+.. defaults 85-89, sub-keywords 561-647)
+
+
+&VDW
+====
 
 .. keyword:: VELOCITIES ... END VELOCITIES
    :section: &ATOMS

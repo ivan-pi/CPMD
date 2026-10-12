@@ -81,6 +81,28 @@ Keywords
    even then it is set to **NO** be default. Previous default values were 30000
    and 2.0.
 
+.. keyword:: FORCE_NEW_HFX
+   :section: &DFT
+
+   Force the use of the new Hartree-Fock exchange (HFX) module even when
+   :kw:`HFX SCREENING` is given. By default the new HFX module is used, but any
+   :kw:`HFX SCREENING` line switches back to the old module; with
+   ``FORCE_NEW_HFX`` the new module is kept, so that thresholding of the
+   integrals is done with the new module as well. The keyword takes no argument.
+   The settings :kw:`HFX_BLOCK_SIZE` and :kw:`HFX_DISTRIBUTION` only apply to the
+   new module.
+
+   **Default** is to use the new HFX module unless :kw:`HFX SCREENING` is present.
+
+   Example::
+
+      HFX SCREENING EPS_INT
+       1.0E-6
+      FORCE_NEW_HFX
+
+.. source: src/dftin_utils.mod.F90:988 (flag applied in check_options, line 2155;
+.. module selection in src/hfx_drivers.mod.F90:124)
+
 .. keyword:: FUNCTIONAL
    :section: &DFT
    :notes: functional_1, functional_2, ...
@@ -254,6 +276,28 @@ Keywords
    active only when no thresholding of the integrals is used. Default is
    BLOCK_CYCLIC. The distribution is read from the next line.
 
+.. keyword:: HFX_NEW_SCDM
+   :section: &DFT
+
+   Select the modified SCDM ("selected column density matrix") localization of
+   the orbitals used in the :kw:`HFX_SCDM` exact-exchange scheme: the columns are
+   pre-selected from the grid points where the electron density is larger and its
+   gradient smaller than their averages over the grid (routine ``loc_scdm_new``,
+   described in the source as a modified version of the SCDM implementation of
+   Quantum ESPRESSO). Without this keyword the original routine
+   ``LOCALIZE_SCDM`` is used. The keyword takes no argument and only has an
+   effect together with :kw:`HFX_SCDM`; the SCDM localization itself is only
+   performed when ACE is active (``USE_ACE`` in the ``&MTS`` section).
+
+   **Default** is the original SCDM localization.
+
+   .. todo::
+
+      MISSING: literature reference and recommended use of the modified SCDM
+      variant; whether HFX_NEW_SCDM is meaningful without USE_ACE.
+
+.. source: src/dftin_utils.mod.F90:682 (used in src/hfx_utils.mod.F90:2146)
+
 .. keyword:: HFX_SCALE
    :target: HFX SCALE
    :section: &DFT
@@ -267,6 +311,37 @@ Keywords
    should always be set to one if combined with a Coulomb-attenuated functional
    (in which case the global scaling can be modified by changing the CAM
    parameters :math:`\alpha` and :math:`\beta`, instead).
+
+.. keyword:: HFX_SCDM
+   :section: &DFT
+
+   Compute the exact exchange with the SCDM ("selected column density matrix")
+   scheme (output banner: "HFX WITH SCDM APPROACH", S. Mandal, IIT Kanpur).
+   The pair cutoff ``SCDM_CUTOFF`` is read from the next line. An orbital pair
+   :math:`(i,j)` is neglected in the exchange sum if
+   :math:`\frac{1}{N}\sum_{\mathbf{r}}|\psi_i(\mathbf{r})\psi_j(\mathbf{r})| <`
+   ``SCDM_CUTOFF``, where :math:`N` is the number of real-space grid points.
+   When ACE is active (``USE_ACE`` in the ``&MTS`` section) the orbitals are first
+   localized with the SCDM method (see :kw:`HFX_NEW_SCDM`). The scheme is only
+   used with the new HFX module (i.e. not after :kw:`HFX SCREENING` unless
+   :kw:`FORCE_NEW_HFX` is given) and only if exact exchange is part of the
+   functional.
+
+   **Default** for ``SCDM_CUTOFF`` is :math:`10^{-8}`; the scheme is off by default.
+
+   Example::
+
+      HFX_SCDM
+       1.0E-6
+
+   .. todo::
+
+      MISSING: literature reference for the SCDM-based HFX implementation and
+      recommended values of SCDM_CUTOFF. The commented-out parameters
+      ``de_cutoff`` and ``n_loop`` (dftin_utils.mod.F90:674) are not read.
+
+.. source: src/dftin_utils.mod.F90:673 (used in src/hfx_drivers.mod.F90:124-138,
+.. src/hfx_utils.mod.F90:3134 SELECT_PAIR)
 
 .. keyword:: HUBBARD
    :section: &DFT
@@ -374,6 +449,61 @@ Keywords
    :kw:`FUNCTIONAL`. **Note:** The functionals in combination with
    the MTS scheme have to be set with :kw:`XC_DRIVER <XC DRIVER>`.
 
+.. keyword:: MTS_LOW_FUNC_HFX_SCALE
+   :section: &DFT
+   :notes: scaling_for_exact_exchange
+
+   Same as :kw:`HFX_SCALE`, but applies to the low-level functional of the
+   multiple-time-step (MTS) scheme, :kw:`MTS_LOW_FUNC`, rather than to
+   :kw:`FUNCTIONAL`. The value is read from the same line. Giving the keyword
+   switches on exact exchange for the low-level functional and disables the
+   built-in hybrid defaults of the functionals listed in :kw:`MTS_LOW_FUNC`.
+   Only meaningful with :kw:`XC_DRIVER`. The alias ``MTS_LOW_FUNC_HFX_SCALES`` is
+   also accepted.
+
+   Example::
+
+      MTS_LOW_FUNC          GGA_X_PBE GGA_C_PBE
+      MTS_LOW_FUNC_SCALES   0.75      1.00
+      MTS_LOW_FUNC_HFX_SCALE 0.25
+
+.. source: src/dftin_utils.mod.F90:840
+
+.. keyword:: MTS_LOW_FUNC_LIBRARY
+   :section: &DFT
+   :notes: library_for_functional_1, library_for_functional_2, ...
+
+   Same as :kw:`LIBRARY`, but applies to the functionals given with
+   :kw:`MTS_LOW_FUNC`. On the same line, one library tag per functional is
+   expected, in the same order: ``CP`` or ``INTERNAL`` for the internal library,
+   ``LIBXC`` or ``LXC`` for libxc. The number of tags must equal the number of
+   functionals. Choosing ``LIBXC`` after :kw:`CP_LIBRARY_ONLY`, or ``CP`` after
+   :kw:`LIBXC_ONLY`, stops the program.
+
+   **Default** is the internal library for all low-level functionals; note that
+   :kw:`LIBXC_ONLY` does not change this default.
+
+   Example::
+
+      MTS_LOW_FUNC          LDA_X LDA_C_VWN_3
+      MTS_LOW_FUNC_LIBRARY  CP    LIBXC
+
+.. source: src/dftin_utils.mod.F90:418
+
+.. keyword:: MTS_LOW_FUNC_SCALES
+   :section: &DFT
+   :notes: scaling_for_functional_1, scaling_for_functional_2, ...
+
+   Same as :kw:`SCALES`, but applies to the functionals given with
+   :kw:`MTS_LOW_FUNC`. The scaling factors are read from the same line in the
+   order of the functionals; their number must equal the number of functionals.
+   Only meaningful with :kw:`XC_DRIVER`. The alias ``MTS_LOW_FUNC_SCALE`` is also
+   accepted; the line must not contain the word ``HFX``.
+
+   **Default** is 1.0 for every functional.
+
+.. source: src/dftin_utils.mod.F90:483
+
 .. keyword:: NEWCODE
    :section: &DFT
 
@@ -453,6 +583,56 @@ Keywords
    functional can be specified on the same line. Available options are LDA_C_PZ,
    LDA_C_PW (the default), LDA_C_OBPW and LDA_C_PZ.
 
+.. keyword:: PCGC
+   :section: &DFT
+
+   Overwrite the scaling factor of the gradient-correction part of the
+   correlation functional (internal variable ``func3%pcgc``). The new value is
+   read from the next line. Only used by the legacy drivers
+   (:kw:`OLDCODE`/:kw:`NEWCODE`) and only when the functional is set with
+   :kw:`FUNCTIONAL`; the value replaces the one implied by the chosen functional
+   (e.g. 0.81 for B3LYP). It has no effect with :kw:`XC_DRIVER` (use
+   :kw:`SCALES` instead) or when the functional is assembled with
+   :kw:`GRADIENT CORRECTION`. In the gradient-correction routines the factor is
+   applied only if a hybrid functional is active; for hybrids containing LYP
+   it also scales the LYP contribution in the LDA routines.
+
+   **Default** is the value set by the functional (1.0 for non-hybrid
+   functionals).
+
+   Example::
+
+      FUNCTIONAL B3LYP
+      PCGC
+       0.81
+
+   .. todo::
+
+      MISSING: intended use cases; confirm whether the factor is used by the
+      NEWCODE LDA routines for non-hybrid functionals.
+
+.. source: src/dftin_utils.mod.F90:872 (applied at 1865; used in
+.. src/gcener_utils.mod.F90:677, src/functionals_utils.mod.F90:219)
+
+.. keyword:: PCLDA
+   :section: &DFT
+
+   Overwrite the scaling factor of the LDA correlation functional (internal
+   variable ``func3%pclda``). The new value is read from the next line. Same
+   restrictions as :kw:`PCGC`: only used with :kw:`FUNCTIONAL` in the legacy
+   drivers, ignored with :kw:`XC_DRIVER`.
+
+   **Default** is the value set by the functional (e.g. 0.19 for B3LYP and
+   X3LYP, 1.0 otherwise).
+
+   .. todo::
+
+      MISSING: confirm whether the factor is used by the NEWCODE LDA routines
+      for non-hybrid functionals.
+
+.. source: src/dftin_utils.mod.F90:888 (applied at 1867; used in
+.. src/functionals_utils.mod.F90:155, src/lsd_func_utils.mod.F90:114)
+
 .. keyword:: PHFX
    :section: &DFT
 
@@ -460,6 +640,55 @@ Keywords
    (no HFX) and 1 (100% of HFX. For HSE06 the standard value is 0.25 if this
    keyword and related numerical value ios not is not selected. Warning: PHFX is
    incompatible with XC_DRIVER. Use NEWCODE instead.
+
+.. keyword:: PXGC
+   :section: &DFT
+
+   Overwrite the scaling factor of the gradient-correction part of the
+   exchange functional (internal variable ``func3%pxgc``). The new value is read
+   from the next line. Same restrictions as :kw:`PCGC`: only used with
+   :kw:`FUNCTIONAL` in the legacy drivers, ignored with :kw:`XC_DRIVER`; in the
+   gradient-correction routines the factor is applied only if a hybrid
+   functional is active.
+
+   **Default** is the value set by the functional (e.g. 0.75 for PBE0, 0.72 for
+   B3LYP, 1.0 for non-hybrid functionals).
+
+   Example::
+
+      FUNCTIONAL PBE0
+      PHFX
+       0.30
+      PXGC
+       0.70
+      PXLDA
+       0.70
+
+.. source: src/dftin_utils.mod.F90:864 (applied at 1864; used in
+.. src/gcener_utils.mod.F90:667-676)
+
+.. keyword:: PXLDA
+   :section: &DFT
+
+   Overwrite the scaling factor of the LDA (Slater) exchange functional
+   (internal variable ``func3%pxlda``). The new value is read from the next
+   line. Same restrictions as :kw:`PCGC`: only used with :kw:`FUNCTIONAL` in the
+   legacy drivers, ignored with :kw:`XC_DRIVER`.
+
+   **Default** is the value set by the functional (e.g. 0.75 for PBE0, 0.8 for
+   B3LYP, 1.0 for non-hybrid functionals).
+
+   .. todo::
+
+      MISSING: confirm whether the factor is used by the NEWCODE LDA routines
+      for non-hybrid functionals.
+
+.. source: src/dftin_utils.mod.F90:880 (applied at 1866; used in
+.. src/functionals_utils.mod.F90:92, src/lsd_func_utils.mod.F90:73)
+
+
+&SYSTEM
+=======
 
 .. keyword:: REFUNCT
    :section: &DFT

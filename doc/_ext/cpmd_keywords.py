@@ -137,12 +137,22 @@ class CPMDDomain(Domain):
                 self.data['keywords'][target] = info
 
     def lookup(self, target):
+        """Find a keyword by target or name; case, blanks, '_' and '-' are
+        not significant, and an entry 'A, B, C' matches each of its names."""
         kws = self.data['keywords']
         target = re.sub(r'\s+', ' ', target.strip())
         if target in kws:
             return kws[target]
-        for t, info in kws.items():
-            if t.upper() == target.upper():
+
+        def norm(x):
+            return re.sub(r'[\s_\-]+', ' ', x.upper()).strip()
+
+        key = norm(target)
+        for t, info in sorted(kws.items()):
+            if norm(t) == key or norm(info['name']) == key:
+                return info
+        for t, info in sorted(kws.items()):
+            if ',' in info['name'] and key in [norm(n) for n in info['name'].split(',')]:
                 return info
         return None
 

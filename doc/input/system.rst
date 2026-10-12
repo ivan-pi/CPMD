@@ -175,6 +175,39 @@ Keywords
    NDON atoms separated by whitespace are read from the next line else only use an
    Acceptor group in the CDFT weight.
 
+.. keyword:: DOUBLE GRID
+   :section: &SYSTEM
+   :options: {ON, OFF}
+
+   Switch the double-grid scheme on (``ON``) or off (``OFF``). With
+   ``DOUBLE GRID ON`` an additional FFT grid corresponding to a density cutoff
+   of 4 times :kw:`CUTOFF` is set up and used for the density and
+   :math:`V\psi` calculation, in addition to the density grid defined by
+   :kw:`DUAL` (or :kw:`DENSITY CUTOFF`). In this case the dual must be at least
+   4, otherwise the program stops. The keyword without ``ON`` leaves the setting unchanged (off).
+   The double grid is not implemented together with :kw:`LOW SPIN EXCITATION`,
+   and the batched-FFT versions of the density and :math:`V\psi` routines
+   (``rhoofr_batchfft``, ``vpsi_batchfft``) stop if it is active.
+
+   **Default** is ``OFF``.
+
+   Example::
+
+      CUTOFF
+       25.0
+      DUAL
+       8.0
+      DOUBLE GRID ON
+
+   .. todo::
+
+      MISSING: physical purpose (presumably ultrasoft pseudopotentials with a
+      hard augmentation charge) and list of supported run types.
+
+.. source: src/sysin_utils.mod.F90:1304 (cutoffs set at 1707-1740;
+.. src/dginit_utils.mod.F90:34, src/rhoofr_utils.mod.F90:225,818,
+.. src/vpsi_utils.mod.F90:1053)
+
 .. keyword:: DUAL
    :section: &SYSTEM
 
@@ -445,6 +478,29 @@ Keywords
    an output file GEOMETRY.scale is written. This file contains the lattice
    vectors in Åand atomic units together with the atomic coordinates in the direct
    lattice basis.
+
+.. keyword:: SHOCK VELOCITY
+   :section: &SYSTEM
+
+   The velocity of the shock wave for the multiscale shock technique
+   (:kw:`PARRINELLO-RAHMAN` ``SHOCK`` in the ``&CPMD`` section) is read from the
+   next line, in **m/s**. It is converted internally to atomic units and, for a
+   shock simulation, multiplied by the square root of the total mass of the
+   system.
+
+   **Default** is 0.
+
+   Example::
+
+      SHOCK VELOCITY
+       5000.0
+
+.. source: src/sysin_utils.mod.F90:1336 (conversion 1340; src/setsys_utils.mod.F90:340;
+.. used in src/npt_md_utils.mod.F90:510, src/vepsup_utils.mod.F90:105)
+
+
+&ATOMS
+======
 
 .. keyword:: STATES
    :section: &SYSTEM

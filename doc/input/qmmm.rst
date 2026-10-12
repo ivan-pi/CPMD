@@ -108,6 +108,35 @@ Keywords
 
    same as :kw:`CAPPING`.
 
+.. keyword:: CHARGE
+   :target: CHARGE QMMM
+   :section: &QMMM
+
+   Applies a harmonic restraint on the total ESP-derived (D-RESP) charge
+   of a group of QM atoms in the electrostatic QM/MM coupling. Three
+   inputs follow on the next lines: the number of atoms ``n_cg``; the
+   ``n_cg`` Gromos indices of the QM atoms; the target charge ``q_rest``
+   and the force constant ``lambda``. The restraint energy
+   :math:`E = \lambda\,(\sum_i q_i - q_{rest})^2` is added to the
+   electrostatic interaction energy and printed as ``CHARGE RESTRAIN
+   ENERGY``. Any line containing ``CHARGE`` (that does not match an earlier
+   keyword of the section) is accepted. The option cannot be combined
+   with :kw:`EXCLUSION`.
+
+   Example::
+
+      CHARGE
+        3
+        12 13 14
+        -1.0 0.5
+
+   .. todo::
+
+      MISSING: units of ``lambda`` (presumably atomic units), whether
+      :kw:`ELECTROSTATIC COUPLING` is required, and typical use cases.
+
+.. source: modules/MM_Interface/mm_read_qmmm_input.F:315
+
 .. keyword:: COORDINATES
    :section: &QMMM
    :notes: (mandatory)
@@ -375,6 +404,23 @@ Keywords
 
    This keyword is mutually exclusive with the :kw:`AMBER` keyword.
 
+.. keyword:: HARMONIC
+   :section: &QMMM
+
+   Sets the internal flag that is also set by :kw:`AMBER`
+   (``agr%qmmm_amber``) without changing the 1-4 scaling factor (AMBER
+   additionally sets it to 1/1.2). The flag is passed to the classical
+   force-field code and to the force-matching code (``fm_amber``). Any line
+   containing ``HARMO`` is accepted.
+
+   .. todo::
+
+      MISSING: the exact effect on the force field (the GROMOS module that
+      consumes the flag is not part of this repository); presumably it
+      selects harmonic bond/angle terms as in AMBER.
+
+.. source: modules/MM_Interface/mm_read_qmmm_input.F:199
+
 .. keyword:: HIRSHFELD
    :section: &QMMM
    :options: [ON,OFF]
@@ -478,6 +524,28 @@ Keywords
 
    **Default** value is 5 for MD calculations and OFF for others.
 
+.. keyword:: SCALE14
+   :section: &QMMM
+
+   The scaling factor for 1-4 interactions used with the Amber functional
+   form is read from the next line. **Default** is 1.0; :kw:`AMBER` sets
+   it to 1/1.2 and :kw:`GROMOS` resets it to 1.0, so SCALE14 must appear
+   after these keywords to take effect.
+
+   Example::
+
+      AMBER
+      SCALE14
+        0.5
+
+   .. todo::
+
+      MISSING: which 1-4 terms (electrostatic and/or van der Waals) are
+      scaled; the consuming code is in the GROMOS module, which is not part
+      of this repository.
+
+.. source: modules/MM_Interface/mm_read_qmmm_input.F:201
+
 .. keyword:: SPLIT
    :section: &QMMM
    :notes: (mandatory)
@@ -528,6 +596,26 @@ Keywords
    The progress of the QM/MM simulation is reported more verbosely in the output.
    This option is off by **default**.
 
+.. keyword:: WRITE DENSITY
+   :section: &QMMM
+   :options: {STRIDE n, STEP m}
+
+   Writes the electron density used in the QM/MM electrostatic coupling on
+   the QM real-space grid to the file ``DENSITY.cube``. The file is written
+   once, at the MD step whose number equals ``m`` (``STEP m``,
+   **default** 1), using every ``n``-th grid point (``STRIDE n``,
+   **default** 1). Both values are read from the same line, after the
+   respective word. Only one of DENSITY and POTENTIAL can be requested per
+   ``WRITE`` line, and both share the same stride. The file is written from
+   the electrostatic coupling routine, so :kw:`ELECTROSTATIC COUPLING` is
+   required.
+
+   Example::
+
+      WRITE DENSITY STRIDE 2 STEP 100
+
+.. source: modules/MM_Interface/mm_read_qmmm_input.F:230
+
 .. keyword:: WRITE LOCALTEMP
    :section: &QMMM
    :options: [STEP {nfi_lt}]
@@ -540,3 +628,36 @@ Keywords
    is part of the solute), and the total temperature in that order. With the
    optional parameters STEP followed by an integer, this is done only every
    ``nfi_lt`` timesteps.
+
+.. keyword:: WRITE ORBITALS
+   :section: &QMMM
+
+   The number of orbitals is read from the next line and their indices from
+   the line after. The keyword sets the flag ``write_orbs`` and the cube
+   stride to 2, but ``write_orbs`` is not used anywhere in the code, so the
+   only effect is a stride of 2 for :kw:`WRITE DENSITY`/:kw:`WRITE POTENTIAL`.
+   Any ``WRITE`` line containing ``ORB`` is accepted.
+
+   .. todo::
+
+      MISSING: intended functionality (apparently unimplemented).
+
+.. source: modules/MM_Interface/mm_read_qmmm_input.F:262
+
+.. keyword:: WRITE POTENTIAL
+   :section: &QMMM
+   :options: {STRIDE n, STEP m}
+
+   Writes the external electrostatic potential of the MM environment on
+   the QM real-space grid to the file ``POTENTIAL.cube``. The file is
+   written once, at the MD step whose number equals ``m`` (``STEP m``,
+   **default** 1), using every ``n``-th grid point (``STRIDE n``,
+   **default** 1). Both values are read from the same line, after the
+   respective word. :kw:`ELECTROSTATIC COUPLING` is required. See also
+   :kw:`WRITE DENSITY`.
+
+   Example::
+
+      WRITE POTENTIAL STRIDE 2 STEP 1
+
+.. source: modules/MM_Interface/mm_read_qmmm_input.F:210
