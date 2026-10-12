@@ -17,26 +17,32 @@ Keywords
 
 .. keyword:: ACCEPTOR
    :section: &SYSTEM
-   :alternatives: [HDASINGLE,WMULT]
+   :alternatives: [HDAS,WMULT]
 
    Set the :kw:`CDFT` acceptor atoms. Parameter NACCR must be specified
    next to the keyword. NACCR :math:`\in [1,2,...,N]` is the number of acceptor
    Atoms (:math:`N` being the total number of atoms). The indices of NACCR atoms
    separated by whitespaces are read from the next line.
 
-   **HDASINGLE** **off** if set together with CDFT HDA, CPMD performs a
+   **HDAS** (default **off**): if set together with CDFT HDA, CPMD performs a
    constrained HDA calculation with only an ACCEPTOR group weight but different
-   constraint values :math:`N_\text{c}`. **WMULT** **off** if set together with
-   CDFT HDA, CPMD performs a constrained HDA calculation with two different an
-   ACCEPTOR group weights for the two states.
+   constraint values :math:`N_\text{c}`; a second line with NACCR atom indices
+   (the group of the second state) is read. **WMULT** (default **off**): if set
+   together with CDFT HDA, CPMD performs a constrained HDA calculation with two
+   different ACCEPTOR group weights for the two states; a second line with
+   NACCR atom indices (acceptor group of the second state) is read.
 
-   **HDASINGLE** and **WMULT** are mutually exclusive.
+   **HDAS** and **WMULT** are mutually exclusive. The full word ``HDASINGLE``
+   (used in older versions of this manual and in an error message) is not
+   recognized.
+
+.. source: src/sysin_utils.mod.F90:419
 
 .. keyword:: ANGSTROM
    :section: &SYSTEM
 
    The atomic coordinates and the supercell parameters and several other
-   parameters are read in Ångstroms.
+   parameters are read in Ångstroms. The alias ``ANGSTROMS`` is also accepted.
 
    **Default** is **atomic units** which are always used internally. Not supported
    for :kw:`QMMM` calculations.
@@ -55,7 +61,11 @@ Keywords
    :math:`\gamma` in degrees instead of their cosine. With the keyword
    **VECTORS**, the lattice vectors :math:`a1`, :math:`a2`, :math:`a3` are read
    from the next line instead of the 6 numbers. In this case the **SYMMETRY**
-   keyword is not used.
+   keyword must not be given (the program stops), and **ABSOLUTE** and
+   **DEGREE** are ignored. The aliases ``VECTOR``, ``ABS`` and ``DEGREES`` are
+   also accepted.
+
+.. source: src/sysin_utils.mod.F90:649
 
 .. keyword:: CHARGE
    :section: &SYSTEM
@@ -72,14 +82,39 @@ Keywords
    are checked against the (supercell) :kw:`SYMMETRY` is read from the
    next line. With older versions of CPMD, redundant variables could be set to
    arbitrary values; now **all** values have to conform. If you want the old
-   behavior back, you can turn the check off by adding the keyword **OFF** or by
-   providing a negative precision. **Default** value is: **1.0e-4**
+   behavior back, you can turn the check off by providing a negative precision.
+   **Default** value is: **1.0e-4**
+
+   .. warning::
+
+      The option **OFF** has no effect: the precision is read from the next
+      line also when ``OFF`` is given and overwrites the setting (if the next
+      line is not a number, the program stops with "ERROR READING SYMMETRY
+      PRECISION"). Give a negative precision to switch the check off.
+
+.. source: src/sysin_utils.mod.F90:514
 
 .. keyword:: CLASSICAL CELL
    :section: &SYSTEM
    :alternatives: [ABSOLUTE, DEGREE]
 
-   Not documented.
+   Set the cell of the classical system. The six cell parameters are read from
+   the next line, as for :kw:`CELL`; **ABSOLUTE** and **DEGREE** (aliases
+   ``ABS``, ``DEGREES``) have the same meaning as there.
+
+   .. warning::
+
+      The keyword is only recognized when written as ``CLASSIC CELL``. Due to
+      the way the line is parsed, ``CLASSICAL CELL`` is treated as a plain
+      :kw:`CELL` line, i.e. the six numbers on the next line overwrite the
+      quantum cell.
+
+   .. todo::
+
+      MISSING: use of the classical cell (classical atoms, see the ``CLASSIC``
+      pseudopotential label).
+
+.. source: src/sysin_utils.mod.F90:686
 
 .. keyword:: CLUSTER
    :section: &SYSTEM
@@ -111,7 +146,16 @@ Keywords
    The displacement :math:`\epsilon` is expected in atomic units. If
    NAT=\ :math:`n` is given, the coupling vector acting on only a subset of
    :math:`n` atoms is calculated. In this case, a line containing :math:`n` atom
-   sequence numbers is expected. See :kw:`COUPLINGS NSURF`.
+   sequence numbers is expected. See :kw:`COUPLINGS NSURF`. The alias
+   ``COUPLING`` is also accepted.
+
+   .. warning::
+
+      Due to the way the line is parsed, an option written as ``NAME=value``
+      without blanks is not recognized and silently ignored; write a blank
+      between the option name and ``=`` (e.g. ``COUPLINGS FD =0.001``).
+
+.. source: src/sysin_utils.mod.F90:787
 
 .. keyword:: COUPLINGS LINRES
    :section: &SYSTEM
@@ -129,7 +173,16 @@ Keywords
    three lines each containing a pair of a threshold contribution to the
    non-adiabatic coupling vector and a tolerance for the linear-response
    wavefunction (see [nonadiabatic]_). Do not forget to include a
-   &LINRES section in the input, even if the defaults are used. See :kw:`COUPLINGS NSURF`.
+   &LINRES section in the input, even if the defaults are used. See
+   :kw:`COUPLINGS NSURF`. ``THRESHOLDS`` is accepted as an alias of ``THR``.
+
+   Together with ``NVECT=n`` the option ``SPECIFY`` reads the start vectors
+   from a separate ``&VECTORS`` section: the first line of that section is a
+   header (if it contains ``FIXED``, the first vector is not read), followed by
+   the vectors, each with :math:`3 N_\text{at}` components; the vectors are
+   normalized by the program.
+
+.. source: src/sysin_utils.mod.F90:813 (vectors: src/cplngs_utils.mod.F90:1621)
 
 .. keyword:: COUPLINGS NSURF
    :section: &SYSTEM
@@ -144,6 +197,12 @@ Keywords
    :kw:`STATES`) of the corresponding Slater transition-state density
    should be used.
 
+   .. warning::
+
+      Due to the way the line is parsed, an option written as ``NAME=value``
+      without blanks is not recognized and silently ignored; write a blank
+      between the option name and ``=`` (e.g. ``COUPLINGS NSURF =1``).
+
 .. keyword:: CUTOFF
    :section: &SYSTEM
    :alternatives: [SPHERICAL,NOSPHERICAL]
@@ -151,7 +210,11 @@ Keywords
    The **cutoff** for the plane wave basis in **Rydberg** is read from the next
    line. The keyword **SPHERICAL** is used with k points in order to have
    :math:`|g + k|^2 < E_{cut}` instead of :math:`|g|^2 < E_{cut}`. This is the
-   default.
+   default. The aliases ``SPHERIC`` and ``NONSPHERICAL`` are also accepted.
+   The keyword is mandatory; without it the program stops ("No plane wave
+   cutoff specified").
+
+.. source: src/sysin_utils.mod.F90:992
 
 .. keyword:: DENSITY CUTOFF
    :section: &SYSTEM
@@ -169,11 +232,14 @@ Keywords
 .. keyword:: DONOR
    :section: &SYSTEM
 
-   Set the :kw:`CDFT` donor atoms. Parameter NACCR must be specified next
-   to the keyword. NDON :math:`\in \mathbb{R}_+` is the number of Donor Atoms
-   (:math:`N` being the total number of atoms). If NDON\ :math:`>0` the indices of
-   NDON atoms separated by whitespace are read from the next line else only use an
-   Acceptor group in the CDFT weight.
+   Set the :kw:`CDFT` donor atoms. The number of donor atoms NDON (integer,
+   NDON :math:`\geq 0`) must be given on the same line, next to the keyword. If
+   NDON\ :math:`>0` the indices of the NDON atoms, separated by whitespace, are
+   read from the next line; with NDON = 0 only an acceptor group is used in the
+   CDFT weight. With the option ``WMULT`` a second line with NDON atom indices
+   (donor group of the second state) is read.
+
+.. source: src/sysin_utils.mod.F90:377
 
 .. keyword:: DOUBLE GRID
    :section: &SYSTEM
@@ -259,7 +325,9 @@ Keywords
 
    With no option, read in the next line with the number of k-points and for each
    k-point, read the components in the Cartesian coordinates
-   (units :math:`2\pi/a`) and the weight.
+   (units :math:`2\pi/a`) and the weight. The alias ``KPOINT`` is also
+   accepted, as are ``MONKHORST`` (for ``MONKHORST-PACK``), ``SYMMETRIZE``,
+   ``SCALE`` and ``BAND`` for the options below.
 
    MONKHORST-PACK
       Read in the next line three numbers for the Monkhorst-Pack mesh. The program
@@ -287,10 +355,22 @@ Keywords
 
       0 0. 0. 0. 0. 0. 0.
 
+   KDP
+      Use the k.p approach; the regular k-point sampling is switched off.
+
+   ONLYDIAG
+      Only one diagonalization is performed (no self-consistency): the
+      Kohn-Sham energies are computed for each k-point, the forces are not
+      calculated and the wavefunctions are not stored. The alias
+      ``ONLYDIAGONAL`` is also accepted.
+
    BLOCK=n [OPTIONS]
       The block option, specifies the number of k-points in the memory. The
-      program uses a swap file to store the wavefunctions only by default. With
-      the following options, you can change this behaviour:
+      program uses a swap file to store the wavefunctions only by default.
+      This option requires Lanczos diagonalization and a serial run. Due to the
+      way the line is parsed, ``BLOCK=n`` is only recognized with a blank
+      before ``=`` (``BLOCK =n``). With the following options, you can change
+      this behaviour:
 
       ALL
          Three swap files are used to store wavefunctions and others arrays
@@ -312,12 +392,27 @@ Keywords
          | MAXSTEP 1 and
          | STORE OFF WAVEFUNCTIONS DENSITY POTENTIAL.
 
+.. source: src/sysin_utils.mod.F90:1073
+
 .. keyword:: LOW SPIN EXCITATION
    :section: &SYSTEM
-   :alternatives: [ROKS,ROSS,ROOTHAAN,CAS22]
+   :alternatives: [ROSS,ROOT,CAS22]
+   :options: {PENALTY, LSETS}
 
    Use the low spin excited state functional [Frank98]_. For ROKS
    calculations, see also the :kw:`ROKS` keyword in the &CPMD-section.
+
+   ROKS is the default (no option needed). ``ROOT`` selects the Roothaan
+   scheme; the full word ``ROOTHAAN`` is not recognized and silently gives
+   ROKS. ``PENALTY`` adds a penalty function whose proportionality factor is
+   read from the next line; it cannot be combined with ``CAS22``. For
+   ``LSETS`` see :kw:`LOW SPIN EXCITATION LSETS`. The spelling
+   ``LOW-SPIN EXCITATION`` is also accepted (any line with the words ``SPIN``
+   and ``EXCITATION``). With surface hopping the options are ignored and ROKS
+   is used. LSE cannot be used with :kw:`LSD`, diagonalization or the stress
+   tensor.
+
+.. source: src/sysin_utils.mod.F90:724 (checks: 1485-1496, 1697)
 
 .. keyword:: LOW SPIN EXCITATION LSETS
    :section: &SYSTEM
@@ -335,9 +430,10 @@ Keywords
    .. math:: E = \mbox{LSEA} \cdot E(Mixed) + \mbox{LSEB} \cdot E(Triplet)
 
    The default (LSEA :math:`= 2` and LSEB :math:`= 1`) corresponds to singlet
-   symmetry. For the lowest triplet state, the :kw:`LSE PARAMETERS` must be set to 0 and 1 (zero times mixed
-   state plus triplet). See ref [Frank98]_ for a description of the
-   method.
+   symmetry. For the lowest triplet state, the :kw:`LSE PARAMETERS` must be
+   set to 0 and 1 (zero times mixed state plus triplet). See ref [Frank98]_
+   for a description of the method. The alias ``LSE PARAMETER`` is also
+   accepted.
 
 .. keyword:: MESH
    :section: &SYSTEM
@@ -355,7 +451,8 @@ Keywords
 .. keyword:: MULTIPLICITY
    :section: &SYSTEM
 
-   This keyword only applies to LSD calculations.
+   This keyword only applies to LSD calculations; without :kw:`LSD` the
+   program stops.
 
    The multiplicity (2\ :math:`S`\ +1) is read from the next line.
 
@@ -377,8 +474,8 @@ Keywords
    The occupation numbers are read from the next line.
 
    This keyword must be preceded by :kw:`STATES`. The FIXED option fixes
-   the occupation numbers for the diagonalization scheme, otherwise this option is
-   meaningless.
+   the occupation numbers for the diagonalization scheme; it can only be used
+   with diagonalization and without k-points (the program stops otherwise).
 
 .. keyword:: POINT GROUP
    :section: &SYSTEM
@@ -406,6 +503,11 @@ Keywords
    You can specify the point group by its name using the keyword *NAME=* followed
    by the name of the point group (one of both notations).
 
+   .. warning::
+
+      The *NAME=* form is currently not functional: the program always stops
+      with "Invalid point group". Give the group number instead.
+
    For molecular point groups the additional keyword *MOLECULE* has to be
    specified. The Schönflies symbol of the group is read in the following format
    from the next line:
@@ -417,9 +519,13 @@ Keywords
    assumed. The principle axis is along :math:`z` and vertical symmetry planes are
    orthogonal to :math:`x`.
 
-   *DELTA=* specifies the required accuracy (default=\ :math:`10^{-6}`).
+   *DELTA=* specifies the required accuracy (default=\ :math:`10^{-6}`); values
+   :math:`\leq 0` are reset to the default. The alias ``MOLECULAR`` is also
+   accepted for ``MOLECULE``.
 
    With the keyword **AUTO**, the point group is determined automatically.
+
+.. source: src/sysin_utils.mod.F90:576
 
 .. keyword:: POISSON SOLVER
    :section: &SYSTEM
@@ -432,13 +538,26 @@ Keywords
    parameter (for Hockney’s method) or :math:`L \times \alpha` for Tuckerman’s
    method can be read from the next line using the **PARAMETER** keyword.
 
+   The keyword is mandatory for isolated systems (:kw:`SYMMETRY` 0,
+   :kw:`CLUSTER`) and for :kw:`SURFACE` and :kw:`POLYMER`; there is no
+   default solver. **Defaults** for the parameters: Hockney smoothing radius
+   = min(average half box length / 7, 2.0) Bohr; Tuckerman
+   :math:`L \times \alpha` = 7.0. Tuckerman's method is not available for
+   :kw:`SURFACE` and :kw:`POLYMER`; the Mortensen solver requires
+   :math:`b = c` for :kw:`POLYMER` and a cubic box for isolated systems. The
+   word ``POISSON`` alone is sufficient; the aliases ``POISSON-SOLVER``,
+   ``TUCKERMAN-MARTYNA`` and ``PARAMETERS`` are also accepted.
+
+.. source: src/sysin_utils.mod.F90:1004 (checks: 1646-1692; Hockney radius:
+.. src/rinit_utils.mod.F90:146)
+
    For more information about the usage of this parameter see also section
    :ref:`hints:symm0`.
 
 .. keyword:: POLYMER
    :section: &SYSTEM
 
-   Assume **periodic boundary** condition in **:math:`x`-direction**.
+   Assume **periodic boundary** condition in :math:`x`-direction.
 
 .. keyword:: PRESSURE
    :section: &SYSTEM
@@ -461,6 +580,8 @@ Keywords
    :math:`c/a`, :math:`\cos \alpha`, :math:`\cos \beta`, :math:`\cos \gamma`.
 
    The keywords **ABSOLUTE** and **DEGREE** are described in **CELL** option.
+   With **VECTORS** the three reference lattice vectors are read instead. The
+   aliases ``VECTOR``, ``ABS`` and ``DEGREES`` are also accepted.
 
 .. keyword:: SCALE
    :section: &SYSTEM
@@ -476,8 +597,14 @@ Keywords
    default with the **SCALE** option is in direct lattice basis. In all cases, the
    coordinates are multiplied by the lattice constants. If this keyword is present
    an output file GEOMETRY.scale is written. This file contains the lattice
-   vectors in Åand atomic units together with the atomic coordinates in the direct
-   lattice basis.
+   vectors in Å and atomic units together with the atomic coordinates in the
+   direct lattice basis.
+
+   .. warning::
+
+      Due to the way the line is parsed, an option written as ``NAME=value``
+      without blanks is not recognized and silently ignored; write a blank
+      between the option name and ``=`` (e.g. ``SCALE SX = 2``).
 
 .. keyword:: SHOCK VELOCITY
    :section: &SYSTEM
@@ -498,16 +625,14 @@ Keywords
 .. source: src/sysin_utils.mod.F90:1336 (conversion 1340; src/setsys_utils.mod.F90:340;
 .. used in src/npt_md_utils.mod.F90:510, src/vepsup_utils.mod.F90:105)
 
-
-&ATOMS
-======
-
 .. keyword:: STATES
    :section: &SYSTEM
 
    The number of states used in the calculation is read from the next line.
 
-   This keyword has to precede the keyword **OCCUPATION**.
+   This keyword has to precede the keyword **OCCUPATION**. The alias ``STATE``
+   is also accepted. The keyword cannot be used for electronic spectra or
+   spin-orbit coupling calculations (the program stops).
 
 .. keyword:: STRESS TENSOR
    :target: STRESS TENSOR SYSTEM
@@ -527,9 +652,9 @@ Keywords
    :alternatives: [XY, YZ, ZX]
 
    By default, if nothing is specified, assume **periodic boundary** condition in
-   **:math:`x`- and :math:`y`-direction**. With the extra keywords *XY*, *YZ* or
-   *ZX*, the periodicity of the systems is assumed to be along :math:`(x,y)`,
-   :math:`(y,z)` or :math:`(z,x)`, respectively.
+   :math:`x`- and :math:`y`-direction (same as **XY**). With the extra
+   keywords *XY*, *YZ* or *ZX*, the periodicity of the systems is assumed to
+   be along :math:`(x,y)`, :math:`(y,z)` or :math:`(z,x)`, respectively.
 
 .. keyword:: SYMMETRIZE COORDINATES
    :section: &SYSTEM
@@ -550,12 +675,11 @@ Keywords
 
       **ISOLATED** system in a cubic/orthorhombic
       box [Hockney70]_ [Landman]_ with ISOLATED MOLECULE option
-      activated. By default the Hockney method (see :kw:`POISSON SOLVER`) is used for solving the Poisson equations.
-      You can use this option in combination with :kw:`POLYMER` or
-      :kw:`SURFACE` for systems that are periodic in only 1 or 2
-      dimensions. The default Poisson solver is MORTENSEN in this case. See the
-      Hints and Tricks section for some additional requirements when calculating
-      isolated system.
+      activated. A :kw:`POISSON SOLVER` must be specified explicitly; there
+      is no default. You can use this option in combination with
+      :kw:`POLYMER` or :kw:`SURFACE` for systems that are periodic in only 1
+      or 2 dimensions. See the Hints and Tricks section for some additional
+      requirements when calculating isolated system.
 
       Simple **CUBIC**
 
@@ -577,7 +701,15 @@ Keywords
 
       **TRICLINIC**
 
-   Warning: This keyword should not be used with the keyword **CELL VECTORS**.
+   The keyword is mandatory ("No symmetry specified") unless **CELL VECTORS**
+   is used; together with **CELL VECTORS** it must not be given (the program
+   stops). The keywords ``FCC``, ``BCC``, ``BCT``, ``RHOMBOHEDRAL``,
+   ``CUBIC FACE``, ``CUBIC BODY`` and ``TETRAGONAL BODY`` are also recognized.
+   The numbers 9, 10, 11 and 13 are rejected ("Symmetry type not supported").
+   Variable-cell runs (e.g. Parrinello-Rahman) require symmetry 14
+   (triclinic) unless **CELL VECTORS** is used.
+
+.. source: src/sysin_utils.mod.F90:529 (checks: 1448-1476, 1566-1582)
 
 .. keyword:: TESR
    :section: &SYSTEM

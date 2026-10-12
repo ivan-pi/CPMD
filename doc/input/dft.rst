@@ -18,22 +18,41 @@ Keywords
 .. keyword:: ACM0
    :section: &DFT
 
-   Add exact exchange to the specified :kw:`FUNCTIONAL` according to
-   the adiabatic connection method 0. [acm0]_ [adamo2000]_
+   Add exact exchange according to the adiabatic connection method
+   0. [acm0]_ [adamo2000]_ The fraction of exact exchange is set to 0.25 and
+   the fractions of the LDA and gradient-corrected exchange to 0.75.
+
+   .. warning::
+
+      The ACM keywords only take effect with the legacy drivers when the
+      functional is assembled with :kw:`GRADIENT CORRECTION` (and
+      :kw:`SLATER`/:kw:`LDA CORRELATION`). Together with :kw:`FUNCTIONAL` the
+      settings are overwritten by the functional definition, which is applied
+      after the whole section has been read; in particular no exact exchange is
+      computed for a non-hybrid functional such as ``PBE``. With
+      :kw:`XC_DRIVER` the program stops; use :kw:`SCALES` and
+      :kw:`HFX_SCALE` instead.
+
+.. source: src/dftin_utils.mod.F90:896
 
 .. keyword:: ACM1
    :section: &DFT
 
-   Add exact exchange to the specified :kw:`FUNCTIONAL` according to
-   the adiabatic connection method 1. [adamo2000]_ [acm1]_ The parameter
-   is read from the next line.
+   Add exact exchange according to the adiabatic connection method
+   1. [adamo2000]_ [acm1]_ The parameter :math:`a` is read from the next line;
+   the fraction of exact exchange is set to :math:`a` and the fractions of the
+   LDA and gradient-corrected exchange to :math:`1-a`. The same restrictions
+   as for :kw:`ACM0` apply.
 
 .. keyword:: ACM3
    :section: &DFT
 
-   Add exact exchange to the specified :kw:`FUNCTIONAL` according to
-   the adiabatic connection method 3. [adamo2000]_ [acm3]_ The three
-   needed parameters are read from the next line.
+   Add exact exchange according to the adiabatic connection method
+   3. [adamo2000]_ [acm3]_ The three parameters :math:`a_1`, :math:`a_2` and
+   :math:`a_3` are read from the next line; the fraction of exact exchange is
+   :math:`a_1`, the fractions of the LDA exchange, gradient-corrected exchange
+   and gradient-corrected correlation are :math:`1-a_1`, :math:`1-a_2` and
+   :math:`1-a_3`. The same restrictions as for :kw:`ACM0` apply.
 
 .. keyword:: ANALYTICAL_DIV
    :target: ANALYTICAL DIV
@@ -49,25 +68,69 @@ Keywords
    Change the :math:`\beta` parameter in Becke’s exchange
    functional [Becke88]_ to the value given on the next line.
 
+   **Default** is 0.0042.
+
 .. keyword:: COULOMB ATTENUATION
    :section: &DFT
 
    Activates the long-range correction/Coulomb attenuation method (**LC, CAM**).
    With this keyword, all selected *internal* LDA or GGA exchange functionals will
    be Coulomb-attenuated, and the corresponding exact exchange contribution is
-   added by default. The three CAM parameters :math:`\alpha`, :math:`\beta` and
-   :math:`\mu` are read from the next line. Setting :math:`\alpha=0` and
-   :math:`\beta=1.0` is equivalent to using the long-range correction (LC) method.
-   This option is only available in combination with the new
-   :kw:`XC_DRIVER <XC DRIVER>`. The keyword is aliased and may be abbreviated by
-   **CAM**.
+   added by default. The three CAM parameters are read from the next line in
+   the order :math:`\mu` (range-separation parameter; printed by the code as
+   "MU [BOHR]"), :math:`\alpha` and :math:`\beta`. Setting :math:`\alpha=0`
+   and :math:`\beta=1.0` is equivalent to using the long-range correction (LC)
+   method; :math:`\alpha+\beta` must not exceed 1.
+
+   The keyword switches on the xc driver (:kw:`XC_DRIVER <XC DRIVER>`) by
+   itself; the functionals must therefore be given with xc-driver names. The
+   CAM parameters also apply to the functionals of :kw:`LR KERNEL` and
+   :kw:`MTS_LOW_FUNC`. The aliases ``CAM``, ``ATTENUATION`` and
+   ``RANGE SEPARATION`` are also accepted (but not on a line that contains
+   ``SCREENED``, see :kw:`SCREENED EXCHANGE`).
+
+   Example (CAM-B3LYP parameters)::
+
+      COULOMB ATTENUATION
+       0.33  0.19  0.46
+
+.. source: src/dftin_utils.mod.F90:686 (parameter order: hfx_func_init in
+.. src/cp_xc_utils.mod.F90:1881)
 
 .. keyword:: CP_LIBRARY_ONLY
    :target: CP LIBRARY ONLY
    :section: &DFT
 
-   Use the new xc driver, but use only functionals that are available internally
-   (this excludes libxc). *Cf.* :kw:`XC_DRIVER <XC DRIVER>`.
+   Use the new xc driver and take all functionals of :kw:`FUNCTIONAL` from the
+   internal CP library (libxc is not used).
+
+   The keyword switches on the xc driver by itself, i.e. it implies
+   :kw:`XC_DRIVER <XC DRIVER>`; a separate ``XC_DRIVER`` line is not needed.
+   Consequently:
+
+   * the functionals must be given with :kw:`FUNCTIONAL` using the xc-driver
+     names (e.g. ``GGA_XC_PBE``); the legacy names (``PBE``, ``BLYP``, ...)
+     are not valid;
+   * :kw:`GRADIENT CORRECTION`, :kw:`LDA CORRELATION`, :kw:`SLATER` (except
+     ``SLATER ALPHA``), :kw:`ACM0`, :kw:`ACM1` and :kw:`ACM3` stop the program;
+   * :kw:`OLDCODE` and :kw:`NEWCODE` have no effect.
+
+   The keyword sets the library of the functionals of :kw:`FUNCTIONAL` only,
+   overriding a :kw:`LIBRARY` line given before it. If :kw:`LR KERNEL` is not
+   given, the kernel is a copy of the functional and therefore also uses the
+   internal library. A :kw:`LIBRARY`, :kw:`KERNEL_LIBRARY` or
+   :kw:`MTS_LOW_FUNC_LIBRARY` entry ``LIBXC`` (or ``LXC``) given *after* this
+   keyword stops the program. If both :kw:`CP_LIBRARY_ONLY` and
+   :kw:`LIBXC_ONLY` are given, the last one is used.
+
+   The aliases ``USE_CP`` and ``INTERNAL_ONLY`` are also accepted.
+
+   Example::
+
+      CP_LIBRARY_ONLY
+      FUNCTIONAL GGA_XC_PBE
+
+.. source: src/dftin_utils.mod.F90:319
 
 .. keyword:: EXCHANGE CORRELATION TABLE
    :section: &DFT
@@ -78,8 +141,11 @@ Keywords
    maximum density have to be given on the next line.
 
    Note that this keyword is only relevant when using :kw:`OLDCODE` and
-   even then it is set to **NO** be default. Previous default values were 30000
-   and 2.0.
+   even then it is set to **NO** by default. Previous default values were 30000
+   and 2.0. The table is always switched off for hybrid functionals. Only the
+   words ``EXCHANGE`` and ``TABLE`` are required on the keyword line.
+
+.. source: src/dftin_utils.mod.F90:801
 
 .. keyword:: FORCE_NEW_HFX
    :section: &DFT
@@ -110,6 +176,13 @@ Keywords
    | The xc functional(s) are specified on the same line, separated by a space.
    |
 
+   There is no default functional: if neither :kw:`FUNCTIONAL` nor one of
+   :kw:`GRADIENT CORRECTION`, :kw:`SLATER`, :kw:`LDA CORRELATION`,
+   :kw:`HARTREE` or :kw:`HARTREE-FOCK` is given, the program stops with "NO
+   FUNCTIONAL HAS BEEN DEFINED - DEFAULTS NO LONGER APPLY". The ``&DFT``
+   section is therefore mandatory. The alias ``MTS_HIGH_FUNC`` is also
+   accepted (see :kw:`MTS_HIGH_FUNC`).
+
    **XC_DRIVER**:
 
    Both functionals from the internal CP library and those linked from libxc are
@@ -138,6 +211,31 @@ Keywords
      \_M08_HX, \_M11, \_MN12_SX
    |
 
+   The following aliases are also accepted:
+
+   .. list-table:: Aliases of xc-driver names (internal library)
+      :header-rows: 1
+      :widths: 30 70
+
+      * - Name
+        - Meaning
+      * - ``GGA_XC_BP``
+        - Alias of ``GGA_XC_BP86``.
+      * - ``GGA_XC_PBE_R``
+        - Alias of ``GGA_XC_REVPBE``.
+      * - ``HYB_GGA_XC_PBE0_R``
+        - Alias of ``HYB_GGA_XC_REVPBE0``.
+      * - ``GGA_X_PBE_R``
+        - Alias of ``GGA_X_REVPBE``.
+
+   Any other name ``X`` taken from the internal library is looked up as the
+   internal routine ``CP_X``; unknown names stop the program with "Could not
+   set functional pointer; functional CP_X n/a". The range-separation
+   parameters of ``MGGA_XC_M11_L``, ``HYB_MGGA_XC_M11`` (:math:`\mu=0.25`) and
+   ``HYB_MGGA_XC_MN12_SX`` (:math:`\mu=0.11`) are hard-coded. For the libxc
+   functionals ``HYB_GGA_XC_B3LYP5`` and ``HYB_GGA_XC_PBEH`` the exact-exchange
+   fractions 0.20 and 0.25 are set by default.
+
    **Important note on Minnesota functionals:**
 
    | At the usual plane wave cutoff values, the Minnesota functionals require
@@ -147,6 +245,11 @@ Keywords
      Rothlisberger\ [bircher_rothlisberger19]_, DOI:
      10.1021/acs.jctc.8b00897.
    |
+
+   The Minnesota functionals of the internal library stop the program ("Invalid
+   setup for Minnesota functional. Please set DUAL to 8-12") unless
+   :kw:`DUAL` or the density cutoff (see :kw:`CUTOFF`) is given explicitly in
+   the ``&SYSTEM`` section.
 
    | The following exchange and correlation functionals are available as separate
      keywords within the internal CP library, both in spin-restricted and
@@ -185,12 +288,90 @@ Keywords
    **NEWCODE** and **OLDCODE**:
 
    Single keyword for setting up XC-functionals. Only *one single* functional
-   keyword can be specified in when using :kw:`OLDCODE` or
+   keyword can be specified when using :kw:`OLDCODE` or
    :kw:`NEWCODE`.
 
    Available functionals are NONE, SONLY, LDA (in PADE form), BONLY, BP, BLYP,
    XLYP, GGA (=PW91), PBE, PBES, REVPBE, HCTH, OPTX, OLYP, TPSS, PBE0, B1LYP,
-   B3LYP, X3LYP,PBES, HSE06
+   B3LYP, X3LYP, HSE06.
+
+   The following additional names are accepted. Except for the two aliases
+   and the model potentials ``SAOP``, ``LB94`` and ``GLLB``, they all switch to
+   :kw:`OLDCODE` internally.
+
+   .. list-table:: Additional functional names of the legacy drivers
+      :header-rows: 1
+      :widths: 15 85
+
+      * - Name
+        - Definition in the code
+      * - ``BP86``
+        - Alias of ``BP``.
+      * - ``PW91``
+        - Alias of ``GGA``.
+      * - ``PBE1W``
+        - Slater exchange + Perdew-Zunger LDA correlation + PBE
+          gradient-corrected exchange + 0.74 times the PBE gradient correction
+          for correlation.
+      * - ``REVPBE0``
+        - Hybrid: 0.75 Slater + 0.75 revPBE gradient-corrected exchange + VWN
+          LDA correlation + PBE gradient-corrected correlation + 25 % exact
+          exchange.
+      * - ``ZPBE0``
+        - Hybrid with Ashcroft-screened exact exchange (25 %) built on the ZPBE
+          exchange and correlation routines of DFRepository. Accepted by the
+          parser, but these routines are not part of the distributed source:
+          the run stops with "you need the DFRepository.F".
+      * - ``XPBE0``
+        - As ``ZPBE0`` with the XPBE hybrid exchange; also stops with "you need
+          the DFRepository.F".
+      * - ``PBEoriginal``
+        - Removed. The program stops with "PBEoriginal isnt supported anymore"
+          (only matched with exactly this mixed-case spelling).
+      * - ``OLDX3LYP``
+        - X3LYP as defined in CPMD 3.17 and earlier: the LDA part of LYP is
+          used instead of VWN (0.782 Slater, 1.0 X exchange (0.542 B88 + 0.167
+          PW91), 1.0 LDA-LYP, 0.871 LYP gradient correction, 21.8 % exact
+          exchange).
+      * - ``MODX3LYP``
+        - X3LYP with 100 % Perdew-Zunger LDA correlation instead of 19 % VWN
+          (reference printed by the code: J. Phys. Chem. B 110, 3685 (2006)).
+      * - ``OLDB3LYP``
+        - B3LYP as defined in CPMD 3.17 and earlier: the LDA part of LYP is
+          used instead of VWN (0.8 Slater, 0.72 B88, 1.0 LDA-LYP, 0.81 LYP
+          gradient correction, 20 % exact exchange).
+      * - ``MODB3LYP``
+        - B3LYP with 100 % Perdew-Zunger LDA correlation instead of 19 % VWN
+          (reference printed by the code: J. Phys. Chem. B 110, 3685 (2006)).
+      * - ``OLDB1LYP``
+        - B1LYP as defined in CPMD 3.17 and earlier (0.75 Slater, 0.75 B88,
+          LYP, 25 % exact exchange). In the present code the parameters are
+          identical to ``B1LYP``; only the printed message differs.
+      * - ``MODB1LYP``
+        - B1LYP with Perdew-Zunger LDA correlation instead of the LDA part of
+          LYP (reference printed by the code: J. Phys. Chem. B 110, 3685
+          (2006)).
+      * - ``SAOP``
+        - Model exchange-correlation potential for TDDFT (no energy functional
+          is available; total energies are not valid). Output label "SAOP
+          POTENTIAL (modified)".
+      * - ``LB94``
+        - Model potential for TDDFT, as ``SAOP`` ("LB94 POTENTIAL
+          (modified)").
+      * - ``GLLB``
+        - Model potential for TDDFT, as ``SAOP`` ("GLLB POTENTIAL
+          (modified)").
+
+   With the legacy drivers, VWN and PW LDA correlation are not available for
+   spin-polarized (LSD) runs: the program stops with "LSD_VWN N/A, you may
+   want to switch to USE_XC_DRIVER" (resp. ``LSD_PW``). This affects e.g.
+   ``B3LYP``, ``X3LYP``, ``PBE0``, ``REVPBE0`` and :kw:`LDA CORRELATION`
+   ``VWN``/``PW``. The fractions of the chosen legacy functional can be
+   changed with :kw:`PXLDA`, :kw:`PXGC`, :kw:`PCLDA`, :kw:`PCGC` and
+   :kw:`PHFX`.
+
+.. source: src/dftin_utils.mod.F90:935 (legacy names: set_xc_functional,
+.. line 1386; xc-driver names: src/cp_xc_utils.mod.F90:586)
 
 .. keyword:: GC-CUTOFF
    :section: &DFT
@@ -212,13 +393,14 @@ Keywords
 
    Individual components of gradient corrected functionals can be selected. Rarely
    needed anymore, use the :kw:`FUNCTIONAL` keyword instead. Only
-   available for **OLDCODE** and **NEWCODE**; but the new
-   :kw:`XC_DRIVER <XC DRIVER>` offers similar flexibility in combination with the
-   **FUNCTIONAL** keyword.
+   available for **OLDCODE** and **NEWCODE**; together with the xc driver
+   (:kw:`XC_DRIVER <XC DRIVER>`, :kw:`CP_LIBRARY_ONLY`, :kw:`LIBXC_ONLY`) the
+   program stops. The new xc driver offers similar flexibility in combination
+   with the **FUNCTIONAL** keyword.
 
    Functionals implemented are for the exchange energy:
 
-   **BECKE88** [Becke88]_, **GGAX** [Perdew92]_
+   **BECKE88** [Becke88]_, **GGAX** [Perdew92]_ (alias **PW91X**),
    **PBEX** [Perdew96]_, **REVPBEX** [Zhang98]_,
    **HCTH** [Handy98]_,
    **OPTX** [Optx]_,\ **PBESX** [Perdew07]_
@@ -226,16 +408,27 @@ Keywords
    and for the correlation part:
 
    **PERDEW86** [Perdew86]_, **LYP** [Lee88]_,
-   **GGAC** [Perdew92]_, **PBEC** [Perdew96]_,
-   **REVPBEC** [Zhang98]_, **HCTH** [Handy98]_
-   **OLYP** [Optx]_,\ **PBESC** [Perdew07]_.
+   **GGAC** [Perdew92]_ (alias **PW91C**), **PBEC** [Perdew96]_,
+   **REVPBEC** [Zhang98]_, **HCTH** [Handy98]_,
+   **PBESC** [Perdew07]_.
 
    Note that for HCTH, exchange and correlation are treated as a unique
-   functional.
+   functional. ``HCTH`` and ``OPTX`` switch to :kw:`OLDCODE`. ``REVPBEC`` is
+   accepted as an alias of ``PBEC`` and selects exactly the same PBE
+   correlation routine. The exchange part of the OLYP functional is ``OPTX``
+   (OLYP itself is a :kw:`FUNCTIONAL` name).
 
-   The keywords **EXCHANGE** and **CORRELATION** can be used for the default
-   functionals (currently BECKE88 and PERDEW86). If no functionals are specified
-   the default functionals for exchange and correlation are used.
+   The words ``EXCH`` and ``CORREL`` select only the default exchange
+   (BECKE88) or correlation (PERDEW86) gradient correction, respectively; the
+   full words ``EXCHANGE`` and ``CORRELATION`` are not recognized. If no
+   functionals are specified, the default functionals for both exchange and
+   correlation are used.
+
+   Example::
+
+      GRADIENT CORRECTION BECKE88 LYP
+
+.. source: src/dftin_utils.mod.F90:526
 
 .. keyword:: HARTREE
    :section: &DFT
@@ -246,19 +439,49 @@ Keywords
    :section: &DFT
 
    Do a Hartree–Fock calculation. This only works correctly for isolated systems.
-   It should be used with care, it needs enormous amounts of CPU time.
+   It should be used with care, it needs enormous amounts of CPU time. The
+   spelling ``HARTREE FOCK`` (two words) is also accepted.
 
 .. keyword:: HFX SCREENING
    :section: &DFT
-   :options: {WFC,DIAG,EPS_INT,RECOMPUTE_TWO_INT_LIST_EVERY}
+   :alternatives: [RADIUS, DIAG, KEEP_RADIUS_FIXED, EPS_INT, RECOMPUTE_TWO_INT_LIST_EVERY]
 
-   Read value from the next line.
+   Perform the calculation of exact exchange using Wannier functions with
+   screening of orbital pairs. Exactly one option is evaluated per line; give
+   the keyword several times to combine options. Without a recognized option
+   the program stops ("need to specify something...").
 
-   Perform the calculation of exact exchange using Wannier functions. Orbital
-   pairs are screened according to the distance of the Wannier centers *WFC*, the
-   value of the integrals *EPS_INT*, or only the diagonal terms are included
-   (*DIAG*). *RECOMPUTE_TWO_INT_LIST_EVERY* allows to set how often the integral
-   list is recomputed.
+   RADIUS
+      Orbital pairs are screened according to the distance of the Wannier
+      centres; the radius is read from the next line.
+
+   KEEP_RADIUS_FIXED
+      Keep the screening radius fixed. No value is read.
+
+   EPS_INT
+      Orbital pairs are screened according to the value of the integrals; the
+      threshold is read from the next line.
+
+   RECOMPUTE_TWO_INT_LIST_EVERY
+      The number of steps after which the integral list is recomputed is read
+      from the next line (by default the list is never recomputed).
+
+   DIAG
+      Only the diagonal terms are included. No value is read; this disables
+      ``RADIUS`` and ``EPS_INT``.
+
+   Any ``HFX SCREENING`` line selects the old HFX module unless
+   :kw:`FORCE_NEW_HFX` is given. The keyword is ignored if the functional
+   contains no exact exchange. The alias ``HFX-SCREENING`` is also accepted.
+
+   Example::
+
+      HFX SCREENING EPS_INT
+       1.0E-6
+      HFX SCREENING RECOMPUTE_TWO_INT_LIST_EVERY
+       10
+
+.. source: src/dftin_utils.mod.F90:990
 
 .. keyword:: HFX_BLOCK_SIZE
    :target: HFX BLOCK SIZE
@@ -273,8 +496,11 @@ Keywords
    :section: &DFT
 
    Set the block distribution for the parallel HFX calculations. This keyword is
-   active only when no thresholding of the integrals is used. Default is
-   BLOCK_CYCLIC. The distribution is read from the next line.
+   active only when no thresholding of the integrals is used. The distribution
+   (``BLOCK_CYCLIC`` or ``DYNAMIC``) is given on the same line, e.g.
+   ``HFX_DISTRIBUTION DYNAMIC``. **Default** is ``BLOCK_CYCLIC``.
+
+.. source: src/dftin_utils.mod.F90:663
 
 .. keyword:: HFX_NEW_SCDM
    :section: &DFT
@@ -307,10 +533,18 @@ Keywords
    line, a scaling value (:math:`\in [0,1]`) for the exact exchange contribution
    to the overall xc functional is specified. If used with a built-in hybrid
    functional, the default value is changed; if used with any other functional,
-   the keyword activates the inclusion of exact exchange. Note that its value
-   should always be set to one if combined with a Coulomb-attenuated functional
-   (in which case the global scaling can be modified by changing the CAM
-   parameters :math:`\alpha` and :math:`\beta`, instead).
+   the keyword activates the inclusion of exact exchange. The alias
+   ``HFX_SCALES`` is also accepted; :kw:`PHFX` has the same effect.
+
+   Do not use this keyword with Coulomb-attenuated functionals
+   (:kw:`COULOMB ATTENUATION`, ``SCREENED EXCHANGE CAM``,
+   ``HYB_GGA_XC_CAM_B3LYP``): for the CAM operator the value given here
+   replaces the parameter :math:`\alpha` (whichever of ``HFX_SCALE`` and the
+   CAM parameter line is read last is used), and with ``HYB_GGA_XC_CAM_B3LYP``
+   it disables the built-in attenuation. Change :math:`\alpha` and
+   :math:`\beta` via the CAM parameter line instead.
+
+.. source: src/dftin_utils.mod.F90:818
 
 .. keyword:: HFX_SCDM
    :section: &DFT
@@ -360,6 +594,13 @@ Keywords
    projectors is read from a new line. For each of those, the shell number of the
    projector and angular momentum :math:`l` is read from the next lines.
 
+   The options are matched as substrings of the keyword line. If ``NUATM=`` is
+   missing, a warning is printed and :math:`nuatm=1` is used. The keyword
+   cannot be combined with broken-symmetry calculations (``BSYMM``); the
+   program stops.
+
+.. source: src/dftin_utils.mod.F90:1028
+
 .. keyword:: KERNEL_HFX_SCALE
    :target: KERNEL HFX SCALE
    :section: &DFT
@@ -367,15 +608,21 @@ Keywords
 
    Identical functionality as described in :kw:`HFX_SCALE <HFX SCALE>`, but
    applies to the :kw:`LR KERNEL` rather than the
-   :kw:`FUNCTIONAL`.
+   :kw:`FUNCTIONAL`. The alias ``KERNEL_HFX_SCALES`` is also accepted.
 
 .. keyword:: KERNEL_LIBRARY
    :target: KERNEL LIBRARY
    :section: &DFT
    :notes: library_for_kernel_1, library_for_kernel_2, ...
 
-   Same functionality as :kw:`LIBRARY`, but applies to the
-   :kw:`FUNCTIONAL` rather than the :kw:`LR KERNEL`.
+   Same functionality as :kw:`LIBRARY`, but applies to the functionals of
+   :kw:`LR KERNEL` rather than to those of :kw:`FUNCTIONAL`. The number of
+   entries must equal the number of kernel functionals. **Default** is the
+   internal library; :kw:`CP_LIBRARY_ONLY` and :kw:`LIBXC_ONLY` do not change
+   this default, but an entry contradicting them stops the program if it is
+   given after them.
+
+.. source: src/dftin_utils.mod.F90:390
 
 .. keyword:: KERNEL_SCALES
    :target: KERNEL SCALES
@@ -384,21 +631,51 @@ Keywords
 
    Identical functionality as described in :kw:`SCALES`, but applies to
    the :kw:`LR KERNEL` rather than the
-   :kw:`FUNCTIONAL`.
+   :kw:`FUNCTIONAL`. The alias ``KERNEL_SCALE`` is also accepted; the line
+   must not contain the word ``HFX``.
 
 .. keyword:: LDA CORRELATION
    :section: &DFT
    :notes: [functional]
 
    The LDA correlation functional is specified. Only available for **OLDCODE** and
-   **NEWCODE**.
+   **NEWCODE**; together with the xc driver the program stops. The keyword is
+   only effective together with :kw:`GRADIENT CORRECTION` (or alone); it is
+   overwritten by :kw:`FUNCTIONAL`.
 
    Possible functionals are **NO** (no correlation functional),
-   **PZ** [Perdew81]_, **VWN** [Vosko80]_,
-   **LYP** [Lee88]_ and **PW** [Perdew91]_.
+   **PZ** [Perdew81]_, the Perdew and Zunger fit to the data of Ceperley and
+   Alder [Ceperley80]_, **VWN** [Vosko80]_,
+   **LYP** [Lee88]_ and **PW** [Perdew91]_. Further options are:
 
-   Default is the **PZ**, the Perdew and Zunger fit to the data of Ceperley and
-   Alder [Ceperley80]_.
+   .. list-table:: Additional LDA CORRELATION options
+      :header-rows: 1
+      :widths: 15 85
+
+      * - Option
+        - Meaning
+      * - ``WIGNER``
+        - Wigner correlation.
+      * - ``HEDIN``
+        - Hedin-Lundqvist correlation.
+      * - ``OBPZ``
+        - Ortiz-Ballone parametrization (PRB 50, 1391 (1994)), Perdew-Zunger
+          form.
+      * - ``OBPW``
+        - Ortiz-Ballone parametrization (PRB 50, 1391 (1994)), Perdew-Wang
+          form.
+      * - ``TETER``
+        - Pade approximation of Goedecker, Teter and Hutter for exchange and
+          correlation together (Slater exchange is switched off).
+      * - ``HCTH``
+        - HCTH exchange-correlation functional (switches to :kw:`OLDCODE`;
+          LDA exchange and correlation are switched off and the HCTH gradient
+          correction is used).
+
+   If the keyword is not given, the Pade form is used with :kw:`NEWCODE` and
+   PZ with :kw:`OLDCODE`.
+
+.. source: src/dftin_utils.mod.F90:614 (defaults: line 2086)
 
 .. keyword:: LIBRARY
    :section: &DFT
@@ -407,9 +684,15 @@ Keywords
    In combination with :kw:`XC_DRIVER <XC DRIVER>`, both functionals from a new,
    internal CP library and from libxc are available. On the same line, for every
    functional specified in **FUNCTIONAL**, the library has to be indicated by
-   **INTERNAL** or **CP** for the internal CP library, or by **LIBXC** for libxc.
-   If the keyword is omitted, the functionals will default to the internal CP
-   library.
+   **INTERNAL** or **CP** for the internal CP library, or by **LIBXC** (or
+   **LXC**) for libxc. The number of entries must equal the number of
+   functionals. If the keyword is omitted, the functionals will default to the
+   internal CP library.
+
+   :kw:`CP_LIBRARY_ONLY` and :kw:`LIBXC_ONLY` set the library of all
+   functionals and override a ``LIBRARY`` line given before them; a
+   ``LIBRARY`` line given after them must not contain an entry of the other
+   library (the program stops).
 
    The use of LIBXC is usually associated to a considerable overhead with respect
    to the internal implementation. It is therefore discouraged for functionals
@@ -420,15 +703,53 @@ Keywords
    :target: LIBXC ONLY
    :section: &DFT
 
-   Use the new xc driver, but use only functionals from libxc (this excludes all
-   internal functionals). *Cf.* :kw:`XC_DRIVER <XC DRIVER>`.
+   Use the new xc driver and take all functionals of :kw:`FUNCTIONAL` from
+   libxc (the internal CP library is not used). CPMD must have been compiled
+   with libxc; otherwise the program stops with "no libxc available".
+
+   The keyword switches on the xc driver by itself, i.e. it implies
+   :kw:`XC_DRIVER <XC DRIVER>`; a separate ``XC_DRIVER`` line is not needed.
+   Consequently:
+
+   * the functionals must be given with :kw:`FUNCTIONAL` using libxc names;
+     the legacy names (``PBE``, ``BLYP``, ...) are not valid;
+   * :kw:`GRADIENT CORRECTION`, :kw:`LDA CORRELATION`, :kw:`SLATER` (except
+     ``SLATER ALPHA``), :kw:`ACM0`, :kw:`ACM1` and :kw:`ACM3` stop the program;
+   * :kw:`OLDCODE` and :kw:`NEWCODE` have no effect.
+
+   The keyword sets the library of the functionals of :kw:`FUNCTIONAL` only,
+   overriding a :kw:`LIBRARY` line given before it. If :kw:`LR KERNEL` is not
+   given, the kernel is a copy of the functional and therefore also uses
+   libxc. Functionals given with :kw:`LR KERNEL` or :kw:`MTS_LOW_FUNC`,
+   however, still default to the internal library and need
+   :kw:`KERNEL_LIBRARY` or :kw:`MTS_LOW_FUNC_LIBRARY` with ``LIBXC`` entries.
+   A :kw:`LIBRARY`, :kw:`KERNEL_LIBRARY` or :kw:`MTS_LOW_FUNC_LIBRARY` entry
+   ``CP`` (or ``INTERNAL``) given *after* this keyword stops the program. If
+   both :kw:`CP_LIBRARY_ONLY` and :kw:`LIBXC_ONLY` are given, the last one is
+   used.
+
+   The alias ``USE_LIBXC`` is also accepted.
+
+   Example::
+
+      LIBXC_ONLY
+      FUNCTIONAL GGA_X_B88 GGA_C_LYP
+
+.. source: src/dftin_utils.mod.F90:334
 
 .. keyword:: LR KERNEL
    :section: &DFT
    :notes: functional
 
-   Use another functional for the linear response kernel. To be used like
-   :kw:`FUNCTIONAL`.
+   Use another functional for the linear-response kernel. With
+   :kw:`XC_DRIVER <XC DRIVER>` the functionals are given as for
+   :kw:`FUNCTIONAL`; with the legacy drivers only ``NONE``, ``LDA``, ``PBE``
+   and ``PBE0`` are available (other names stop the program with "TDDFT kernel
+   functional not available"). If the keyword is not given, the kernel is the
+   same as the functional. The aliases ``LR_KERNEL`` and ``XC_KERNEL`` are also
+   accepted.
+
+.. source: src/dftin_utils.mod.F90:984 (kernel names: line 1989)
 
 .. keyword:: MTS_HIGH_FUNC
    :target: MTS HIGH FUNC
@@ -543,8 +864,15 @@ Keywords
 
    For certain functionals, older versions of CPMD did not use standard
    definitions. When using the new :kw:`XC_DRIVER <XC DRIVER>`, those definitions
-   can be invoked by using **OLD_DEFINITIONS**. The option is available in
-   combination with any derivative of PBE and TPSS correlation.
+   can be invoked by using **OLD_DEFINITIONS**. The option affects the PBE
+   correlation in ``GGA_C_PBE``, ``GGA_C_PBE_SOL``, ``GGA_XC_PBE``,
+   ``GGA_XC_REVPBE`` (``GGA_XC_PBE_R``), ``GGA_XC_PBE_SOL`` and
+   ``HYB_GGA_XC_PBE0``, and the TPSS correlation in ``MGGA_C_TPSS`` and
+   ``MGGA_XC_TPSS``. ``HYB_GGA_XC_REVPBE0`` is not affected, and with
+   ``HYB_GGA_XC_PBE0_SOL`` the program stops ("Old definition n/a; Pade xc not
+   coded"). The alias ``COMPATIBILITY`` is also accepted.
+
+.. source: src/dftin_utils.mod.F90:501 (src/cp_xc_utils.mod.F90:596-1360)
 
 .. keyword:: PBE_FLEX_BETA
    :target: PBE FLEX BETA
@@ -564,15 +892,15 @@ Keywords
    :target: PBE FLEX KAPPA
    :section: &DFT
 
-   In combination with the PBE_FLEX exchange or correlation functionals, the
-   parameter :math:`\kappa` can be specified on the next line.
+   In combination with the PBE_FLEX exchange functional (``GGA_X_PBE_FLEX``),
+   the parameter :math:`\kappa` is read from the next line.
 
 .. keyword:: PBE_FLEX_MU
    :target: PBE FLEX MU
    :section: &DFT
 
-   In combination with the PBE_FLEX exchange or correlation functionals, the
-   parameter :math:`\mu` can be specified on the next line.
+   In combination with the PBE_FLEX exchange functional (``GGA_X_PBE_FLEX``),
+   the parameter :math:`\mu` is read from the next line.
 
 .. keyword:: PBE_FLEX_UEG_CORRELATION
    :target: PBE FLEX UEG CORRELATION
@@ -580,8 +908,11 @@ Keywords
    :notes: functional
 
    In combination with the PBE_FLEX correlation functional, the LDA correlation
-   functional can be specified on the same line. Available options are LDA_C_PZ,
-   LDA_C_PW (the default), LDA_C_OBPW and LDA_C_PZ.
+   functional can be specified on the same line. Available options are
+   ``LDA_C_PW`` (the default), ``LDA_C_PZ``, ``LDA_C_VWN`` and
+   ``LDA_C_OB_PW``. Any other value silently falls back to ``LDA_C_PW``.
+
+.. source: src/dftin_utils.mod.F90:521 (src/cp_gga_correlation_utils.mod.F90:1127)
 
 .. keyword:: PCGC
    :section: &DFT
@@ -636,10 +967,31 @@ Keywords
 .. keyword:: PHFX
    :section: &DFT
 
-   Set the amount of HFX in the next line. The numerical value must be between 0
-   (no HFX) and 1 (100% of HFX. For HSE06 the standard value is 0.25 if this
-   keyword and related numerical value ios not is not selected. Warning: PHFX is
-   incompatible with XC_DRIVER. Use NEWCODE instead.
+   Set the fraction of exact (Hartree-Fock) exchange. The value is read from
+   the next line and must lie between 0 (no exact exchange) and 1 (100 % exact
+   exchange).
+
+   With the legacy drivers (:kw:`OLDCODE`/:kw:`NEWCODE`) the value replaces the
+   fraction built into the hybrid functional selected with :kw:`FUNCTIONAL`
+   (e.g. 0.25 for PBE0 and HSE06, 0.20 for B3LYP). The fractions of the
+   semi-local exchange are not adjusted (see :kw:`PXLDA` and :kw:`PXGC`), and
+   the keyword has no effect for non-hybrid functionals (exact exchange is not
+   switched on) or when the functional is assembled with
+   :kw:`GRADIENT CORRECTION`. For HSE06 this keyword is the only way to change
+   the default fraction of 0.25 (:kw:`ACM1` is overwritten by the functional
+   definition).
+
+   With :kw:`XC_DRIVER <XC DRIVER>`, PHFX has the same effect as
+   :kw:`HFX_SCALE` (which reads the value from the same line); the use of
+   :kw:`HFX_SCALE` is recommended there.
+
+   Example::
+
+      FUNCTIONAL HSE06
+      PHFX
+       0.30
+
+.. source: src/dftin_utils.mod.F90:851 (applied at line 1874)
 
 .. keyword:: PXGC
    :section: &DFT
@@ -686,15 +1038,17 @@ Keywords
 .. source: src/dftin_utils.mod.F90:880 (applied at 1866; used in
 .. src/functionals_utils.mod.F90:92, src/lsd_func_utils.mod.F90:73)
 
-
-&SYSTEM
-=======
-
 .. keyword:: REFUNCT
    :section: &DFT
    :notes: functionals
 
-   Use a special reference functional in a calculation. This option is not active.
+   Use a special reference functional in a calculation. This option is not
+   active: the functional is parsed, but the values are not used anywhere in
+   the code. Accepted names are ``LDA``, ``PBE``, ``BLYP``, ``OLYP`` and
+   ``BP`` (alias ``BP86``); other names stop the program ("Reference functional
+   not available").
+
+.. source: src/dftin_utils.mod.F90:943
 
 .. keyword:: SCALED EXCHANGE
    :section: &DFT
@@ -708,7 +1062,9 @@ Keywords
    Only available in combination with :kw:`XC_DRIVER <XC DRIVER>`. On the same
    line, rescaling values (:math:`\in [0,1]`) for the different
    exchange-correlation functionals specified in :kw:`FUNCTIONAL`
-   are read in the same order in which the functionals were specified.
+   are read in the same order in which the functionals were specified. The
+   number of values must equal the number of functionals. The alias ``SCALE``
+   is also accepted; the line must not contain the word ``HFX``.
 
 .. keyword:: SCEX
    :section: &DFT
@@ -724,15 +1080,18 @@ Keywords
    :options: {ASHCROFT,CAM,ERFC,EXP}
 
    Screening / range separation applied to the Hartree-Fock exchange term *only*.
-   Possible options are:
+   Without option, ``EXP`` is used. Possible options are:
 
    ASHCROFT
       Ashcroft exchange. :math:`r_\text{cut}` is read from the next line.
 
    CAM
-      Coulomb-attenuation method. :math:`\alpha`, :math:`\beta` and :math:`\mu`
-      are read from the next line. Please note that in case attenuation of the
-      (semi-)local part is desired, too, the keyword :kw:`COULOMB ATTENUATION` has to be used.
+      Coulomb-attenuation method. The parameters are read from the next line
+      in the order :math:`\mu`, :math:`\alpha`, :math:`\beta` (as for
+      :kw:`COULOMB ATTENUATION`). Please note that in case attenuation of the
+      (semi-)local part is desired, too, the keyword
+      :kw:`COULOMB ATTENUATION` has to be used. ``LC`` is accepted as an alias
+      of ``CAM``.
 
    ERFC
       Screened exchange using the complementary error function. The switching
@@ -742,13 +1101,27 @@ Keywords
       Screened exchange using an exponential function. The switching parameter
       :math:`\gamma` is read from the next line.
 
+   With :kw:`XC_DRIVER <XC DRIVER>`, this keyword replaces the built-in
+   exact-exchange settings of hybrid functionals: for ``EXP``, ``ERFC`` and
+   ``ASHCROFT`` the fraction of exact exchange must then be given with
+   :kw:`HFX_SCALE` (otherwise it is zero); for ``CAM`` the fractions are the
+   :math:`\alpha` and :math:`\beta` read from the input. The settings also
+   apply to the functionals of :kw:`LR KERNEL` and :kw:`MTS_LOW_FUNC`. With the
+   legacy drivers, the settings are overwritten by ``FUNCTIONAL HSE06``
+   (:math:`\omega` is fixed to 0.106).
+
+.. source: src/dftin_utils.mod.F90:718
+
 .. keyword:: SLATER
    :section: &DFT
    :alternatives: [NO]
 
    The :math:`\alpha` value for the Slater exchange
-   functional [Slater51]_ is read from the next line. With NO the
-   exchange functional is switched off.
+   functional [Slater51]_ is read from the next line and Slater exchange is
+   selected. With NO the exchange functional is switched off. With ``ALPHA``
+   (``SLATER ALPHA``) only the value of :math:`\alpha` is read from the next
+   line, without selecting Slater exchange; this is the only form that may be
+   used together with the xc driver.
 
    Default is a value of 2/3.
 
@@ -758,7 +1131,8 @@ Keywords
 .. keyword:: SMOOTH
    :section: &DFT
 
-   A smoothening function is applied to the density [Laasonen93]_.
+   A smoothening function is applied to the density [Laasonen93]_. The alias
+   ``SMOOTHING`` is also accepted.
 
    The function is of the Fermi type.
 
@@ -789,6 +1163,12 @@ Keywords
    definitions differ from older versions of CPMD, the old definitions (where
    implemented) can be accessed by using the keyword
    :kw:`OLD_DEFINITIONS <OLD DEFINITIONS>`.
+
+   The aliases ``USE_XC_DRIVER`` and ``USE_DRIVER`` are also accepted. The xc
+   driver is also switched on implicitly by :kw:`CP_LIBRARY_ONLY`,
+   :kw:`LIBXC_ONLY` and :kw:`COULOMB ATTENUATION`.
+
+.. source: src/dftin_utils.mod.F90:349
 
 .. keyword:: XC_KERNEL
    :target: XC KERNEL

@@ -137,25 +137,33 @@ Keywords
    metals...) are read from the next line.
 
 .. keyword:: VDW DCACP
-   :section: &VDW
+   :section: &CPMD
 
-   Synonymous to :kw:`DCACP`.
+   Synonymous to :kw:`DCACP`. This is a keyword of the ``&CPMD`` section (any
+   line there containing the word ``DCACP`` switches the DCACP scheme on); in
+   the ``&VDW`` section the line is not recognized and is reported as an
+   unknown keyword.
+
+.. source: src/control_utils.mod.F90:4236
 
 .. keyword:: VDW PARAMETERS
    :section: &VDW
 
-   Parameters for empirical van der Waals correction schemes are set with the
-   keyword. This requires the :kw:`VDW CORRECTION` keyword to be
-   set in the &CPMD section. For Grimme’s **DFT-D2** and **DFT-D3** type (see
-   below) an automatic assignment of the parameters can be requested by putting
-   **ALL DFT-D2** or **ALL DFT-D3** on the next line. Otherwise the number of
-   pairs *NVDW* is read from the next line and followed by *NVDW* lines of
+   ``VDW PARAMETERS`` is not a keyword of its own: the parameters for the
+   empirical van der Waals correction schemes are given inside the block
+   :kw:`EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION`. This requires the
+   :kw:`VDW CORRECTION` keyword to be set in the &CPMD section. For Grimme’s
+   **DFT-D2** and **DFT-D3** type (see below) an automatic assignment of the
+   parameters can be requested by putting the line **ALL DFT-D2** or
+   **ALL DFT-D3** into the block. Otherwise a line **CUSTOM** is given,
+   followed by the number of pairs *NVDW* on the next line and *NVDW* lines of
    parameters: *TYPE*, :math:`\alpha`, :math:`\beta`, :math:`C_6^{\alpha\beta}`,
    :math:`R_0^{\alpha\beta}`, and :math:`d` for each pair of atom types
    :math:`\alpha` and :math:`\beta`, where :math:`\alpha` and :math:`\beta` are
    the indexes of pseudopotentials (and their associated groups of atoms) in the
-   order they are listed in the &ATOMS section. For type **DFT-D2** and **DFT-D3**
-   only :math:`\alpha` and :math:`\beta` are required. If the other parameters are
+   order they are listed in the &ATOMS section. *TYPE* is **C6**, **TANH** or
+   **DFT-D2** (**DFT-D3** is not allowed here). For type **DFT-D2** only
+   :math:`\alpha` and :math:`\beta` are required; if the other parameters are
    omitted the internal table of parameters is used.
 
    A presently implemented damped dispersion model, described by M. Elstner *et
@@ -192,24 +200,34 @@ Keywords
    above for details). Namely, all elements from H (:math:`Z=1`) to Rn
    (:math:`Z=86`) are available, whereas elements beyond Rn give by default a zero
    contribution. Note that the parameter :math:`s_6` depends on the functional
-   used and has to be provided consistently with the DFT one chosen for the
-   calculation. The following line has to be added S6GRIMME and the type of
-   functional is read from the next line. One of the following labels has to be
-   provided: BP86, BLYP, B3LYP, PBE, TPSS, REVPBE, PBE0. Note that Grimme vdW does
-   not support other functionals. In the **DFT-D3** version
-   [GrimmeD3]_ there is no need to specify manually :math:`s_6`
+   used and has to be consistent with the DFT one chosen for the calculation.
+   It can be set with the line S6GRIMME in the block; the type of functional is
+   then read from the next line. One of the following labels has to be
+   provided: BP86, BLYP, B3LYP, PBE, TPSS, REVPBE, PBE0. If S6GRIMME is not
+   given, :math:`s_6` is derived from the functional of the &DFT section (the
+   program stops if that is not one of these functionals). In the **DFT-D3**
+   version [GrimmeD3]_ there is no need to specify :math:`s_6` manually.
+
+.. source: src/vdwin_utils.mod.F90:602 (s6 default: line 804)
 
 .. keyword:: VDW-CELL
    :section: &VDW
 
    The number of additional supercells to be included in the sum of van der Waals
-   correction.
+   correction: three integers NX NY NZ (additional cells in each direction)
+   are read from the next line. **Default** is 0 0 0. This is a sub-keyword of
+   :kw:`EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION` (alias ``CELL``);
+   at the top level of the &VDW section it is reported as an unknown keyword.
 
 .. keyword:: VDW-CUTOFF
    :section: &VDW
 
    On the next line the short range cutoff of van der Waals correction has to be
-   specified. The default value is :math:`10^{-2}`.
+   specified. The default value is :math:`10^{-2}`. This is a sub-keyword of
+   :kw:`EMPIRICAL CORRECTION ... END EMPIRICAL CORRECTION` (alias ``CUTOFF``);
+   at the top level of the &VDW section it is reported as an unknown keyword.
+
+.. source: src/vdwin_utils.mod.F90:668
 
 .. keyword:: WANNIER CORRECTION ... END WANNIER CORRECTION
    :section: &VDW
@@ -231,7 +249,8 @@ Keywords
 
    VERSION
 
-   iswitchvdw (method 1 [psil1]_ or 2 [psil2]_)
+   iswitchvdw (method 1 [psil1]_ or 2 [psil2]_; other values stop the program;
+   default 1)
 
    FRAGMENT ZLEVEL
 
@@ -245,13 +264,21 @@ Keywords
 
    ...
 
-   FRAGMENT BOND
+   FRAGMENT BOND [COVRAD]
 
-   tollength
+   xmfacwf
+
+   [covrad(1) ... covrad(nsp)]
 
    DAMPING [DIPOLE]
 
    a6
+
+   RS_SCALING_FACTOR
+
+   rs_scfac
+
+   REFERENCE [FIT, CENTER]
 
    RESTART WANNIER
 
@@ -277,10 +304,26 @@ Keywords
 
    nxvdw nyvdw nzvdw
 
-   PRINT :math:`[`\ INFO,FRAGMENT,C6,FORCES\ :math:`]`
+   PRINT [OFF] :math:`[`\ INFO,FRAGMENT,C6,FORCES\ :math:`]`
 
-   Note that the total number of WFCs in your system depends on the spin
-   description you use (1 for LSD, 2 for LDA). The coefficient a6 is the smoothing
+   END WANNIER CORRECTION
+
+   For FRAGMENT BOND, xmfacwf is a dimensionless factor (**default** 1.35)
+   multiplying the sum of the covalent radii used to detect bonds; with
+   ``COVRAD`` one covalent radius per species is read from the following line
+   (in Bohr, or in Angstrom with :kw:`ANGSTROM`). The alias ``FRAGMENT BONDS``
+   is accepted; ``FRAGMENTS`` is only accepted for FRAGMENT ZLEVEL.
+   RS_SCALING_FACTOR scales the van der Waals radius :math:`R_S` in the damping
+   function (**default** 1.0). With REFERENCE FIT the reference positions are
+   determined by a linear least-squares fit to the Wannier centres; CENTER
+   (the default) does not use the fit. PRINT switches the listed items on, or
+   off with ``OFF``; by default only INFO is printed (aliases ``FRAGMENTS``,
+   ``FORCE``). **Defaults**: a6 = 20.0 (values below :math:`10^{-5}` are reset
+   to 20.0), tolwann = 0.0, tolref = 1.0. ``RESTART WANN`` is accepted for
+   RESTART WANNIER. Any line containing the word ``END`` terminates the block.
+
+   Note that each Wannier function holds 1 electron in LSD and 2 electrons in
+   spin-restricted calculations. The coefficient a6 is the smoothing
    parameter and the reference total energy intended as a sum of all the total
    energies of your fragments (e.g. the ETOT you get by a standard calculation not
    including vdW corrections). For a6 the suggested parameter is 20.0
@@ -293,3 +336,9 @@ Keywords
    neither read nor used in this (DAMPING DIPOLE) case. Note that the two possible
    vdW options, EMPIRICAL CORRECTION and WANNIER CORRECTION are mutually
    exclusive.
+
+   .. todo::
+
+      MISSING: units and exact meaning of tolwann and tolref.
+
+.. source: src/vdwin_utils.mod.F90:867 (wannvdwin)

@@ -7,6 +7,10 @@ Atoms, pseudopotentials and related parameters (**required**). The pseudopotenti
 
 The section starts with ``&ATOMS`` and ends with ``&END``.
 
+Unlike in most other sections, the keywords of the ``&ATOMS`` section are
+recognized as substrings of the input line, so abbreviations such as
+``CONFIN POTENT``, ``GENER COORD`` or ``VELOC`` are also accepted.
+
 Summary
 -------
 
@@ -75,8 +79,9 @@ Keywords
 
    The definition of dummy atoms follows this keyword.
 
-   Three different kinds of dummy atoms are implemented. Type 1 is fixed in space,
+   Four different kinds of dummy atoms are implemented. Type 1 is fixed in space,
    type 2 lies at the arithmetic mean, type 3 at the center of mass of the
+   coordinates of real atoms, and type 4 at a weighted average of the
    coordinates of real atoms.
 
    The first line contains the total number of dummy atoms. The following lines
@@ -91,20 +96,25 @@ Keywords
    coordinates of real atoms with user-supplied weights. This feature is useful
    e. g.in constrained dynamics, because allows to modify positions and weights of
    dummy atoms according to some relevant quantity such as forces on selected
-   atoms. Example:
+   atoms. The format of a type 4 line is
+   ``TYPE4 n i_1 ... i_n w_1 ... w_n``: the number of atoms, their indices and
+   then their weights. Example:
 
    ::
 
       DUMMY ATOMS
-      3
+      4
       TYPE1 0.0 0.0 0.0
       TYPE2 2 1 4
       TYPE3 -1
+      TYPE4 2 1 4 0.25 0.75
 
 
    Note: Indices of dummy atoms always start with total-number-of-atoms plus 1. In
    the case of a Gromos-QM/MM interface simulations with dummy hydrogen atoms for
    capping, it is total-number-of-atoms plus number-of-dummy-hydrogens plus 1
+
+.. source: src/ratom_utils.mod.F90:828 (rdumat)
 
 .. keyword:: GENERATE COORDINATES
    :section: &ATOMS
@@ -129,7 +139,22 @@ Keywords
    :section: &ATOMS
 
    Initiate Metadynamics (see section :ref:`sec:meta` for more information
-   on the available options and the input format).
+   on the available options and the input format). The following variants are
+   recognized on the keyword line:
+
+   ``METADYNAMICS COLLECTIVE VARIABLES``
+      Metadynamics in the space of collective variables (the line must contain
+      ``COLLE`` and ``VAR``).
+   ``METADYNAMICS MULTI WALKERS NW=n``
+      Multiple-walker metadynamics with ``n`` walkers; the program stops if
+      ``NW=`` is missing, and ``n`` is reduced to the number of processors if
+      it is larger.
+   ``METADYNAMICS MULTI NS=n``
+      Metadynamics with ``n`` sets of collective variables.
+   ``METADYNAMICS CELL``
+      Metadynamics of the cell.
+
+.. source: src/ratom_utils.mod.F90:540
 
 .. keyword:: MOVIE TYPE
    :section: &ATOMS
@@ -202,10 +227,6 @@ Keywords
 .. source: src/ratom_utils.mod.F90:580 (parser src/tst2min_inp_utils.mod.F90:31,
 .. defaults 85-89, sub-keywords 561-647)
 
-
-&VDW
-====
-
 .. keyword:: VELOCITIES ... END VELOCITIES
    :section: &ATOMS
 
@@ -214,10 +235,15 @@ Keywords
    The first line contains first the total number of specified atomic velocities
    followed **on the same line** by the list of atomic numbers for which the
    velocities will be read. On each of the following lines the x, y and z
-   coordinates of the velocities of an atom have to be specified. These values
-   will ignored in case of starting with :kw:`RESTART` VELOCITIES..
+   coordinates of the velocities of an atom have to be specified. The first
+   line may be arbitrarily long, and the atom numbers refer to the global
+   ordering of the atoms in the ``&ATOMS`` section. Several such groups may
+   follow each other until the closing ``END VELOCITIES``. These values
+   will be ignored in case of starting with :kw:`RESTART` VELOCITIES.
 
    NOTE: these velocities are rescaled to produce the initial temperature as
    specified by :kw:`TEMPERATURE`. The default temperature,
    however, is 0K, so you **have** to set the matching temperature or your initial
    velocities will be useless.
+
+.. source: src/velocitinp_utils.mod.F90:20
