@@ -264,7 +264,7 @@ different updates to the Linux architecture files.
 *Note on OMP 3.0*: The *collapse(n)* clause, although powerful in well nested
 loops, may not work in old compilers and is known to have troubles e.g. in old
 Intel Fortran Compilers (versions 11 and former ones). Please, check carefully
-your OS and your compiler berfore compiling blindly and refer to the discussion
+your OS and your compiler before compiling blindly and refer to the discussion
 in http://openmp.org/forum/viewtopic.php?f=3&t=1023&start=10.
 
 CPMD Version 4
@@ -310,12 +310,12 @@ With the version 4.3, we have ported some of the core-procedures to gpu. The XC
 procedures have been refactored and it was added the possibility to link to
 libxc. Coulomb-attenuated functionals (CAM) and the Minnesota functionals (M05,
 M06, M08 and M11 families) are now available as internal xc procedures. A new
-development for Eherenfest dynamics with ionized states is deployed. Few novel
+development for Ehrenfest dynamics with ionized states is deployed. Few novel
 implementations are available: a multiple time step scheme for MD, accelerated
 exact exchange for isolated systems, the stress tensor, LSD and UltraSoft
 Vanderbilt pseudopotentials and NPT. Also a new bicanonical ensemble method is
 made available with version 4.3. Extensive cleanup and bug fixes and
-strenghtening of the regression test suite.
+strengthening of the regression test suite.
 
 Version 4.5
 ~~~~~~~~~~~

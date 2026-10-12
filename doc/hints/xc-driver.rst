@@ -65,7 +65,7 @@ HYB_GGA_XC_CAM_B3LYP, but using different attenuation parameters
 
 It is also possible to use a linear response kernel different from the one used
 to generate the ground-state orbitals. In this case, duplicates of the
-aforementionned exist with the prefix **KERNEL\_**. Note that is currently not
+aforementioned exist with the prefix **KERNEL\_**. Note that is currently not
 possible to combine different forms of the Coulomb operator between the kernel
 and the ground-state functional (*i.e.* it is not possible to use the
 combination of B3LYP and CAM-B3LYP; however, combinations between GGA and any

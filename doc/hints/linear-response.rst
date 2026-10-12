@@ -533,7 +533,7 @@ presence in the &RESP section there should be no ambiguity.
 
    -  **OFF**; the option is disactivated and no projection is performed.
 
-**Lanczos output** In the output, all the informations about the perturbed
+**Lanczos output** In the output, all the information about the perturbed
 wavefunction optimization are reported, just like in the :kw:`PHONON`
 case. The differences are in the form of the perturbation and in the eigenmodes
 information coming from the diagonalization of :math:`\mathbf{T}_k`.

@@ -27,7 +27,7 @@ constituted by :math:`NSUBSYS` subsets, which are independent one from each
 other. The number of subsystems is given on the same line by writing
 :math:`NS=` followed by an integer number (default: 1). Alternatively, if
 :math:`MULTIPLE` :math:`WALKERS` is present in the same line multiple walker
-metadynamics is preformed using the extended Lagrangian metadynamics; number of
+metadynamics is performed using the extended Lagrangian metadynamics; number of
 walkers is read in the same line immediately after :math:`NW=` (see
 :ref:`sect:mw`). Instead, if :math:`CELL  FULL` is the keyword, the CV
 are the 6 cell parameters (3 side lengths and 3 angles), and the MTD is

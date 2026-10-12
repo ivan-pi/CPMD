@@ -33,7 +33,7 @@ Keywords
    An Amber functional form for the classical force field is used. In this case
    coordinates and topology files as obtained by Amber have to be converted in
    Gromos format just for input/read consistency. This is done with the tool
-   amber2gromos availabe with the CPMD/QMMM package.
+   amber2gromos available with the CPMD/QMMM package.
 
    This keyword is mutually exclusive with the :kw:`GROMOS` keyword
    (which is used by default).
@@ -160,7 +160,7 @@ Keywords
    :section: &QMMM
    :notes: (mandatory)
 
-   The ESP-charg fit weighting parameter is read from the next line.
+   The ESP charge fit weighting parameter is read from the next line.
 
    **Default** value is :math:`0.1 e_0`.
 
@@ -182,7 +182,7 @@ Keywords
    :options: [ALL,BONDTYPE]
    :notes: (mandatory)
 
-   Convert some solven water molecules into solute molecules and thus using a
+   Convert some solvent water molecules into solute molecules and thus using a
    flexible potential.
 
    With the BONDTYPE flag, the three bond potentials (OH1, OH2, and H1H2) can be
@@ -249,9 +249,9 @@ Keywords
 
    **INITWF [OFF]**
 
-   Generate an initial guess for the wfkt for the SP calculations based on AOs
-   (default). With the **OFF** option the wfkt of the previous frame is used as an
-   intial guess.
+   Generate an initial guess for the wavefunction for the SP calculations based on AOs
+   (default). With the **OFF** option the wavefunction of the previous frame is used as an
+   initial guess.
 
    **CHARGES [ONLY,NO],[FIX]**
 
@@ -305,7 +305,7 @@ Keywords
    from the input). For each pair of equivalencies the gromos indexes have to be
    specified on one separate line. The lower index has to be given first!
 
-   If an atom is equivalent to more then one other atom. E.g. atom1,atom3 and
+   If an atom is equivalent to more than one other atom. E.g. atom1,atom3 and
    atom4 are equivalent. Then this has to be encoded by:
 
    | ``atom1   atom3``

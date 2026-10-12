@@ -61,7 +61,7 @@ a) having an index.ndx file specifying the QM atoms (see example index.ndx
 file). You can create a usual Gromacs index.ndx file and then append to it the
 QM group.
 
-b) specifying other QM informations like planewave cutoff, qmbox size etc in
+b) specifying other QM information like planewave cutoff, qmbox size etc in
 the grompp setup (for the mdp file).
 
 c) having a CPMD input file template "CPMD_inp.tmpl" where essential keywords

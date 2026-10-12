@@ -65,3 +65,52 @@ integrator will be applied in a given update. This is the parameter
 the MD run. :math:`N_{SUZ} =2` or 3 is usually large enough to give stable
 integration. If more stable integration is required, try :math:`M_{SUZ}=4` or
 make :math:`N_{SUZ}` larger.
+
+Fictitious electron mass, time step and energy conservation
+-----------------------------------------------------------
+
+In Car-Parrinello molecular dynamics the fictitious electron mass
+(:kw:`EMASS`) and the time step (:kw:`TIMESTEP`) have to be chosen together.
+The fictitious kinetic energy of the electrons (``EKINC`` in the output)
+should remain small compared with the kinetic energy of the ions and should
+not drift during the run; a larger electron mass increases ``EKINC`` and
+allows a longer time step, a smaller electron mass keeps the electrons closer
+to the Born-Oppenheimer surface but requires a shorter time step. The quality
+of a run is judged from the conservation of the constant of motion
+(``ECLASSIC``, or ``EHAM`` when thermostats are used) and from the behavior
+of ``EKINC``.
+
+.. figure:: ../fig/md-ekinc.*
+   :width: 80%
+   :alt: Fictitious electronic kinetic energy for different electron masses and time steps
+
+   Fictitious kinetic energy of the electrons, ``EKINC``, during
+   Car-Parrinello runs with Troullier-Martins (MT, 70 Ry cutoff) and
+   Vanderbilt (VDB, 35 Ry cutoff) pseudopotentials for different electron
+   masses :math:`\mu` (a.u.) and time steps :math:`\Delta t` (a.u.). ``EKINC``
+   increases with the electron mass; for the largest masses it also drifts
+   upwards during the run.
+
+.. figure:: ../fig/md-timestep-eham.*
+   :width: 80%
+   :alt: Conserved energy for time steps from 1 to 5 a.u. and the corresponding CPU time
+
+   Constant of motion ``EHAM`` (shifted and scaled) during 1 ps of
+   Car-Parrinello dynamics with time steps from 1 to 5 a.u., and the CPU time
+   needed for each run (bars). Longer time steps reduce the cost considerably
+   while the fluctuations of the conserved energy stay small.
+
+.. figure:: ../fig/md-econs.*
+   :width: 60%
+   :alt: Conserved energy as a function of time for three pairs of simulations
+
+   Conserved energy :math:`E_\mathrm{cons}` as a function of time for three
+   pairs of simulations (open and filled symbols in each panel). In each
+   panel one of the two runs shows a steady drift of the conserved energy.
+
+   .. todo::
+
+      MISSING: the simulations compared in this figure (system, method and
+      parameters of the runs shown with open and filled symbols) are not
+      documented, and neither are the details (system, functional,
+      pseudopotentials) of the two figures above.

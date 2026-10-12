@@ -47,10 +47,10 @@ Basic rules
 
 -  Only keywords with capital letters match
 
--  Lists inclosed in **{ }** imply that you have to choose **exactly one** of
+-  Lists enclosed in **{ }** imply that you have to choose **exactly one** of
    the items
 
--  Lists inclosed in **[ ]** imply that you can choose **any number** of items
+-  Lists enclosed in **[ ]** imply that you can choose **any number** of items
    on the same line
 
 -  Arguments to a keyword are given on the following line(s) if not explicitly

@@ -29,6 +29,15 @@ different, usually a much higher cutoff is required. It’s always a good idea t
 make checks at some critical points of the calculations by increasing the
 cutoff.
 
+.. figure:: ../fig/o2-conv.png
+   :width: 70%
+   :alt: O2 bond length as a function of the plane wave cutoff
+
+   Convergence of the bond length of the O\ :sub:`2` molecule with the plane
+   wave cutoff for Troullier-Martins pseudopotentials (TM-PP) with different
+   core radii and local channels, and for a Goedecker (HGH) pseudopotential,
+   compared with the all-electron value.
+
 Typical cutoff values range from 20–40 ry for Vanderbilt ultra-soft
 pseudopotentials, 60–100 ry for Troullier-Martins norm-conserving
 pseudopotentials to 80–200 ry for Goedecker pseudopotentials. Pseudopotentials

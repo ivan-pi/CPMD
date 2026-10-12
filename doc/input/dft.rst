@@ -97,7 +97,7 @@ Keywords
    default to the internal implementations, use of libxc for single functionals
    can be requested by the keyword :kw:`LIBRARY`. The functional code
    names for the functionals available internally follow the nomenclature
-   introduced by libxc: The functional name must be preceeded by a tag specifying
+   introduced by libxc: The functional name must be preceded by a tag specifying
    its level (hybrid, MGGA, GGA...). B3LYP would therefore be specified as
    HYB_GGA_XC_B3LYP.
 
@@ -299,7 +299,7 @@ Keywords
    :section: &DFT
    :notes: library_for_kernel_1, library_for_kernel_2, ...
 
-   Same functionalty as :kw:`LIBRARY`, but applies to the
+   Same functionality as :kw:`LIBRARY`, but applies to the
    :kw:`FUNCTIONAL` rather than the :kw:`LR KERNEL`.
 
 .. keyword:: KERNEL_SCALES
@@ -457,7 +457,7 @@ Keywords
    :section: &DFT
 
    Set the amount of HFX in the next line. The numerical value must be between 0
-   (no HFX) and 1 (100% of HFX. For HSE06 the standard valus is 0.25 if this
+   (no HFX) and 1 (100% of HFX. For HSE06 the standard value is 0.25 if this
    keyword and related numerical value ios not is not selected. Warning: PHFX is
    incompatible with XC_DRIVER. Use NEWCODE instead.
 

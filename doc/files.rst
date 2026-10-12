@@ -139,7 +139,7 @@ Incomplete list of the files used or created by CPMD:
 | WANNIER_1.x                          | Wannier orbitals or orbital          |
 |                                      | densities                            |
 +--------------------------------------+--------------------------------------+
-| wavefunctions                        | Containes the complex wavefunctions  |
+| wavefunctions                        | Contains the complex wavefunctions   |
 |                                      | for Ehrenfest dynamics               |
 +--------------------------------------+--------------------------------------+
 | HARDNESS                             | Orbital hardness matrix              |

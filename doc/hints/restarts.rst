@@ -22,7 +22,7 @@ should be used for writing. If the :kw:`RESTFILE` parameter was set
 to 4, then 4 restart files with the names ``RESTART.1``, :math:`\ldots`,
 ``RESTART.4`` will be written. If more than 4 restart files are needed the
 first one will be overwritten. This option is useful if there is the
-possibility that restart files get corrupted (e.g. on instable systems), or if
+possibility that restart files get corrupted (e.g. on unstable systems), or if
 simulations are performed that might lead to unphysical results. In this case
 it might be possible to go back to a restart file which contains still intact
 information.

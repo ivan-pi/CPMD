@@ -81,7 +81,7 @@ Keywords
    optimizers for an automatic selection of optimizers during a linear response
    calculation. This also applies to the Z-vector optimization for TDDFT forces.
    The first value is the threshold for switching from conjugate gradients to DIIS
-   (with compressed storage and averged preconditioner, subspace size defined with
+   (with compressed storage and averaged preconditioner, subspace size defined with
    :kw:`ODIIS`). The second value is the threshold for switching to DIIS
    with full storage and state dependent preconditioner. See also
    :kw:`ZDIIS` for specification of the subspace size.

@@ -233,7 +233,7 @@ Keywords
    :section: &TDDFT
    :alternatives: [{\em functionals}]
 
-   Use a different potential for the eigenvalue differnce part of the response
+   Use a different potential for the eigenvalue difference part of the response
    equations than was used to generate the ground state orbitals. The potential
    generating functional has to be given after the keyword. For possible
    functionals see the code. Most likely you want to use the **SAOP** functional.

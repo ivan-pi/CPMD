@@ -56,7 +56,7 @@ Keywords
    keyword: ``STEP=0.14``, where (e.g.) 0.14 is the bin width in eV of the
    :math:`\sigma(\omega)` histogram if you want it to be different from
    :math:`\Delta \omega`. A file MATRIX.DAT is written in your working directory,
-   where all the non-zero transition amplitudes and related informations are
+   where all the non-zero transition amplitudes and related information are
    reported (see the header of MATRIX.DAT). An example of application is given in
    Refs. [solve]_ [solve2]_.
 
@@ -87,8 +87,8 @@ Keywords
    previously computed the electronic structure of your system and have a
    consistent* :kw:`RESTART` *file ready to use*. A file XRAYSPEC.DAT
    is written in your working directory, containing all the square transition
-   amplitudes and related informations, part of which are also written in the
-   standard output. Waring: in order to use this keyword you need special
+   amplitudes and related information, part of which are also written in the
+   standard output. Warning: in order to use this keyword you need special
    pseudopotentials. These are provided, at least for some elements, in the PP
    library of CPMD and are named as \*_HOLE.psp
 
@@ -143,7 +143,7 @@ Keywords
    from the next line.
 
    To use the LDOS keyword, the user must first have performed a wavefunction
-   optimization and then restart with with the :kw:`PROPERTIES` and
+   optimization and then restart with the :kw:`PROPERTIES` and
    :kw:`LANCZOS DIAGONALIZATION` keywords in the &CPMD
    section (and LDOS in the &PROP section).
 

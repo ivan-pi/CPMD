@@ -32,7 +32,7 @@ the orbitals should always be checked. One of the SOMOs should have the same
 nodal structure as the HOMO obtained by a ground state calculation. If using
 the unmodified Goedecker-Umrigar scheme (GOEDECKER), the energy of the singlet
 may collapse to approximately the triplet energy if the two SOMOs do not have
-different symmetries. The triplet energy can be calculated by specifiying
+different symmetries. The triplet energy can be calculated by specifying
 
 ::
 

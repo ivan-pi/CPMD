@@ -87,10 +87,10 @@ Keywords
    Use the bicanonical ensemble AIMD for simulation of open
    systems [Frenzel2017]_.
 
-   Note, requesting this runtype cpmd must be executed on more then one MPI
+   Note, requesting this runtype cpmd must be executed on more than one MPI
    thread.
 
-   Within the bicanonocal ensemble one out of two sampling modes must be specified
+   Within the bicanonical ensemble one out of two sampling modes must be specified
    in the input:
 
    |
@@ -129,7 +129,7 @@ Keywords
      system 2 is written on OUTPUT_CNF2 while that of system 1 is stdout. The
      suffixes "\_CNF1" and "\_CNF2" are used to specify the canonical systems for
      the other cpmd files. For example the content of the file ENERGIES of a
-     canoncal cpmd run is written to the files ENERGIES_CNF1 and ENERGIES_CNF2. In
+     canonical cpmd run is written to the files ENERGIES_CNF1 and ENERGIES_CNF2. In
      the bicanonical AIMD the ENERGIES then stores: nfi, chemical potential,
      xweight, :math:`\Delta U`, and :math:`\mu_{x_1=0.5}`. Where :math:`\Delta U`
      is the difference of the total energy of system 1 and system 2 at timestep
@@ -366,7 +366,7 @@ Keywords
    :alternatives: [ADAPT, ENERGY, CALFOR, RELAX, INITIAL]
 
    The adaptive convergence criteria for the wavefunction during a geometry
-   optimization are specified. For more informations, see [LSCAL]_.
+   optimization are specified. For more information, see [LSCAL]_.
    The ratio *TOLAD* between the smallest maximum component of the nuclear
    gradient reached so far and the maximum allowed component of the electronic
    **gradient** is specified with **CONVERGENCE ADAPT**. This criterion is
@@ -630,7 +630,7 @@ Keywords
    addition the spin–polarized average of ELF as well as the separate
    :math:`\alpha`– and :math:`\beta`–orbital parts are written to the files
    LSD_ELF, ELF_ALPHA and ELF_BETA, respectively; see Ref. [Kohut96]_
-   for definitions and further infos.
+   for definitions and further information.
 
    Note 2: ELF does not make much sense when using Vanderbilt’s ultra-soft
    pseudopotentials!
@@ -915,7 +915,7 @@ Keywords
      option and :kw:`OPTIMIZE WAVEFUNCTION` have to be
      activated. This option is useful for fragment orbital DFT (FODFT)
      calculations. Orbitals for the output of the FO-DFT matrix element can be
-     given with the option **STATE**, then indics of the two orbitals are read
+     given with the option **STATE**, then indices of the two orbitals are read
      from the next line. **ROUT** controls printing of involved orbitals.
    | **MATRIX** instructs CPMD to read a transformation matrix from the file
      LOWDIN_A to transform the KS-Hamiltonian to the non-orthogonal orbital basis
@@ -1035,7 +1035,7 @@ Keywords
    :alternatives: [NREM, NTRUST, NRESTT, TRUSTR]
 
    Use the limited-memory BFGS method (L-BFGS) for linear scaling **optimization**
-   of the **ionic positions**. For more informations, see [LSCAL]_.
+   of the **ionic positions**. For more information, see [LSCAL]_.
    The information about the Hessian for the quasi-Newton method employed is
    derived from the history of the optimization [LSCAL]_ [Liu89]_.
 
@@ -1181,7 +1181,7 @@ Keywords
    1.D-8 or 1.D-9, if possible. An additional file called "wavefunctions" is
    produced, which contains the complex KS orbitals needed for the restart of the
    EH dynamics (see restart options in &PTDDFT). Typical (minimal) input &CPMD and
-   &PTDDFT sections to be used with EH dynmiacs
+   &PTDDFT sections to be used with EH dynamics
 
    &CPMD
 
@@ -1224,7 +1224,7 @@ Keywords
    trajectories (:math:`N_{traj}`) used to describe the nuclear wavepacket are
    specified. The initial spread of the Gaussians associated to each element is
    guessed from the De Broglie wavelength. A special tuning of this value for the
-   different elements may be necessary (not yet automatized). During the dynamics
+   different elements may be necessary (not yet automated). During the dynamics
    the :math:`N_{traj}` trajectories (each corresponding to a configuration space
    point or fluid element) are interacting within each other through the action of
    the quantum potential. For the more details about the implementation see
@@ -1263,7 +1263,7 @@ Keywords
    :section: &CPMD
 
    Default is to check all atomic distances and stop the program if the smallest
-   disctance is below 0.5 Bohr. This keyword requests not to perform the check.
+   distance is below 0.5 Bohr. This keyword requests not to perform the check.
 
 .. keyword:: NONORTHOGONAL ORBITALS
    :section: &CPMD
@@ -1490,7 +1490,7 @@ Keywords
    If this keyword is used together with other run options like OPTIMIZE
    WAVEFUNCTIONS, calculations with different reference cells can be performed.
 
-   With the additional keywork **SHOCK** a MD simulation using the multiscale
+   With the additional keyword **SHOCK** a MD simulation using the multiscale
    shock method [shock]_ is performed.
 
 .. keyword:: PATH INTEGRAL
@@ -1535,7 +1535,7 @@ Keywords
    :alternatives: [MODE, MDLOCK, TRUSTP, OMIN, PRJHES, DISPLACEMENT, HESSTYPE]
 
    Use the partitioned rational function optimizer (P-RFO) with a quasi-Newton
-   method for **optimization** of the **ionic positions**. For more informations,
+   method for **optimization** of the **ionic positions**. For more information,
    see [LSCAL]_. The approximated Hessian is updated using the Powell
    method [Powell71]_. This method is used to find **transition
    states** by **following eigenmodes** of the approximated
@@ -1591,7 +1591,7 @@ Keywords
 
    If any of these suboptions is present, the **microiterative transition state
    search** scheme for **optimization** of the **ionic positions** is used. For
-   more informations, see [LSCAL]_. A combination of the **L-BFGS**
+   more information, see [LSCAL]_. A combination of the **L-BFGS**
    and **P-RFO** methods is employed for linear scaling search for transition
    states [LSCAL]_ [Turner99]_. Before each P-RFO step in the reaction
    core towards the transition state, the **environment** is fully **relaxed**
@@ -2440,6 +2440,14 @@ Keywords
 
                   WANNIER WFNOUT PARTIAL
                      5  8
+
+   .. figure:: ../fig/b2h6-wannier.png
+      :width: 40%
+      :alt: Wannier orbitals of diborane
+
+      Isosurfaces of the localized Wannier orbitals of diborane,
+      B\ :sub:`2`\ H\ :sub:`6`: the four two-center B-H bonds (blue) and the
+      two three-center B-H-B bonds (red).
 
 .. keyword:: WOUT
    :section: &CPMD

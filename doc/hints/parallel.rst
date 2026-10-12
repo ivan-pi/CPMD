@@ -50,6 +50,17 @@ strategy has to be chosen at compile time.
    Forschungszentrum Jülich, NIC Series, Vol. 1 (2000), 301-449. For recent
    developments and for a perspective see http://www.cpmd.org.
 
+   .. figure:: ../fig/fft-flowchart.png
+      :width: 80%
+      :alt: Flowcharts of the density calculation and of the application of the local potential
+
+      The two basic operations that dominate the use of FFTs in a plane wave
+      code. Left: the orbitals :math:`c_i(\mathbf{G})` are transformed to real
+      space and their squares are accumulated to the density
+      :math:`n(\mathbf{R})`. Right: the local potential is applied to an
+      orbital in real space, and the product is transformed back to
+      reciprocal space.
+
    When selecting **NSTBLK** for :kw:`BLOCKSIZE STATES` it
    is important to take into account the granularity of the problem at hand.
    For example, in cases where the number of :kw:`STATES` is smaller

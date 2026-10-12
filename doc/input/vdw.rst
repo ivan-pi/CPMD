@@ -40,8 +40,8 @@ Keywords
    :target: NO CONTRIBUTION
    :section: &VDW
 
-   If the :kw:`DCACP` van der Waals-correction scheme is adpoted, the
-   indeces of atomic species (in the same order as specified in the &ATOMS
+   If the :kw:`DCACP` van der Waals-correction scheme is adopted, the
+   indices of atomic species (in the same order as specified in the &ATOMS
    section) that shall not contribute to the dispersion forces (capping atoms,
    metals...) are read from the next line.
 

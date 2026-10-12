@@ -158,7 +158,7 @@ Keywords
    :alternatives: [NUMBER]
 
    Set the plane wave energy cutoff for the density. The value is read from the
-   next line. The density cutoff is usally automatically determined from the
+   next line. The density cutoff is usually automatically determined from the
    wavefunction :kw:`CUTOFF` via the :kw:`DUAL` factor.
 
    With the additional flag **NUMBER** the number of plane waves can be specified

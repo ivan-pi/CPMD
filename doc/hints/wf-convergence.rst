@@ -53,6 +53,15 @@ beginning of a geometry optimization or this is just the start of a MD) you can
 relax the convergence criteria to :math:`10^{-3}` or :math:`10^{-4}` and do
 some geometry steps. After that optimization will be easier.
 
+.. figure:: ../fig/bo-forces.*
+   :width: 75%
+   :alt: RMS error of the ionic forces versus the largest element of the electronic gradient
+
+   Error of the ionic forces as a function of the convergence of the
+   wavefunction, measured by the largest element of the electronic gradient
+   (see :kw:`CONVERGENCE ORBITALS <CONVERGENCE 2>`). The total energy is
+   correct to machine precision long before the forces are.
+
 Some general remarks on comparing the final energies:
 
 Converge the wavefunction very well, i.e. set :kw:`CONVERGENCE`

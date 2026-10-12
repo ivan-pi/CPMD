@@ -37,6 +37,15 @@ box are not important.
 
 Further requirements on the Poisson solvers:
 
+.. figure:: ../fig/hockney.*
+   :width: 90%
+   :alt: Schematic of the Hockney method
+
+   Schematic of Hockney's method: the charge density of the isolated system
+   (top) is placed in a computational box of twice the size, so that the
+   periodic images in the enlarged box do not interact with the system; the
+   bottom row sketches the resulting electrostatic potential.
+
 HOCKNEY Method:
 
 -  molecule has to be in the center of the box
@@ -58,7 +67,7 @@ TUCKERMAN-MARTYNA Method:
    of the electron charge distribution (check the density after a single-point
    wavefunction optimization).
 
--  expensive for large systems, smaller boxes might be used without loosing too
+-  expensive for large systems, smaller boxes might be used without losing too
    much accuracy
 
 -  :kw:`SURFACE` or :kw:`POLYMER` are not available
@@ -81,3 +90,21 @@ difficult cases such as charged molecules, where the calculation in an isolated
 box is recommended. The PBC calculation is always cheaper for a box of the same
 size, so for a neutral molecule such as water molecule you would save time and
 memory by not using :kw:`SYMMETRY` 0.
+
+.. figure:: ../fig/boxsize-sym1.*
+   :width: 100%
+   :alt: Energy profiles along a reaction coordinate for different box sizes
+
+   Energy profile along a reaction coordinate computed with periodic boundary
+   conditions in simple cubic cells (``SYMMETRY 1``) with edge lengths from
+   8 to 25 Å, and the CPU time of each calculation (bars), for two
+   different setups (left and right panel). In the left panel the profile
+   depends strongly on the cell size; in the right panel it is converged
+   already for the smallest cell, while the CPU time grows rapidly with the
+   cell size.
+
+   .. todo::
+
+      MISSING: the system and the parameter that distinguishes the two panels
+      (labelled ``r025`` and ``r045`` in the original figure files) are not
+      documented.

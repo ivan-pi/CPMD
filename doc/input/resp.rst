@@ -156,7 +156,7 @@ Keywords
    The :kw:`SCALE` option allows to specify them in units of the
    reciprocal cell vectors.
 
-   The line after **KPERT** has to contain the the total number of k-points
+   The line after **KPERT** has to contain the total number of k-points
    :math:`(NKPTS)`, which have then to be given by their coordinates and the
    associated weights :math:`(RK,WK)` in the format:
 

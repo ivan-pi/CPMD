@@ -64,7 +64,7 @@ FAQ on warnings and errors:
 specific cases. Usually, if an error is encountered, every task writes to a
 file called *LocalError-X-X-X.log* (where :math:`x` denotes a task ID), where
 you will find an *error message*, the *procedure* and *file name* where the
-error occured, as well as a *call stack* (although the latter may sometimes be
+error occurred, as well as a *call stack* (although the latter may sometimes be
 incomplete). In case the error message is empty, you may have to consult the
 source code directly.
 
@@ -73,7 +73,7 @@ insufficient amount of RAM available for a single task.
 
 .. _faqwannier:
 
-**Q:** Could anybody explain to me the follwing error in the cpmd output during
+**Q:** Could anybody explain to me the following error in the cpmd output during
 CP Molecular Dynamics runs with the flag :kw:`WANNIER WFNOUT`
 LIST DENSITY?
 
@@ -255,6 +255,17 @@ Kleinman-Bylander separation, one also has to be careful to avoid so called
 ghost states (e.g. many transition metals need LOC=\ :math:`l` with :math:`l`
 being an angular momentum smaller than default value which is highest).
 
+.. figure:: fig/oxygen-pseudopotential.*
+   :width: 90%
+   :alt: Pseudo and all-electron wavefunctions, radial densities and pseudopotentials of oxygen
+
+   Example of a norm-conserving pseudopotential for oxygen with a core radius
+   :math:`r_c = 1.044` bohr for the *s* and *p* channels. Top left: pseudo
+   (solid) and all-electron (dashed) 2\ *s* and 2\ *p* radial wavefunctions,
+   which agree beyond :math:`r_c`. Top right: pseudo valence and true core
+   radial densities. Bottom: screened (left) and ionic, i.e. unscreened
+   (right), pseudopotentials for the *s* and *p* channels.
+
 Goedecker pseudopotentials are stored in an analytical form, that ensures the
 separability, but they usually need a higher (sometimes much higher) plane wave
 cutoff than the corresponding Troullier-Martins counterparts. Also the creation
@@ -286,7 +297,7 @@ a quick test with a numerical (Troullier-Martins) pseudopotential.
 
 Generally, the highest possible value of LMAX depends on the highest angular
 momentum for which a “channel” was created in the pseudopotential. In the
-pseudopotential file you can see this from the number of coloumns in the
+pseudopotential file you can see this from the number of columns in the
 &POTENTIAL section. The first is the radius, the next ones are the orbital
 angular momenta (s, p, d, f,…). As an example you can determine a potential for
 carbon using f-electrons and set LMAX=F. Since the f-state is not occupied in
@@ -567,7 +578,7 @@ FAQ on input parameters:
 -  I want to collide fast atoms against surfaces. Why are the :ref:`initial velocities given using the VELOCITIES keyword <faqvelocities>` not
    considered in the calculation?
 
--  I want to to run CPMD with :ref:`basis sets equivalent to Gaussian <faqgaussianbasis>` 6-31+G(d) and 6-311+G(2d,p). How do i set
+-  I want to run CPMD with :ref:`basis sets equivalent to Gaussian <faqgaussianbasis>` 6-31+G(d) and 6-311+G(2d,p). How do I set
    up the &BASIS section?
 
 -  :ref:`How do I add support for a new functional? <faqnewdft>`
@@ -612,7 +623,7 @@ option
     KOHN-SHAM ENERGIES
      n
 
-where n ist the number of unoccupied orbitals. This will diagonalize the
+where n is the number of unoccupied orbitals. This will diagonalize the
 Kohn-Sham Potential (defined by the occupied orbitals alone).
 
 To test if everything goes fine, you can check the total energy printed at the
@@ -705,7 +716,7 @@ velocities are set to zero.
 
 .. _faqgaussianbasis:
 
-**Q:** I want to to run CPMD with basis sets equivalent to Gaussian 6-31+G(d)
+**Q:** I want to run CPMD with basis sets equivalent to Gaussian 6-31+G(d)
 and 6-311+G(2d,p). How do I set up the &BASIS section?
 
 **A:** You should be able to construct inputs from the description in this
@@ -752,7 +763,7 @@ results I get are most erratic, or they require very high values for the
 **A:** The Minnesota functionals require unusually dense integration grids.
 Simply increasing the cutoff will introduce numerical noise and make the
 wavefunction optimisation unstable. This issue can be overcome by increasing
-the :kw:`DUAL` up to 8-12. A detailled assessment of these effects
+the :kw:`DUAL` up to 8-12. A detailed assessment of these effects
 along with recommendations for appropriate values can be found in the following
 reference: M.P. Bircher, P. Lopez-Tarifa and U. Rothlisberger: *J. Chem. Theory
 Comput.*, **15** (1), 557 (2019). DOI: 10.1021/acs.jctc.8b00897
@@ -770,7 +781,7 @@ obtained in Gaussian basis sets may occasionally differ by more than just
 chemical accuracy from the plane wave results. This effect is not limited to
 plane waves, it can also be observed - to a lesser extent - when comparing
 plane waves and Slater functions, and can be rather pronounced when comparing
-Gaussian and Slater functions. A detailled study of basis set effects is
+Gaussian and Slater functions. A detailed study of basis set effects is
 provided in the following article: M.P. Bircher, P. Lopez-Tarifa and U.
 Rothlisberger: *J. Chem. Theory Comput.*, **15** (1), 557 (2019). DOI:
 10.1021/acs.jctc.8b00897

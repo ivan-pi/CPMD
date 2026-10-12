@@ -42,7 +42,7 @@ During the run cpmd.x creates different outputs:
 
 In case CPMD quits with a non-zero exit status, an error message is written to
 a file called *LocalError-X-X-X.log* by every task, indicating the procedure in
-which the error occured and the call stack. In certain cases (mostly when
+which the error occurred and the call stack. In certain cases (mostly when
 processing the input), more ample error information is written to the output
 unit as well.
 
