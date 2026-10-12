@@ -105,13 +105,13 @@ performance of the optimization.
 
 Generally, the keyword :kw:`LINEAR RESPONSE` in the &CPMD
 input section initiates the calculation. In the section &RESP, the type of the
-perturbation needs to be specified. Either one of the following keywords must
+perturbation needs to be specified. Exactly one of the following keywords must
 appear:
 
    :kw:`PHONON` :kw:`LANCZOS` :kw:`RAMAN`
    :kw:`FUKUI` :kw:`KPERT` :kw:`NMR` :kw:`EPR`
    :kw:`HARDNESS` :kw:`EIGENSYSTEM`
-   :kw:`INTERACTION` :kw:`OACP`
+   :kw:`INTERACTION` :kw:`OACP` DENSITY :kw:`VOA`
 
 The first six types are discussed in detail in the following. An overview is
 also contained in the file respin_p_utils.mod.F90. In addition to the specific
@@ -142,7 +142,7 @@ NB: The linear response code works with all cell symmetries [1]_, but it is
    through the dependence of the perturbation Hamiltonian :math:`H^{(1)}` on
    the perturbation density :math:`n^{(1)}`. Therefore, the analytic formula
    has a tendency to overshoot. This is corrected by an empirical prefactor
-   which is controlled by this option. Default is 0.7.
+   which is controlled by this option. Default is 0.8.
 
 -  **CONVERGENCE:** The criterion which determines when convergence is reached
    is that the maximum element of the gradient of the energy with respect to
@@ -641,8 +641,9 @@ speeds up convergence.
 
 **NMR input**
 
-The options which control the specific NMR features are discussed below. None
-of them requires an argument, they can all be put in the same line.
+The options which control the specific NMR features are discussed below.
+Except for **OVERLAP**, none of them requires an argument, and they can all be
+put in the same line. Further options are listed in the :kw:`NMR` entry.
 
 -  **RESTART:** The run is restarted from a previous stop. The user has to take
    care that the required files RESTART.\ *xxx* (where *xxx* are NMR, p_x, p_y,

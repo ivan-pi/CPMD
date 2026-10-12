@@ -7,6 +7,21 @@ Response calculations. This section is always evaluated, even if it is not used.
 
 The section starts with ``&RESP`` and ends with ``&END``.
 
+.. note::
+
+   In ``&RESP`` keywords are recognized as substrings anywhere in a line, so
+   several keywords may be put on one line (e.g. ``NMR NOOPT FAST``) and
+   abbreviations such as ``CONVERGE``, ``REALSPACE``, ``EIGEN``,
+   ``INTERACT``, ``ISOLAT`` are sufficient. The keywords :kw:`EPR` and
+   :kw:`ATOMLIST`, the options of :kw:`NMR`, :kw:`EPR` and :kw:`VOA` and
+   several :kw:`INTERACTION` sub-keywords are only recognized if they are
+   preceded by a blank; indent such lines.
+
+   Exactly one of :kw:`PHONON`, :kw:`LANCZOS`, :kw:`RAMAN`, :kw:`FUKUI`,
+   :kw:`KPERT`, :kw:`NMR`, :kw:`EPR`, :kw:`HARDNESS`, :kw:`EIGENSYSTEM`,
+   :kw:`INTERACTION`, :kw:`OACP` ``DENSITY`` and :kw:`VOA` must be given;
+   otherwise the program stops with "REQUESTED FLAGS INCONSISTENT".
+
 Summary
 -------
 
@@ -73,6 +88,12 @@ Keywords
      tuning.
    | **Default** value is **3** for NMR and **99** otherwise.
 
+   If used together with :kw:`NMR` or :kw:`EPR`, :kw:`CG-ANALYTIC` must be
+   placed after the ``NMR``/``EPR`` line, otherwise its value is
+   overwritten.
+
+.. source: src/respin_p_utils.mod.F90:1028
+
 .. keyword:: CG-FACTOR
    :section: &RESP
 
@@ -134,23 +155,44 @@ Keywords
 .. keyword:: EIGENSYSTEM
    :section: &RESP
 
-   Not documented.
+   Computes eigenstates of the (density) response operator by a Lanczos
+   procedure with complete reorthogonalization. Four values are read from
+   the next line: the maximum dimension of the Lanczos space, the number of
+   desired eigenstates, the convergence threshold and a shift applied to
+   the response operator. The number of eigenstates must be larger than 2
+   and at least 20 smaller than the Lanczos dimension; the threshold must
+   lie between :math:`10^{-8}` and :math:`10^{-2}` (the program stops
+   otherwise). Detected as the substring ``EIGEN``.
+
+   .. todo::
+
+      MISSING: physical meaning of the eigenstates (softness/response
+      eigenmodes), output files, units of the shift.
+
+.. source: src/respin_p_utils.mod.F90:502
 
 .. keyword:: EPR
    :section: &RESP
    :notes: options
+   :options: {CSGT, FAST, NOLOC, NOVIRTUAL, WANNIERCENTERS, LLC, FORCEX,
+              FORCEY, FORCEZ, VERBOSE, PSI0, RHO0, NOSMOOTH, HYP}
 
    Calculate the EPR :math:`g` tensor for the system. This routine accepts most,
    if not all, of the options available in the NMR routine (RESTART, NOSMOOTH,
-   NOVIRTUAL, PSI0, RHO0, OVERLAP and FULL). Most important new options are:
+   NOVIRTUAL, PSI0, RHO0, OVERLAP and FULL). The options on the ``EPR`` line
+   have the same meaning as for :kw:`NMR` (``CURRENT``, ``TRIPACK`` and
+   ``SIXPACK`` are not available). ``EPR`` itself must be preceded by at
+   least one blank (indent the line), otherwise it is not recognized. Most
+   important new options are:
 
    **FULL SMART**: does a calculation with improved accuracy. A threshold value
-   (between 0 and 1) must be present on the next line. The higher the threshold
-   value, the lower the computational cost, but this will also reduce the accuracy
-   (a bit). Typically, a value of 0.05 should be fine.
+   between 0 and 0.1 must be present on the next line (larger values stop the
+   program). The higher the threshold value, the lower the computational
+   cost, but this will also reduce the accuracy (a bit). Typically, a value
+   of 0.05 should be fine. See :kw:`SMART`.
 
-   **OWNOPT**: for the calculation of the :math:`g` tensor, an effective potential
-   is needed. By default, the EPR routine uses the local potential
+   **OWNPOT**: for the calculation of the :math:`g` tensor, an effective
+   potential is needed. By default, the EPR routine uses the local potential
    (:math:`V_{LOC} = V_{PP,LOC} + V_{HARTREE} + V_{XC}`). This works well with
    Goedecker pseudopotentials, but rather poor with Troullier-Martins
    pseudopotentials. When using this option, the following potential is used
@@ -158,12 +200,15 @@ Keywords
 
    .. math:: V_{EFF} = -\frac{Z}{r}\mathrm{erf}(r/r_c) + V_{HARTREE} + V_{XC}
 
-   and :math:`r_c` (greater than 0) is read on the next line.
+   and :math:`r_c` (greater than 0) is read on the next line. See
+   :kw:`OWNPOT`.
 
    **HYP**: calculates the hyperfine tensors. See epr_hyp_utils.mod.F90 for
    details.
 
    Contact Reinout.Declerck@UGent.be should you require further information.
+
+.. source: src/respin_p_utils.mod.F90:768
 
 .. keyword:: FASTDEXC
    :section: &RESP
@@ -177,7 +222,7 @@ Keywords
 
 .. keyword:: FUKUI
    :section: &RESP
-   :alternatives: [N=nf]
+   :alternatives: [N=nf, COEFFICIENTS]
 
    Calculates the response to a change of occupation number of chosen orbitals.
    The indices of these orbitals are read from the following nf lines (**default
@@ -197,7 +242,14 @@ Keywords
          -j -1.0
 
    corresponds to the response to taking one electron from orbital i and put it in
-   orbital j.
+   orbital j. A missing weight defaults to 1.0; a non-negative orbital number
+   stops the program.
+
+   With ``COEFFICIENTS`` (detected as ``COEF``) the weights are used as
+   coefficients of a single linear combination of the orbitals (normalized
+   by the code), and the response to this combination is computed.
+
+.. source: src/respin_p_utils.mod.F90:517
 
 .. keyword:: HAMILTONIAN CUTOFF
    :target: HAMILTONIAN CUTOFF RESP
@@ -210,12 +262,38 @@ Keywords
 .. keyword:: HARDNESS
    :section: &RESP
 
-   Not documented.
+   Diagonalizes the hardness kernel :math:`dv(r)/dn(r)` by a Lanczos
+   procedure. The same four values as for :kw:`EIGENSYSTEM` are read from
+   the next line (Lanczos dimension, number of states, convergence
+   threshold, shift). The number of states must be at least 1 and at least
+   20 smaller than the Lanczos dimension.
+
+   .. todo::
+
+      MISSING: physical meaning and output.
+
+.. source: src/respin_p_utils.mod.F90:509
 
 .. keyword:: INTERACTION
    :section: &RESP
 
-   Not documented.
+   Perturbation-theory calculation of the interaction between molecules
+   described by (rotated/displaced) Wannier functions. Detected as the
+   substring ``INTERACT``. The behaviour is controlled by sub-keywords that
+   are only recognized after :kw:`INTERACTION` (on the same or a later
+   line): :kw:`LINEARSCALING`, :kw:`ORTHOGONAL`, :kw:`LMAX`, :kw:`NMOL`,
+   :kw:`NSAVESTATE`, :kw:`SELFCONSISTENT`, :kw:`SCFPTTOL`, :kw:`THETA`,
+   :kw:`VEC`, :kw:`DX`, :kw:`WLOAD`, :kw:`WSAVE`, :kw:`NOROT`,
+   :kw:`WGAUSSIAN`, :kw:`MULTIREF`, :kw:`TRICK`, :kw:`RESTRAINED`,
+   :kw:`NOLOC`, :kw:`WCPREDICT`, :kw:`FASTDEXC`, :kw:`SAVELOCW0`,
+   :kw:`ATOMICWAVEFUNCTION`, :kw:`ATOMICRHO`, :kw:`NONORTHOGWANNIER`,
+   :kw:`SIMPLEMODEL` and :kw:`MANNOPT`.
+
+   .. todo::
+
+      MISSING: physical description of the method and literature reference.
+
+.. source: src/respin_p_utils.mod.F90:548
 
 .. keyword:: ISOLATED
    :section: &RESP
@@ -269,7 +347,9 @@ Keywords
    standard wavefunction optimization). The second order correction to the
    :math:`\Gamma`-point total energy is calculated for the requested k-point mesh.
 
-   Further options are (each in a new line of the input file ):
+   Further options are (each in a new line of the input file, directly
+   after the k-point input; the first line that is not one of these options
+   ends the list):
 
    WRITE_C1
       the 3 sets of response wfns are stored in three separate restart files.
@@ -282,7 +362,9 @@ Keywords
       reliable.
 
    READ_C1
-      the response wfns are read from RESTART.P\_{xyz}.
+      (on the same line as ``BUILD_C00`` or ``HAMILTONIAN``, not on a line of
+      its own) the response wfns are read from RESTART.P\_{xyz} instead of
+      being computed.
 
    BUILD_C00
       the set of k-dependent wfns (first order correction) is calculated from the
@@ -297,6 +379,19 @@ Keywords
    NORESTART
       no RESTART file is written.
 
+   ``BUILD_C00`` and ``HAMILTONIAN`` are mutually exclusive.
+   ``MONKHORSTPACK`` is detected as the substring ``MONKH``.
+
+   .. warning::
+
+      Because of the way the sub-options are read, :kw:`KPERT` and its
+      sub-options must not be the last lines of the ``&RESP`` section: the
+      ``&END`` line would then not be detected. Put at least one other
+      ``&RESP`` keyword (e.g. :kw:`CONVERGENCE <CONVERGENCE RESP>`) after
+      them.
+
+.. source: src/respin_p_utils.mod.F90:555
+
 .. keyword:: LANCZOS
    :section: &RESP
    :alternatives: [CONTINUE,DETAILS]
@@ -306,6 +401,11 @@ Keywords
    threshold for convergence on eigenvectors CONTINUE = argument for continuing
    Lanczos diagonalization from a previous run (reads file LANCZOS_CONTINUE)
    DETAILS = argument for verbosity. prints a lot of stuff
+
+   ``CONTINUE`` is detected as the substring ``CONT``. ``DETAILS`` may also
+   be given on a separate line.
+
+.. source: src/respin_p_utils.mod.F90:663
 
 .. keyword:: LINEARSCALING
    :section: &RESP
@@ -374,6 +474,9 @@ Keywords
 .. keyword:: NMR
    :section: &RESP
    :notes: options
+   :options: {CURRENT, CSGT, FAST, NOLOC, NOVIRTUAL, WANNIERCENTERS, LLC,
+              FORCEX, FORCEY, FORCEZ, NOSMOOTH, PSI0, RHO0, VERBOSE,
+              TRIPACK, SIXPACK}
 
    Calculate the NMR chemical shielding tensors for the system. Most important
    option: FULL, does a calculation with improved accuracy for periodic systems
@@ -381,6 +484,38 @@ Keywords
    for the same effect. *Be careful for non-hydrogen nuclei.* The shielding is
    calculated without contribution from the core electrons. Contact
    sebastia@mpip-mainz.mpg.de for further details.
+
+   The following options are given on the ``NMR`` line, each preceded by a
+   blank (see also :doc:`/hints/linear-response`):
+
+   * ``CURRENT``: write the current density and the nucleus-independent
+     chemical shift fields as cube files.
+   * ``CSGT``: use the CSGT method (default). Giving it explicitly disables
+     the automatic choice of ``NOVIRTUAL`` for isolated systems.
+   * ``FAST``: omit some time-consuming operations.
+   * ``NOLOC``: use canonical orbitals instead of Wannier functions (only
+     for molecules; ``NOVIRTUAL`` is recommended instead).
+   * ``NOVIRTUAL`` (detected as ``NOVIRT``): use the same virtual cell
+     (the unit cell) for all orbitals; implies ``NOLOC``. Default for
+     isolated systems.
+   * ``WANNIERCENTERS`` (detected as ``WANNIER``): center the virtual cells
+     at the Wannier centers.
+   * ``LLC``: put the border of each virtual cell where the orbital density
+     is minimal (default for periodic systems; see :kw:`SIGMA`).
+   * ``FORCEX``, ``FORCEY``, ``FORCEZ``: use a common virtual cell origin
+     for all orbitals along x, y or z.
+   * ``NOSMOOTH``: switch off the smoothing of the position operator at the
+     border of the virtual cells.
+   * ``PSI0``, ``RHO0``: write the Wannier orbitals or the orbital densities
+     to files.
+   * ``VERBOSE``: print additional technical information.
+   * ``TRIPACK`` / ``SIXPACK``: distribute the perturbation calculations on
+     3 or 6 processor groups; implies :kw:`NOOPT`.
+
+   Separate keywords acting on NMR are :kw:`ISOLATED`, ``OVERLAP``,
+   ``FULL``, :kw:`RESTART <RESTART RESP>` and :kw:`SIGMA`.
+
+.. source: src/respin_p_utils.mod.F90:701
 
 .. keyword:: NOLOC
    :section: &RESP
@@ -442,7 +577,21 @@ Keywords
    :section: &RESP
    :alternatives: [DENSITY, REF_DENSITY, FORCE]
 
-   Not documented.
+   With ``OACP DENSITY`` three lines are read: an integer and a real; five
+   reals (step sizes); two reals (radii). With ``OACP FORCE`` two lines are
+   read with three values each. ``OACP REF_DENSITY`` reads no data. Only
+   ``OACP DENSITY`` counts as a response type; ``OACP REF_DENSITY`` or
+   ``OACP FORCE`` alone stop the program with "REQUESTED FLAGS
+   INCONSISTENT".
+
+   .. todo::
+
+      MISSING: meaning of all OACP parameters (the source comments refer to
+      "linking dummy atom optimization" with parabolic, steepest-descent and
+      Newton optimizers); whether REF_DENSITY/FORCE must be combined with
+      DENSITY.
+
+.. source: src/respin_p_utils.mod.F90:450
 
 .. keyword:: ORTHOGONAL
    :section: &RESP
@@ -459,8 +608,7 @@ Keywords
    :math:`V_{EFF} = -\frac{Z}{r}\mathrm{erf}(r/r_c) + V_{HARTREE} + V_{XC}`
    instead of the local potential for the calculation of the :math:`g`
    tensor. The smoothing radius :math:`r_c` (must be greater than zero) is
-   read from the next line. (Documented in the :kw:`EPR` entry under the
-   misspelled name OWNOPT.)
+   read from the next line. (Also described in the :kw:`EPR` entry.)
 
    Example::
 

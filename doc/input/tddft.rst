@@ -21,9 +21,13 @@ Keywords
 
    The maximum number of Davidson iterations, the convergence criteria for the
    eigenvectors and the maximal size of the Davidson subspace are set. The three
-   parameters *ndavmax, epstdav, ndavspace* are read from the next line.
+   parameters *ndavmax, epstdav, ndavspace* are read from the next line. The
+   plural form ``DAVIDSON PARAMETERS`` is also accepted.
 
-   **Default** values are **100**, **10\ :math:`^{-10}`** and **10**.
+   **Default** values are **100**, :math:`10^{-8}` (:math:`10^{-6}` for the
+   non-hermitian Davidson method used in full LR-TDDFT) and **10**.
+
+.. source: src/lr_in_utils.mod.F90:591
 
 .. keyword:: DAVIDSON RDIIS
    :section: &TDDFT
@@ -38,17 +42,28 @@ Keywords
 
 .. keyword:: DIAGONALIZER
    :section: &TDDFT
-   :options: {DAVIDSON,NONHERMIT,PCG}
+   :options: {DAVIDSON,NONHERMITIAN,PCG}
    :alternatives: [MINIMIZE]
 
-   Specify the iterative diagonalizer to be used.
+   Specify the iterative diagonalizer to be used. The non-hermitian Davidson
+   method is selected with ``NONHERMITIAN`` or with the two words
+   ``NONHERMIT DAVIDSON``. The alias ``DIAGONALIZATION`` is also accepted
+   for the keyword.
 
-   **Defaults** are *DAVIDSON* for the Tamm–Dancoff method, *NONHERMIT* (a
-   non-hermitian Davidson method) for TDDFT LR and *PCG* (Conjugate gradients) for
-   the optimized subspace method. The additional keyword *MINIMIZE* applies to the
-   PCG method only. It forces a line minimization with quadratic search.
+   **Defaults** are *DAVIDSON* for the Tamm–Dancoff method, the
+   non-hermitian Davidson method for full LR-TDDFT (:kw:`LR-TDDFT`, selected
+   automatically) and *PCG* (Conjugate gradients) for the optimized subspace
+   method. The additional keyword *MINIMIZE* applies to the PCG method only.
+   It forces a line minimization with quadratic search.
 
    **Default** is **not to use line minimization**.
+
+   .. warning::
+
+      ``NONHERMIT`` alone (the spelling of earlier versions of this manual)
+      is not recognized; the diagonalizer is then left unchanged.
+
+.. source: src/lr_in_utils.mod.F90:581
 
 .. keyword:: EXTPOT
    :section: &TDDFT
@@ -108,16 +123,21 @@ Keywords
 
    .. todo::
 
-      MISSING: required companion keywords (e.g. :kw:`STATES` with SINGLET
-      and TRIPLET, SOC settings in ``&CPMD``), physical reference.
+      MISSING: required companion keywords (e.g.
+      :kw:`STATES <STATES TDDFT>` with SINGLET and TRIPLET, SOC settings in
+      ``&CPMD``), physical reference.
 
 .. source: src/lr_in_utils.mod.F90:795
 
-.. keyword:: LOCALIZATION
+.. keyword:: LOCAL
    :section: &TDDFT
 
    Use localized orbitals in the TDDFT calculation. Default is to use canonical
-   orbitals.
+   orbitals. Earlier versions of this manual called this keyword
+   ``LOCALIZATION``; that spelling is not recognized (only the whole word
+   ``LOCAL`` matches).
+
+.. source: src/lr_in_utils.mod.F90:706
 
 .. keyword:: LR-TDDFT
    :section: &TDDFT
@@ -127,6 +147,7 @@ Keywords
 
 .. keyword:: LZ-SHTDDFT
    :section: &TDDFT
+   :options: {DIAGONAL}
 
    Non adiabatic (nonadiabatic, non-adiabatic) trajectory surface hopping scheme
    based on Landau-Zener transition probabilities. Excited state dynamics is
@@ -138,11 +159,26 @@ Keywords
    hopping scheme based on :kw:`ROKS` (see :kw:`SURFACE HOPPING`). See also the related approach based on
    Tully’s hopping probabilities :kw:`T-SHTDDFT`.
 
+   With the option ``DIAGONAL`` (alias ``DIAGONALIZE``) on the same line an
+   additional TDDFT diagonalization including the virtual orbitals is done
+   at each surface-hopping step.
+
+   .. todo::
+
+      MISSING: purpose of the DIAGONAL option.
+
+.. source: src/lr_in_utils.mod.F90:785
+
 .. keyword:: MOLECULAR STATES
    :section: &TDDFT
 
    Calculate and group Kohn–Sham orbitals into molecular states for a TDDFT
-   calculation.
+   calculation. The assignment of atoms and orbitals to molecules is read
+   from the section :ref:`&MOLSTATES <input-molstates>`. Used with
+   :kw:`TD_METHOD_A` (e.g. SAOP) in :kw:`ELECTRONIC SPECTRA` calculations;
+   not implemented for :kw:`LSD`, QM/MM and TDDFT forces.
+
+.. source: src/lr_in_utils.mod.F90:621
 
 .. keyword:: NACV_FULL
    :section: &TDDFT
@@ -193,20 +229,39 @@ Keywords
 .. keyword:: PCG PARAMETER
    :section: &TDDFT
 
-   The parameters for the PCG diagonalization are read from the next line. If
-   *MINIMIZE* was used in the :kw:`DIAGONALIZER` then the total
-   number of steps (default 100) and the convergence criteria (default
-   :math:`10^{-8}`) are read from the next line. Without minimization in addition
-   the step length (default 0.5) has also to be given.
+   The parameters for the PCG diagonalization are read from the next line:
+   the maximum number of steps (**default** 100), the convergence criterion
+   (**default** :math:`10^{-7}`) and the step length (**default** 0.5). The
+   step length is omitted if :kw:`PCG` MINIMIZE is set in the ``&CPMD``
+   section. The plural form ``PCG PARAMETERS`` is also accepted.
+
+   .. warning::
+
+      The number of values depends on the ``MINIMIZE`` option of :kw:`PCG`
+      in ``&CPMD``, not on the ``MINIMIZE`` option of :kw:`DIAGONALIZER`.
+      With ``DIAGONALIZER PCG MINIMIZE`` alone, three values are still
+      expected.
+
+.. source: src/lr_in_utils.mod.F90:608
 
 .. keyword:: PROPERTY
    :section: &TDDFT
    :options: { STATE }
 
-   Calculate properties of excited states at the end of an :kw:`ELECTRONIC SPECTRA` calculations. default is to calculate
-   properties for all states. Adding the keyword **STATE** allows to restrict the
-   calculation to only one state. The number of the state is read from the next
-   line.
+   Calculate properties of excited states at the end of an
+   :kw:`ELECTRONIC SPECTRA` calculation. Default is to calculate properties
+   for all states. Adding the keyword **STATE** is intended to restrict the
+   calculation to only one state, whose number is read from the next line.
+
+   .. warning::
+
+      The option ``STATE`` is currently not functional: the line
+      ``PROPERTY STATE`` is interpreted as :kw:`STATES <STATES TDDFT>`
+      (without a state type, so the number on the next line is ignored) and
+      :kw:`PROPERTY` is not switched on. Only ``PROPERTY`` without ``STATE``
+      works.
+
+.. source: src/lr_in_utils.mod.F90:709
 
 .. keyword:: RANDOMIZE
    :target: RANDOMIZE TDDFT
@@ -235,7 +290,7 @@ Keywords
    Reorder the localized states according to a distance criteria. The number of
    reference atoms is read from the next line. On the following line the position
    of the reference atoms within the set of all atoms has to be given. The keyword
-   :kw:`LOCALIZE` is automatically set. The minimum distance of the
+   :kw:`LOCAL` (``&TDDFT``) is automatically set. The minimum distance of the
    center of charge of each state to the reference atoms is calculated and the
    states are ordered with respect to decreasing distance. Together with the
    *SUBSPACE* option in a :kw:`TAMM-DANCOFF` calculation this can
@@ -247,7 +302,8 @@ Keywords
    The parameters for the orbital rotations in an optimized subspace calculation
    (see :kw:`TAMM-DANCOFF`) are read from the next line. The total
    number of iterations (default 50), the convergence criteria (default
-   :math:`10^{-6}`) and the step size (default 0.5) have to be given.
+   :math:`10^{-6}`) and the step size (default 0.5) have to be given. The
+   plural form ``ROTATION PARAMETERS`` is also accepted.
 
 .. keyword:: SH_LCT
    :section: &TDDFT
@@ -281,10 +337,14 @@ Keywords
    :section: &TDDFT
    :options: {MIXED,SINGLET,TRIPLET}
 
-   The number of states to be calculated is read from the next line. The type of
-   state *SINGLET, TRIPLET* can be given for non-spinpolarized calculations.
-   Default is to calculate one singlet state for LDA and 1 mixed state for LSD
-   calculations.
+   The number of states to be calculated is read from the next line. The type
+   of the states must be given on the keyword line: *SINGLET* or *TRIPLET*
+   (both may be given) for non-spin-polarized and *MIXED* for :kw:`LSD`
+   calculations. Without a type the number is ignored. **Default** is to
+   calculate one singlet state for LDA and one mixed state for LSD
+   calculations. The singular ``STATE`` is accepted as well.
+
+.. source: src/lr_in_utils.mod.F90:632
 
 .. keyword:: STORE_V_AB
    :section: &TDDFT
@@ -310,8 +370,9 @@ Keywords
    surface hopping according to the algorithm by Tully adapted to
    TDDFT [TDDFT-SH]_. The forces on the excited state surfaces are
    computed using TDDFT as for the adiabatic case. A sufficiently large number of
-   excited states must be declared using the keyword :kw:`STATES` in the
-   section &TDDFT. The initial running surface is specified with the keyword
+   excited states must be declared using the keyword
+   :kw:`STATES <STATES TDDFT>` in the section &TDDFT. The initial running
+   surface is specified with the keyword
    :kw:`FORCE STATE` in the section &TDDFT. This can change during
    the dynamics when a surface hop occurs. After a restart the value of the
    running state is taken from the file SH_STATE.dat (see below). The run produces
@@ -336,15 +397,28 @@ Keywords
    calculation. The subspace can be optimized at each step (not recommended).
    Default is to use all states.
 
+   The spelling ``TAMM DANCOFF`` (two words) is also accepted. With
+   ``SUBSPACE`` the number of occupied orbitals in the subspace is read from
+   the next line; together with :kw:`REORDER` or :kw:`REORDER LOCAL` this
+   selects which orbitals are included. With ``SUBSPACE``, ``OPTIMIZE``
+   optimizes the subspace by orbital rotations (:kw:`ROTATION PARAMETER`)
+   and switches the diagonalizer to PCG.
+
+.. source: src/lr_in_utils.mod.F90:749
+
 .. keyword:: TD_METHOD_A
    :target: TD METHOD A
    :section: &TDDFT
-   :alternatives: [{\em functionals}]
+   :options: {LDA, BP, PBE, PBE0, BLYP, OLYP, HCTH, SAOP, LB94, GLLB, B3LYP}
 
    Use a different potential for the eigenvalue difference part of the response
    equations than was used to generate the ground state orbitals. The potential
-   generating functional has to be given after the keyword. For possible
-   functionals see the code. Most likely you want to use the **SAOP** functional.
+   generating functional has to be given after the keyword, on the same
+   line: one of ``LDA``, ``BP``, ``PBE``, ``PBE0``, ``BLYP``, ``OLYP``,
+   ``HCTH``, ``SAOP``, ``LB94``, ``GLLB`` or ``B3LYP``; without a valid
+   choice the program stops. Most likely you want to use the **SAOP**
+   functional, possibly together with :kw:`MOLECULAR STATES`. Not available
+   with :kw:`XC_DRIVER` (the program stops).
 
    This functional does not affect the choice of functional used in the TDDFT
    kernel. The kernel functional is set in the &DFT section. It is either the

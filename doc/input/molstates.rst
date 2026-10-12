@@ -24,7 +24,7 @@ Syntax::
        n(1) n(2) ... n(NMOL)
    &END
 
-:kw:`MOLECULES` must be given before :kw:`STATES`.
+:kw:`MOLECULES` must be given before :kw:`STATES <STATES MOLSTATES>`.
 
 Summary
 -------

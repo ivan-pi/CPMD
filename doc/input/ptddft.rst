@@ -10,6 +10,13 @@ induced dipole fluctuation) [taver_eh]_ [taver1]_.
 
 The section starts with ``&PTDDFT`` and ends with ``&END``.
 
+.. note::
+
+   In ``&PTDDFT`` only the first blank-delimited word of a keyword line is
+   evaluated (the line is read list-directed), and keywords are case
+   sensitive. All arguments are read from the following line(s). Two-word
+   keywords such as :kw:`GAUGEFIELD PARA` are therefore not recognized.
+
 Summary
 -------
 
@@ -22,7 +29,8 @@ Keywords
    :section: &PTDDFT
 
    Specifies the accuracy to be reached in the Cayley propagation scheme used in
-   Ehrenfest type of dynamics and spectra calculation.
+   Ehrenfest type of dynamics and spectra calculation. The value is read from
+   the next line. **Default** is :math:`10^{-10}`.
 
 .. keyword:: ADD_MASK
    :section: &PTDDFT
@@ -177,8 +185,13 @@ Keywords
    :section: &PTDDFT
 
    A Dirac type pulse is applied to the KS orbitals before propagation. This
-   keyword is used with the principal keyword :kw:`PROPAGATION SPECTRA`. The intensity of the perturbing field is
-   read from the next line.
+   keyword is used with the principal keyword :kw:`PROPAGATION SPECTRA`. The
+   intensity of the perturbing field is read from the next line.
+
+   Equivalent to :kw:`EXT_POTENTIAL` together with :kw:`PERT_TYPE` 1 and
+   :kw:`PERT_AMPLI` (the amplitude is the value read from the next line). To
+   select another perturbation type, :kw:`PERT_TYPE` must be given after
+   this keyword.
 
 .. keyword:: FIX_SPIN_DENS
    :section: &PTDDFT
@@ -210,11 +223,13 @@ Keywords
    is the width and ``gdfreq`` the center of a Gaussian envelope. ``gimax``
    is not used.
 
-   **Warning:** the keyword line in ``&PTDDFT`` is read list-directed, so
-   only the first word (``GAUGEFIELD``) is kept and the two-word pattern
-   ``GAUGEFIELD PARA`` can never be matched. The keyword is therefore
-   currently ineffective unless the whole line is enclosed in quotes
-   (``'GAUGEFIELD PARA'``).
+   .. warning::
+
+      The keyword line in ``&PTDDFT`` is read list-directed, so only the
+      first word (``GAUGEFIELD``) is kept and the two-word pattern
+      ``GAUGEFIELD PARA`` can never be matched. The keyword is therefore
+      currently ineffective unless the whole line is enclosed in quotes
+      (``'GAUGEFIELD PARA'``).
 
    .. todo::
 
@@ -230,9 +245,11 @@ Keywords
    (``gaugefield%nperiod``, **Default** 5) from the next line. The value is
    only referenced in commented-out code and has no effect.
 
-   **Warning:** as for :kw:`GAUGEFIELD PARA`, only the first word of the
-   keyword line is kept by the parser, so this two-word keyword can never be
-   matched (unless the line is enclosed in quotes).
+   .. warning::
+
+      As for :kw:`GAUGEFIELD PARA`, only the first word of the keyword line
+      is kept by the parser, so this two-word keyword can never be matched
+      (unless the line is enclosed in quotes).
 
    .. todo::
 
@@ -335,34 +352,57 @@ Keywords
    Defines the number of cycles (time steps) used in the propagation of the
    perturbed KS orbitals in a :kw:`PROPAGATION SPECTRA`
    calculation. The number of cycles is read from the next line.
+   **Default** is the value of :kw:`MAXSTEP` (``&CPMD``) for
+   :kw:`PROPAGATION SPECTRA` and 1 for Ehrenfest dynamics.
 
 .. keyword:: PERT_AMPLI
    :target: PERT-AMPLI
    :section: &PTDDFT
 
-   The amplitude of the perturbation used with :kw:`MOLECULAR DYNAMICS` EH or :kw:`PROPAGATION SPECTRA` is read from the next line.
+   The amplitude of the perturbation used with :kw:`MOLECULAR DYNAMICS` EH or
+   :kw:`PROPAGATION SPECTRA` is read from the next line. **Default** is
+   :math:`10^{-15}`. The amplitude is also used for the fields of
+   :kw:`TD_POTENTIAL` and :kw:`PIPULSE`.
 
 .. keyword:: PERT_DIRECTION
    :target: PERT-DIRECTION
    :section: &PTDDFT
 
-   Use with MOLECULAR DYNAMICS EH or PROPAGATION SPECTRA to specify the direction
-   (x=1,y=2,z=3) of the perturbing field. The direction code (1,2,3) is read from
-   the next line.
+   Use with :kw:`MOLECULAR DYNAMICS` EH or :kw:`PROPAGATION SPECTRA` to
+   specify the direction (x=1, y=2, z=3) of the perturbing field. The
+   direction code is read from the next line. **Default** is 1. For the
+   time-dependent fields of :kw:`TD_POTENTIAL` and :kw:`PIPULSE` the values
+   4 (x and y components) and 5 (x, y and z components) are also accepted.
+   With a gauge field (``GAUGEFIELD`` or ``GAUGEPULSE`` in ``&CPMD``) values
+   larger than 3 are reset to 3.
 
 .. keyword:: PERT_TYPE
    :target: PERT-TYPE
    :section: &PTDDFT
 
-   The type of the static perturbation used with :kw:`MOLECULAR DYNAMICS` EH or :kw:`PROPAGATION SPECTRA` is read from the next line. 1: Dirac pulse,
+   The type of the static perturbation used with :kw:`MOLECULAR DYNAMICS` EH
+   or :kw:`PROPAGATION SPECTRA` is read from the next line. 1: Dirac pulse,
    2: Heaviside step function (constant value after :math:`t=0`).
+   **Default** is 1.
 
 .. keyword:: PIPULSE
    :section: &PTDDFT
 
-   Specifies a time dependent pi-pulse to be used with MOLECULAR DYNAMICS EH. Use
-   PIPULSE together with TD_POTENTIAL. The pulse strength is read from the next
-   line (see subroutine gaugepot_laser in td_utils.mod.F90 for further details).
+   Specifies a time-dependent pi-pulse for :kw:`MOLECULAR DYNAMICS` EH. Use
+   it together with :kw:`TD_POTENTIAL` (carrier frequency :math:`\omega`) and
+   :kw:`PERT_AMPLI` (field amplitude :math:`A`). The transition dipole
+   moment :math:`\mu_{AB}` of the targeted transition (not the pulse
+   strength) is read from the next line; the field is
+   :math:`E(t) = A \sin^2(2 A \mu_{AB} t) \cos(\omega t)`. The direction is
+   set with :kw:`PERT_DIRECTION` (1-5). **Default** for :math:`\mu_{AB}`
+   is 1 in Ehrenfest dynamics. See ``dext_pipot`` and ``gaugepot_laser`` in
+   ``td_utils.mod.F90``.
+
+   .. todo::
+
+      MISSING: units of :math:`\mu_{AB}` (presumably atomic units).
+
+.. source: src/read_prop_utils.mod.F90:195
 
 .. keyword:: PLANE_WAVE
    :section: &PTDDFT
@@ -430,23 +470,48 @@ Keywords
    :target: PROP-TSTEP
    :section: &PTDDFT
 
-   Propagation timestep used in Ehrenfest dynamics. It is used in the spectra
-   calculation (**PROPAGATION SPECTRA** ) to specify the time step for the
-   propagation of the KS orbitals.
+   Propagation time step (a.u.), read from the next line. For
+   :kw:`PROPAGATION SPECTRA` it defines the time step of the propagation of
+   the KS orbitals (**Default** is 0.05). For Ehrenfest dynamics
+   (:kw:`MOLECULAR DYNAMICS` EH) the electronic time step of ``&CPMD``
+   (:kw:`TIMESTEP` or :kw:`TIMESTEP ELECTRONS`) takes precedence: since it
+   has a non-zero default, :kw:`PROP_TSTEP` is only used if that time step
+   is explicitly set to zero. If both differ, the warning "time step setted
+   to ..." is printed. Ionic and electronic time steps are always set equal
+   in Ehrenfest dynamics.
 
-.. keyword:: RESTFILE
-   :target: RESTFILE PTDDFT
+.. keyword:: RESTART
+   :target: RESTART PTDDFT
    :section: &PTDDFT
 
-   Defines a restart code for the restart of the Ehrenfest dynamics (:kw:`MOLECULAR DYNAMICS` EH) and the propagation spectra
-   (:kw:`PROPAGATION SPECTRA`). The restart option is read
-   from the next line: 0(=default) restart from the (complex)wavefunctions in the
-   file wavefunctions. This option is used in case of a continuation run; 1.
-   restart from the orbital files WAVEFUNCTION.n, where :math:`n` is the index of
-   the KS orbital and runs from :math:`1` to the number of states (This states a
-   prepare in a previous run using the KOHN-SHAM ENERGIES principal keyword), 2;
-   restart from the orbitals stored in RESTART (obtained from a optimization run
-   with tight convergence (at least 1.D-7)).
+   Defines how the orbitals are initialized for Ehrenfest dynamics
+   (:kw:`MOLECULAR DYNAMICS` EH) and for :kw:`PROPAGATION SPECTRA`. An
+   integer code is read from the next line:
+
+   * 0 (**default**): read the complex orbitals from the file
+     ``wavefunctions`` written by a previous propagation run (continuation
+     run).
+   * 1: read the orbitals from the files ``WAVEFUNCTION.n``, where :math:`n`
+     runs from 1 to the number of states. These files are prepared in a
+     previous run with the :kw:`KOHN-SHAM ENERGIES` principal keyword. In
+     Ehrenfest dynamics the orbitals are normalized after reading.
+   * 2: start from the (real) orbitals stored in the ``RESTART`` file,
+     obtained from a wavefunction optimization with tight convergence (at
+     least :math:`10^{-7}`).
+
+   Any non-zero value switches on the start from real wavefunctions (as do
+   :kw:`IONIZE_FROM_STATE`, :kw:`IONIZE_FROM_RDM` and :kw:`FIX_SPIN_DENS`),
+   in which case the file ``wavefunctions`` is not read.
+
+   Example::
+
+      RESTART
+       2
+
+   Note that the keyword is ``RESTART``; :kw:`RESTFILE` is a different
+   keyword of the ``&CPMD`` section and is not recognized in ``&PTDDFT``.
+
+.. source: src/read_prop_utils.mod.F90:191
 
 .. keyword:: TD_POTENTIAL
    :target: TD-POTENTIAL
@@ -457,3 +522,9 @@ Keywords
    keyword :kw:`PIPULSE`. The frequency of the external field is read
    from the next line (in atomic units). For more information see subroutine
    gaugepot_laser in td_utils.mod.F90 .
+
+   Without :kw:`PIPULSE` the field is :math:`E(t)=A\,s(t)\cos(\omega t)`,
+   where :math:`A` is set with :kw:`PERT_AMPLI`, :math:`\omega` is the
+   frequency read from the next line and :math:`s(t)` switches the field on
+   linearly during the first 50 a.u. of time. The direction is set with
+   :kw:`PERT_DIRECTION`.
