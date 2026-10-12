@@ -35,6 +35,7 @@ option(CPMD_ENABLE_COVERAGE   "Instrument for coverage analysis (configure.sh -c
 set(CPMD_FFT "DEFAULT" CACHE STRING "FFT library without CPMD_CONFIG: DEFAULT (built-in) or FFTW3")
 set_property(CACHE CPMD_FFT PROPERTY STRINGS DEFAULT FFTW3)
 set(CPMD_MINPACK_LIBRARY "" CACHE FILEPATH "MINPACK library to link (configure.sh -minpack=), -D__MINPACK")
+option(CPMD_BUILD_TESTS       "Add the smoke tests in tests/ (run with ctest)" ON)
 
 if(CPMD_CONFIG)
   include(cmake/CPMDImportConfig.cmake)
@@ -93,6 +94,11 @@ ${_gromos_comment}     include 'Gromos/box.h'
 
 add_subdirectory(modules)
 add_subdirectory(src)
+
+if(CPMD_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
 
 # ---------------------------------------------------------------------------
 # Summary

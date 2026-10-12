@@ -1,0 +1,16 @@
+&ATOM
+ Z  =   1
+ ZV =   1
+ XC = 1100        .666667
+ TYPE = NORMCONSERVING GOEDECKER
+&END
+&INFO
+ Goedecker-Teter-Hutter LDA pseudopotential for H
+ S. Goedecker, M. Teter, J. Hutter, PRB 54, 1703 (1996)
+&END
+&POTENTIAL
+    GOEDECKER
+    0                                    LMAX
+    0.20000000                           RC
+    2  -4.18023680  0.72507482           #C  C1 C2
+&END

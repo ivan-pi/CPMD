@@ -105,6 +105,20 @@ Notes:
 | `CPMD_ENABLE_VDWLIB`       | `OFF`     | Grimme vdW library from `modules/vdw_lib`                 |
 | `CPMD_ENABLE_COVERAGE`     | `OFF`     | coverage instrumentation (GNU)                            |
 | `CPMD_MINPACK_LIBRARY`     |           | MINPACK library (`-D__MINPACK`)                           |
+| `CPMD_BUILD_TESTS`         | `ON`      | add the smoke tests in `tests/`                           |
+| `CPMD_TEST_NPROCS`         | `2`       | MPI processes used by the tests                           |
+
+## Tests
+
+`ctest --test-dir build` runs a few short calculations (`tests/`) and
+compares the final total energy with a reference value. MPI builds run them
+with `mpiexec -n 2`; set `MPIEXEC_EXECUTABLE`, `MPIEXEC_PREFLAGS` or
+`CPMD_TEST_NPROCS` to change that. These are smoke tests for the build, not a
+replacement for the CPMD regression test suite.
+
+The GitHub Actions workflow `.github/workflows/cmake.yml` builds CPMD with
+the gfortran versions of the Ubuntu runner (native configuration with and
+without MPI, and one `configure/` file) and runs the tests.
 
 ## Layout of the build
 

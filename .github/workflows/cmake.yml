@@ -1,0 +1,68 @@
+name: CMake build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Native CMake configuration (find_package for MPI, OpenMP, LAPACK)
+          - name: gfortran-13, MPI + OpenMP
+            gcc: 13
+            cmake-args: -DCPMD_ENABLE_MPI=ON -DCPMD_ENABLE_OPENMP=ON
+          - name: gfortran-12, serial
+            gcc: 12
+            cmake-args: -DCPMD_ENABLE_MPI=OFF
+          - name: gfortran-14, serial + OpenMP
+            gcc: 14
+            cmake-args: -DCPMD_ENABLE_MPI=OFF -DCPMD_ENABLE_OPENMP=ON
+          # Machine configuration from configure/ (mpif90 wrapper, gfortran-13)
+          - name: configure/CRAY-HPE-GFORTRAN-AMDEPYC
+            gcc: 13
+            cmake-args: -DCPMD_CONFIG=CRAY-HPE-GFORTRAN-AMDEPYC -DCPMD_ENABLE_OPENMP=ON
+            config: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-${{ matrix.gcc }} gfortran-${{ matrix.gcc }} ninja-build \
+            libopenmpi-dev openmpi-bin liblapack-dev libblas-dev
+
+      - name: Select compilers
+        if: ${{ !matrix.config }}
+        run: |
+          echo "FC=gfortran-${{ matrix.gcc }}" >> "$GITHUB_ENV"
+          echo "CC=gcc-${{ matrix.gcc }}" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja ${{ matrix.cmake-args }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-${{ strategy.job-index }}
+          path: build/tests/
+          if-no-files-found: ignore
