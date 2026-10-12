@@ -265,7 +265,7 @@ different updates to the Linux architecture files.
 loops, may not work in old compilers and is known to have troubles e.g. in old
 Intel Fortran Compilers (versions 11 and former ones). Please, check carefully
 your OS and your compiler before compiling blindly and refer to the discussion
-in http://openmp.org/forum/viewtopic.php?f=3&t=1023&start=10.
+in a thread of the (now closed) OpenMP forum.
 
 CPMD Version 4
 --------------

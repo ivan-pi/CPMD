@@ -13,7 +13,7 @@ done externally by IPHIGENIE.
 
 The implementation is based on a single executable, which links CPMD and the
 interface routines as libraries to the IPHIGENIE MD executable ’iffi’. For
-CPMD-3.17 a patch is provided on `www.cpmd.org <www.cpmd.org>`__ with example
+CPMD-3.17 a patch was provided on www.cpmd.org with example
 configurations for the compilation. For CPMD-4.0 and later the interface to
 IPHIGENIE is provided as a module. Here, using the configure.sh script with the
 option ``-iphigenie`` generates a makefile which builds the interface library

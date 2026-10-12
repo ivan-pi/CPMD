@@ -65,7 +65,7 @@ References
 
 .. [xcder] D. Egli and S. R. Billeter, Phys. Rev. B **69**, 115106 (2004).
 
-.. [gmxqmmm] P. K. Biswas, V. Gogonea, J. Chem. Phys. **123**,164114 (2005). The corresponding modifications to the Gromacs code are available at http://comppsi.csuohio.edu/groups/
+.. [gmxqmmm] P. K. Biswas, V. Gogonea, J. Chem. Phys. **123**,164114 (2005). The corresponding modifications to the Gromacs code were distributed at http://comppsi.csuohio.edu/groups/ (no longer available).
 
 .. [bgl] J. Hutter and A. Curioni, ChemPhysChem **6**, 1788-1793 (2005).
 
@@ -163,7 +163,7 @@ References
 
 .. [marx-savin-97] D. Marx and A. Savin, Angew. Chem. Int. Ed. Engl. **36**, 2077 (1997).
 
-.. [homeofelf] Check the ELF homepage http://www.cpfs.mpg.de/ELF/ for lots of useful information in particular on how ELF should be interpreted.
+.. [homeofelf] Check the former ELF homepage http://www.cpfs.mpg.de/ELF/ (available from the Internet Archive, https://web.archive.org/) for lots of useful information in particular on how ELF should be interpreted.
 
 .. [Kohut96] M. Kohut and A. Savin, Int. J. Quant. Chem. **60**, 875–882 (1996)
 
@@ -329,7 +329,7 @@ References
 
 .. [Raiteri05] P. Raiteri, A. Laio, F. L. Gervasio, C. Micheletti and M. Parrinello, J. Phys. Chem. B **110**, 3533 (2005).
 
-.. [Nair-inside-08] N. N. Nair, E. Schreiner and D. Marx inSiDE **6**, 30 (2008). http://inside.hlrs.de/htm/Edition\ :math:`\_02\_08`/article\ :math:`\_09`.html
+.. [Nair-inside-08] N. N. Nair, E. Schreiner and D. Marx inSiDE **6**, 30 (2008). 
 
 .. [chandler] C. Dellago, P. G. Bolhuis, F. S.Csajka, and D. Chandler, J. Chem. Phys. **108** 1964 (1998).
 

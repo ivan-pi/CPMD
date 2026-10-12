@@ -4,7 +4,9 @@ Questions and Answers
 =====================
 
 The following section is a slightly edited collection of questions and answers
-from the cpmd mailing list, cpmd-list@cpmd.org.
+from the former CPMD mailing list (cpmd-list@cpmd.org, no longer available).
+Today, questions can be asked in the issues and discussions of the OpenCPMD
+project on GitHub (https://github.com/OpenCPMD).
 
 How to Report Problems
 ----------------------
@@ -28,7 +30,7 @@ on.
 
 A useful article about how to ask questions the smart way is at:
 
-http://www.catb.org/~esr/faqs/smart-questions.html
+http://www.catb.org/esr/faqs/smart-questions.html
 
 .. _sec:expl-warn-error:
 

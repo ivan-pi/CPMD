@@ -9,9 +9,11 @@ interfaces for GAMESS, Gaussian, and …CPMD. Unlike in the Gromos/CPMD QM/MM
 interface code (see above) the main MD driver is in the classical code. The
 Gromacs/CPMD interface code is based on the EGO/CPMD interface and was
 developed by Pradip Kumar Biswas in the group of Valentin Gogonea at Cleveland
-State University. For additional information and downloads see
-http://comppsi.csuohio.edu/groups/qmmm.html, and the respective
-publication [gmxqmmm]_.
+State University. The code was distributed at
+http://comppsi.csuohio.edu/groups/qmmm.html, which is no longer available; see
+the respective publication [gmxqmmm]_. A newer, different coupling of CPMD
+and GROMACS is provided by MiMiC
+(https://manual.gromacs.org/current/reference-manual/special/mimic-qmmm.html).
 
 Technical Introduction
 ----------------------
@@ -83,6 +85,4 @@ QM/MM Examples
 --------------
 
 Example inputs for a H\ :math:`{}_2`\ O-dimer and an ethane molecule are
-bundled with the modified gromacs distribution from.
-
-http://comppsi.csuohio.edu/groups/qmmm.html,
+bundled with the modified Gromacs distribution (see above).

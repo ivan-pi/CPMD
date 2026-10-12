@@ -3,15 +3,19 @@
 About this manual
 =================
 
-Many members of the CPMD consortium (http://www.cpmd.org/) contributed to this
-manual. This version of the manual is based on a compilation by Barbara
+Many members of the CPMD consortium contributed to this manual. This version of the manual is based on a compilation by Barbara
 Kirchner, Ari P. Seitsonen and Jürg Hutter working at the Physical Chemistry
 Institute of the University of Zurich. Recent updates by Mauro Boero,
 Alessandro Curioni, Jürg Hutter, Axel Kohlmeyer, Nisanth Nair and Wolfram
 Quester.
 
-If you want to contribute or have constructive criticism please contact
-cpmd@cpmd.org.
+CPMD is now developed as open source by the OpenCPMD community at
+https://github.com/OpenCPMD. The original web site of the CPMD consortium,
+www.cpmd.org, together with its mailing list (cpmd-list@cpmd.org) and contact
+address (cpmd@cpmd.org), is no longer available. If you want to contribute or
+have constructive criticism, please open an issue or a pull request in the
+repository of the code, or use the discussions of the OpenCPMD organization on
+GitHub.
 
 .. _citation:
 
@@ -21,8 +25,8 @@ Citation
 Publications of results obtained with CPMD should acknowledge its use by an
 appropriate citation of the following kind:
 
-*CPMD, http://www.cpmd.org/,
-Copyright IBM Corp 1990-2019,
+*CPMD, https://github.com/OpenCPMD/CPMD,
+Copyright IBM Corp 1990-2023,
 Copyright MPI für Festkörperforschung Stuttgart 1997-2001*.
 
 Important constants and conversion factors
@@ -37,7 +41,7 @@ IMPORTANT NOTICE:
 As of CPMD version 3.15.1 all constants and conversion factors have been
 consolidated and updated to the CODATA 2006 data
 set\ [codata2006]_. For details see the file ``cnst.inc`` and
-http://physics.nist.gov/constants.
+https://physics.nist.gov/constants.
 
 +-------------------+---------------------------------------------------------+
 | *quantity*        | *conversion factor*                                     |
@@ -69,7 +73,7 @@ Recommendations for further reading
 
    Cambridge University Press, 2006, ISBN-13 978-0-521-81591-8
 
-   http://www.cambridge.org/9780521815918
+   https://doi.org/10.1017/CBO9780511755613
 
 -  **General introduction to Car-Parrinello simulation**
 
@@ -96,16 +100,14 @@ Recommendations for further reading
 
    Cambridge University Press, 2004, ISBN-13: 978-0-521-78285-2
 
-   http://electronicstructure.org
 
 -  **General overview about quantum simulation techniques**
 
    J. Grotendorst, D. Marx, and A. Muramatsu, *Quantum Simulations of Complex
    Many–Body Systems: From Theory to Algorithms*, (John von Neumann Institute
    for Computing, Forschungszentrum Jülich 2002); Printed Version: ISBN
-   3–00–009057–6 Electronic Version:
-   http://www.fz-juelich.de/nic-series/volume10/ Audio–Visual Version:
-   http://www.fz-juelich.de/video/wsqs/
+   3–00–009057–6. Electronic version:
+   https://juser.fz-juelich.de/record/24560/files/NIC-Band-10.pdf
 
 -  **Molecular dynamics simulation**
 
@@ -119,17 +121,23 @@ Recommendations for further reading
 
 -  **Pseudopotentials**
 
-   http://www.cpmd.org/documentation/useful-links
+   https://github.com/OpenCPMD/pseudopotentials-extended-library (benchmarked
+   pseudopotentials for CPMD)
 
-   http://www.cpmd.org/cpmd_download.html
+   https://github.com/OpenCPMD/GTH-pseudopotentials (Goedecker-Teter-Hutter
+   pseudopotentials for all elements)
 
-   http://cvs.berlios.de/cgi-bin/viewcvs.cgi/cp2k/potentials/Goedecker/cpmd/
+   https://github.com/cp2k/cp2k-data/tree/master/potentials/Goedecker/cpmd
+   (Goedecker pseudopotentials in CPMD format from CP2K)
 
-   http://www.fhi-berlin.mpg.de/th/fhi98md/fhi98PP/
+   https://doi.org/10.17632/kygjf563w3.1 (the fhi98PP pseudopotential
+   generator, CPC Program Library)
 
-   http://www.physics.rutgers.edu/~dhv/uspp/
+   https://www.physics.rutgers.edu/~dhv/uspp/ (Vanderbilt ultrasoft
+   pseudopotentials)
 
-   http://www.pwscf.org/pseudo.htm
+   https://pseudopotentials.quantum-espresso.org/ (pseudopotential library of
+   Quantum ESPRESSO)
 
 -  **Parallelization & Performance**
 

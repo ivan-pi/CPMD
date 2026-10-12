@@ -9,20 +9,21 @@ output are density-like files, trajectories and/or xyz-files. These can be
 visualized or analyzed with a number of different programs. Some of them are
 (in no specific order):
 
-Molden: (homepage:
-`http://www.cmbi.kun.nl/ schaft/molden/molden.html <http://www.cmbi.kun.nl/~schaft/molden/molden.html>`__
+- Molden (homepage: https://www.theochem.ru.nl/molden/)
 
-gOpenMol: (homepage: http://www.csc.fi/gopenmol/)
+- gOpenMol (no longer maintained)
 
-Molekel: (homepage: http://www.cscs.ch/molekel/)
+- Molekel (homepage: https://github.com/ugovaretto/molekel)
 
-VMD: (homepage: http://www.ks.uiuc.edu/Research/vmd/)
+- VMD (homepage: https://www.ks.uiuc.edu/Research/vmd/)
 
 Starting with version 1.8.2 VMD does fully support the CPMD trajectory format,
 xyz-movie format and Gaussian Cube files. Since version 1.8.3 VMD supports
 periodic display of non-orthogonal supercells. A tutorial on Visualization and
-Analysis of CPMD data with VMD can be found at
-http://www.theochem.ruhr-uni-bochum.de/go/cpmd-vmd.html.
+Analysis of CPMD data with VMD was available at
+http://www.theochem.ruhr-uni-bochum.de/go/cpmd-vmd.html; the tutorials of
+Axel Kohlmeyer are now archived at
+https://www.theochem.ruhr-uni-bochum.de/~legacy.akohlmey/.
 
 Density files
 -------------
@@ -39,7 +40,8 @@ Postprocessing
 
 These files are created in a binary format, they have to be transformed to a
 Gaussian cube-File format to be readable by visualization programs. The
-``cpmd2cube.x`` to convert the output can be download at www.cpmd.org and is
+``cpmd2cube.x`` to convert the output is part of the CPMD add-ons
+(https://github.com/OpenCPMD/Addons, directory ``cpmd2cube``) and is
 used in the following way:
 
 ::

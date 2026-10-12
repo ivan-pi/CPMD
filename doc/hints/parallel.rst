@@ -48,7 +48,7 @@ strategy has to be chosen at compile time.
    more about the distributed memory parallelization of CPMD consult D. Marx
    and J. Hutter, "Modern Methods and Algorithms of Quantum Chemistry",
    Forschungszentrum Jülich, NIC Series, Vol. 1 (2000), 301-449. For recent
-   developments and for a perspective see http://www.cpmd.org.
+   developments see https://github.com/OpenCPMD.
 
    .. figure:: ../fig/fft-flowchart.png
       :width: 80%

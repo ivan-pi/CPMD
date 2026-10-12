@@ -13,7 +13,7 @@ kinds of calculations (Transferability), but in practice one frequently has to
 make compromises between accuracy and impact on the computational effort when
 creating a pseudopotential. Therefore one always has to test pseudopotentials
 before using them on new systems. There are quite a large number of CPMD
-calculations published (see http://www.cpmd.org/cpmd_publications.html) which
+calculations published (see :doc:`/publications`) which
 can serve as a guideline.
 
 Since CPMD uses a plane wave basis, a concept of several different, formalized
