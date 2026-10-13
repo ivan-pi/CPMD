@@ -20,7 +20,9 @@ SUBROUTINE vdw_forces(alat, avec, bvec, celvol, natcel, idx_ityp, coorat, &
 !  USE mp_global, ONLY: me_image, nproc_image, intra_image_comm
 !  USE mp,        ONLY: mp_sum
 !#endif
+#if defined(__PARALLEL)
   USE mpi_f08
+#endif
   !
   IMPLICIT NONE
   !
@@ -28,7 +30,11 @@ SUBROUTINE vdw_forces(alat, avec, bvec, celvol, natcel, idx_ityp, coorat, &
   ! natcel   : number of atoms
   ! idx_ityp : type of each atom
   INTEGER, INTENT(IN) :: mepos, nproc
+#if defined(__PARALLEL)
   type(MPI_COMM), INTENT(IN) :: allgrp
+#else
+  INTEGER, INTENT(IN) :: allgrp
+#endif
   INTEGER,INTENT(OUT) :: error
   ! parallelization stuff
   DOUBLE PRECISION, INTENT(IN) :: alat, avec(3,3), bvec(3,3), celvol, &
@@ -92,10 +98,7 @@ SUBROUTINE vdw_forces(alat, avec, bvec, celvol, natcel, idx_ityp, coorat, &
 !  jat_last = natcel
 !#endif
   !
-#ifndef PARALLEL
-#define PARALLEL
-#endif
-#ifdef PARALLEL
+#if defined(__PARALLEL)
   !
   error=0
   !
@@ -145,7 +148,7 @@ SUBROUTINE vdw_forces(alat, avec, bvec, celvol, natcel, idx_ityp, coorat, &
     !
     CALL get_CN(alat, avec, bvec, natcel, idx_ityp, coorat, CN, &
                 jat_first, jat_last)
-#ifdef PARALLEL
+#if defined(__PARALLEL)
     CALL MPI_Allgatherv(mpi_in_place, 0, MPI_DATATYPE_NULL, &
                         CN, revcnt, displ, mpi_double_precision, allgrp, ierr)
 #endif
@@ -347,7 +350,7 @@ SUBROUTINE vdw_forces(alat, avec, bvec, celvol, natcel, idx_ityp, coorat, &
 !#if defined __PARA   ! --> PWSCF only
 !    CALL mp_sum(dE_dCN_sum, intra_image_comm)
 !#endif
-#ifdef PARALLEL
+#if defined(__PARALLEL)
     CALL MPI_Allgatherv(mpi_in_place, 0, MPI_DATATYPE_NULL, &
                         dE_dCN_sum, revcnt, displ, mpi_double_precision, allgrp, ierr)
 #endif

@@ -17,9 +17,8 @@ Prerequisites
 * A recent Fortran compiler (e.g. GNU gfortran, Intel
   ifx/ifort, NVIDIA/PGI, Cray, Fujitsu, ...) and a C compiler.
 * BLAS and LAPACK (e.g. OpenBLAS, Intel MKL, ESSL).
-* An MPI library for parallel runs. At present the code only compiles with
-  MPI (``-D__PARALLEL``); serial builds fail because ``mp_interface.mod.F90``
-  uses MPI types unconditionally.
+* An MPI library for parallel runs. Without MPI (no ``-D__PARALLEL``) a
+  serial version is built.
 * Optional: FFTW3 (otherwise the built-in FFT is used), `libxc
   <https://libxc.gitlab.io/>`_ for additional exchange-correlation
   functionals, CUDA for the GPU code, MINPACK, and the Gromos sources for the
@@ -149,7 +148,7 @@ CMake options
    * - ``CPMD_ENABLE_MPI``
      - ``ON``
      - Parallel version (``-D__PARALLEL``); taken from ``CPPFLAGS`` with a
-       configuration. Serial builds currently fail to compile.
+       configuration. With ``OFF`` CPMD is built without MPI.
    * - ``CPMD_ENABLE_OPENMP``
      - ``OFF``
      - OpenMP.
@@ -214,8 +213,8 @@ CPMD creates its FFTW plans with ``FFTW_EXHAUSTIVE``.
 
 The GitHub Actions workflow ``.github/workflows/cmake.yml`` builds CPMD with
 the gfortran versions of the Ubuntu runner (native configuration with MPI,
-with FFTW3, with the scratch and vdW libraries and two OpenMP threads, and
-one ``configure/`` file) and runs the tests.
+with FFTW3, with the scratch and vdW libraries and two OpenMP threads,
+without MPI, and one ``configure/`` file) and runs the tests.
 
 Layout of the build
 ~~~~~~~~~~~~~~~~~~~

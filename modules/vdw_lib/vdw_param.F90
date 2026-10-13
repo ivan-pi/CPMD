@@ -609,13 +609,20 @@ MODULE vdw_param
     !
 
     SUBROUTINE vdw_init_data(master_rank, mpi_rank, mpi_com, error)
+#if defined(__PARALLEL)
       USE MPI_f08
+#endif
       IMPLICIT NONE
       INTEGER,INTENT(IN) :: master_rank, mpi_rank
+#if defined(__PARALLEL)
       type(MPI_COMM),intent(IN) :: mpi_com
+#else
+      INTEGER,intent(IN) :: mpi_com
+#endif
       INTEGER,INTENT(OUT) :: error
       
-      
+      error = 0
+#if defined(__PARALLEL)
       CALL mpi_bcast(numTypes,1,mpi_integer,MASTER_RANK,MPI_COM,error)
       CALL mpi_bcast(functional,8,mpi_character,MASTER_RANK,MPI_COM,error)
       IF (MASTER_RANK .NE. MPI_RANK) THEN
@@ -627,6 +634,7 @@ MODULE vdw_param
       CALL mpi_BCAST(vdw_input,1,mpi_integer,MASTER_RANK,MPI_COM,error)
       CALL mpi_BCAST(vdw_dir,3,mpi_integer,MASTER_RANK,MPI_COM,error)
       CALL mpi_BCAST(vdw_pair,numTypes*numTypes,mpi_integer,MASTER_RANK,MPI_COM,error)
+#endif
       IF (ERROR .NE. 0) THEN
          call vdw_error('vdw_init_data',' mpi error during bcast',error)
          return
@@ -813,6 +821,7 @@ MODULE vdw_param
             RETURN
          ENDIF
       ENDIF
+#if defined(__PARALLEL)
       CALL MPI_BCAST(rcov,numTypes*8,MPI_BYTE,MASTER_RANK,MPI_COM,ERROR)
       IF (version(1:2) == 'D2') THEN
          CALL MPI_BCAST(C6_ij,numTypes*numTypes*8,MPI_BYTE,MASTER_RANK,MPI_COM,ERROR)
@@ -829,6 +838,7 @@ MODULE vdw_param
       ENDIF
       CALL MPI_BCAST(rcut2_vdw,8,MPI_BYTE,MASTER_RANK,MPI_COM,ERROR)
       CALL MPI_BCAST(rcut2_cn,8,MPI_BYTE,MASTER_RANK,MPI_COM,ERROR)
+#endif
       IF (ERROR .NE. 0) then 
          call vdw_error('vdw_init_data', 'mpi error during bcast',error)
          return

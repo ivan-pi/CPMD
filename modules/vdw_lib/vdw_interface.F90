@@ -35,9 +35,15 @@
     SUBROUTINE vdw_grimme_init_data_mpi(master_rank, mpi_rank, mpi_com,error)
       USE vdw_param, only: grimvdwin, vdw_init_data
       USE vdw_calculator, only: vdw_forces
+#if defined(__PARALLEL)
       USE mpi_f08
+#endif
       INTEGER, INTENT(IN) :: master_rank, mpi_rank
+#if defined(__PARALLEL)
       type(MPI_COMM), intent(in)  :: mpi_com
+#else
+      INTEGER, intent(in)  :: mpi_com
+#endif
       ! master_rank : mpi rank of IO proc in supplied mpi communicator
       ! mpi_rank : callers mpi rank in supplied mpi communicator
       ! mpi_com : mpi communicator
@@ -51,7 +57,9 @@
                mpi_rank, num_mpi_procs, mpi_com, error)
      USE vdw_param, only: grimvdwin, vdw_init_data
      USE vdw_calculator, only: vdw_forces
+#if defined(__PARALLEL)
      USE mpi_f08
+#endif
       REAL(KIND=8), INTENT(IN) :: lattice_constant, realsp_lattice_vectors(3,3), recipro_lattice_vectors(3,3),&
                                   cel_volume, atomic_coordinates(3,num_atoms)
       ! lattice_constant : lattice constant
@@ -60,7 +68,11 @@
       ! cel_vol : real space cell volume  
       ! atomic_coordinates : 3xnum_atoms array containing the atomic coordinates in xyz style
       INTEGER, INTENT(IN) :: num_atoms, index_atom_types(num_atoms),mpi_rank,num_mpi_procs
+#if defined(__PARALLEL)
       type(MPI_COMM) :: mpi_com
+#else
+      INTEGER :: mpi_com
+#endif
       INTEGER, INTENT(OUT):: error
       ! num_atoms : number of atoms
       ! index_atom_types : array of length num_atoms, containing a map of atom number to element type number

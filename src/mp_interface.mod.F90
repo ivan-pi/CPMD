@@ -365,7 +365,9 @@ CONTAINS
     ENDDO
     CALL mp_set_atomic_type_sizes()
     CALL mp_set_global_consts()
-       mp_comm_world = MPI_COMM_WORLD
+#ifdef __PARALLEL
+    mp_comm_world = MPI_COMM_WORLD
+#endif
   END SUBROUTINE mp_start
 
 
@@ -909,7 +911,11 @@ CONTAINS
     USE, intrinsic :: iso_c_binding, only : c_ptr, c_f_pointer
     INTEGER                                  :: len
     type(C_PTR), VALUE                       :: inoutvec, invec
+#ifdef __PARALLEL
     type(MPI_Datatype)                       :: TYPE
+#else
+    INTEGER                                  :: TYPE
+#endif
     INTEGER(int_1), POINTER                  :: invec_f(:), inoutvec_f(:)
 
     INTEGER                                  :: i
