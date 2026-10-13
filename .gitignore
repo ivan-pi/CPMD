@@ -33,3 +33,7 @@
 
 # CMake build directories
 /build*/
+
+# Sphinx documentation build
+doc/_build/
+__pycache__/

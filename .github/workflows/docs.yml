@@ -1,0 +1,76 @@
+name: Documentation
+
+# Builds the Sphinx manual in doc/ as HTML and PDF. On pushes to main the
+# result is published on GitHub Pages (Settings > Pages > Source must be set
+# to "GitHub Actions").
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doc/**'
+      - 'VERSION'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'doc/**'
+      - 'VERSION'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build HTML and PDF
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: doc/requirements.txt
+
+      - name: Install Sphinx
+        run: pip install -r doc/requirements.txt
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk texlive-latex-recommended texlive-latex-extra \
+            texlive-fonts-recommended tex-gyre
+
+      - name: Build HTML
+        run: sphinx-build -b html -W --keep-going doc doc/_build/html
+
+      - name: Build PDF
+        run: |
+          sphinx-build -M latexpdf doc doc/_build
+          cp doc/_build/latex/cpmd-manual.pdf doc/_build/html/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc/_build/html
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
