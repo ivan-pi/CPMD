@@ -1,0 +1,28 @@
+H2 chain, LDA: wavefunction optimisation with a 2x2x2 Monkhorst-Pack k-point mesh
+
+&CPMD
+ OPTIMIZE WAVEFUNCTION
+ CONVERGENCE ORBITALS
+  1.0d-6
+&END
+&SYSTEM
+ ANGSTROM
+ SYMMETRY
+  1
+ CELL
+  3.0 1.0 1.0 0.0 0.0 0.0
+ CUTOFF
+  30.0
+ KPOINTS MONKHORST-PACK
+  2 2 2
+&END
+&DFT
+ FUNCTIONAL LDA
+&END
+&ATOMS
+*H_GO.psp
+ LMAX=S
+  2
+  0.0 0.0 0.0
+  0.74 0.0 0.0
+&END

@@ -17,9 +17,8 @@ Prerequisites
 * A recent Fortran compiler (e.g. GNU gfortran, Intel
   ifx/ifort, NVIDIA/PGI, Cray, Fujitsu, ...) and a C compiler.
 * BLAS and LAPACK (e.g. OpenBLAS, Intel MKL, ESSL).
-* An MPI library for parallel runs. At present the code only compiles with
-  MPI (``-D__PARALLEL``); serial builds fail because ``mp_interface.mod.F90``
-  uses MPI types unconditionally.
+* An MPI library with the ``mpi_f08`` module for parallel runs. Without MPI
+  (no ``-D__PARALLEL``) a serial version is built.
 * Optional: FFTW3 (otherwise the built-in FFT is used), `libxc
   <https://libxc.gitlab.io/>`_ for additional exchange-correlation
   functionals, CUDA for the GPU code, MINPACK, and the Gromos sources for the
@@ -149,13 +148,15 @@ CMake options
    * - ``CPMD_ENABLE_MPI``
      - ``ON``
      - Parallel version (``-D__PARALLEL``); taken from ``CPPFLAGS`` with a
-       configuration. Serial builds currently fail to compile.
+       configuration. With ``OFF`` CPMD is built without MPI.
    * - ``CPMD_ENABLE_OPENMP``
      - ``OFF``
      - OpenMP.
    * - ``CPMD_FFT``
      - ``DEFAULT``
-     - ``DEFAULT`` (built-in) or ``FFTW3``; without a configuration.
+     - ``DEFAULT`` (built-in, ``-D__HAS_FFT_DEFAULT``) or ``FFTW3``
+       (``-D__HAS_FFT_FFTW3``); without a configuration. See
+       ``src/cpmd_global.h`` for how the FFT library is selected.
    * - ``CPMD_ENABLE_LIBXC``
      - ``OFF``
      - libxc functionals (``-D__HAS_LIBXC``); without a configuration.
@@ -183,23 +184,39 @@ CMake options
      - MINPACK library (``-D__MINPACK``).
    * - ``CPMD_BUILD_TESTS``
      - ``ON``
-     - Add the smoke tests in ``tests/``.
+     - Add the tests in ``tests/`` and ``.github/tests/``.
    * - ``CPMD_TEST_NPROCS``
      - ``2``
      - MPI processes used by the tests.
+   * - ``CPMD_TEST_NTHREADS``
+     - ``1``
+     - OpenMP threads per process used by the tests.
 
 Tests
 ~~~~~
 
-``ctest --test-dir build`` runs a few short calculations (``tests/``) and
-compares the final total energy with a reference value. MPI builds run them
-with ``mpiexec -n 2``; set ``MPIEXEC_EXECUTABLE``, ``MPIEXEC_PREFLAGS`` or
-``CPMD_TEST_NPROCS`` to change that. These are smoke tests for the build, not
-a replacement for the CPMD regression test suite
+``ctest --test-dir build`` runs a few short calculations and compares the
+last total energy of each with a reference value: a smoke test in ``tests/``
+and the regression tests used by CI in ``.github/tests/`` (registered in
+``.github/tests/tests.cmake``, pseudopotentials in ``.github/tests/pseudo/``).
+They cover wavefunction optimisation (ODIIS, PCG, LSD, PBE, k-points, CP
+groups), restarting (also with MPI-IO), geometry optimisation, BO and CP
+molecular dynamics and, with ``CPMD_ENABLE_VDWLIB``, the Grimme D3
+correction. MPI builds run them with ``mpiexec -n 2``; set
+``MPIEXEC_EXECUTABLE``, ``MPIEXEC_PREFLAGS`` or ``CPMD_TEST_NPROCS`` to change
+that, and ``CPMD_TEST_NTHREADS`` for the number of OpenMP threads per process
+(default 1). These tests check that the build works and that results do not
+change; they are not a replacement for the CPMD regression test suite
 (https://github.com/CPMD-code/Regtests).
 
+FFTW3 builds take much longer to run the tests (about a minute each) because
+CPMD creates its FFTW plans with ``FFTW_EXHAUSTIVE``.
+
 The GitHub Actions workflow ``.github/workflows/cmake.yml`` builds CPMD with
-the gfortran versions of the Ubuntu runner and runs the tests.
+the gfortran versions of the Ubuntu runner (native configuration with MPI,
+with FFTW3, with the scratch and vdW libraries and two OpenMP threads,
+without MPI, and one ``configure/`` file) and runs the tests. A separate job
+checks that MPI is only used through the ``mpi_f08`` module.
 
 Layout of the build
 ~~~~~~~~~~~~~~~~~~~

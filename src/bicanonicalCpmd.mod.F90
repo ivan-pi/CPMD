@@ -59,9 +59,6 @@ module bicanonicalCpmd
                                              wannl
   USE zeroing_utils,                   ONLY: zeroing
 
-#ifdef __PARALLEL
-  USE mpi
-#endif
 
   
   implicit none

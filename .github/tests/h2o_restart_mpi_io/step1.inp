@@ -1,0 +1,34 @@
+H2O, LDA: as h2o_restart/step1.inp, but writes RESTART.1 as a stream file with MPI-IO from 2 CP groups
+
+&CPMD
+ OPTIMIZE WAVEFUNCTION
+ CP_GROUPS
+  2
+ USE_MPI_IO
+ USE_OUT_STREAM
+ CONVERGENCE ORBITALS
+  1.0d-3
+&END
+&SYSTEM
+ SYMMETRY
+  1
+ ANGSTROM
+ CELL
+  7.0 1.0 1.0 0.0 0.0 0.0
+ CUTOFF
+  50.0
+&END
+&DFT
+ FUNCTIONAL LDA
+&END
+&ATOMS
+*O_GO.psp
+ LMAX=P
+  1
+  0.0000  0.0000  0.1173
+*H_GO.psp
+ LMAX=S
+  2
+  0.0000  0.7572 -0.4692
+  0.0000 -0.7572 -0.4692
+&END

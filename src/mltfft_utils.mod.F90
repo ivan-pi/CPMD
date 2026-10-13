@@ -1,9 +1,3 @@
-#if defined(__FFT_HAS_LOW_LEVEL_TIMERS)
-#define HAS_LOW_LEVEL_TIMERS .TRUE.
-#else
-#define HAS_LOW_LEVEL_TIMERS .FALSE.
-#endif
-
 #include "cpmd_global.h"
 
 MODULE mltfft_utils
@@ -69,7 +63,9 @@ CONTAINS
     LOGICAL                                  :: tscal
     REAL(real_8)                             :: trig(2,1024)
 
-#if defined(__NEC)
+#if defined(_FFT_NCACHE)
+    INTEGER, PARAMETER :: ncache=_FFT_NCACHE
+#elif defined(__NEC)
     INTEGER, PARAMETER :: ncache=1024*1024
 #elif defined(__PRIMEHPC)
     INTEGER, PARAMETER :: ncache=1024*32
@@ -101,8 +97,6 @@ CONTAINS
     INTEGER, PARAMETER :: ncache=1024*64
 #elif defined(__ALTIX)
     INTEGER, PARAMETER :: ncache=1024*16  ! Altix3700/3900
-#elif defined(_FFT_NCACHE)
-    INTEGER, PARAMETER :: ncache=_fft_ncache  ! for convenient overrides in makefile
 #else
     INTEGER, PARAMETER :: ncache=1024*2
 #endif
@@ -278,7 +272,7 @@ CONTAINS
     INTEGER                                  :: i, j
     REAL(real_8)                             :: aux1(naux1), aux2(naux2)
 
-#if defined(__HAS_FFT_ESSL)
+#if defined(_HAS_FFT_ESSL)
     IF (transa.EQ.'N'.OR.transa.EQ.'n') THEN
        IF (transb.EQ.'N'.OR.transb.EQ.'n') THEN
           CALL dcft(1,a,1,ldax,b,1,ldbx,n,m,isign,scale,&
@@ -349,7 +343,7 @@ CONTAINS
 
 ! ==--------------------------------------------------------------==
 
-#if defined(__HAS_FFT_HP)
+#if defined(_HAS_FFT_HP)
     IF (transa.EQ.'N'.OR.transa.EQ.'n') THEN
        IF (transb.EQ.'N'.OR.transb.EQ.'n') THEN
           ! CALL DCFT(1,A,1,LDAX,B,1,LDBX,N,M,ISIGN,SCALE,
@@ -533,7 +527,7 @@ CONTAINS
 
     CALL get_fftw_plan(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,&
          isign,plan)
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN1//'_tuning',isub1)
        ELSE
@@ -541,7 +535,7 @@ CONTAINS
        END IF
     END IF
     CALL dfftw_execute_dft(plan,a,b)
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tihalt(procedureN1//'_tuning',isub1)
           CALL tiset(procedureN2//'_tuning',isub3)
@@ -621,7 +615,7 @@ CONTAINS
     LOGICAL, SAVE                            :: batch_tuning = .FALSE.
     CHARACTER(*), PARAMETER                  :: procedureN = 'get_fftw_plan'
 
-    IF (HAS_LOW_LEVEL_TIMERS) THEN
+    IF (_FFT_LOW_LEVEL_TIMERS) THEN
        IF(cntl%fft_tune_batchsize) THEN
           CALL tiset(procedureN//'_tuning',isub1)
        ELSE

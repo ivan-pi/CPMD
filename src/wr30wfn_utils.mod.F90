@@ -1175,18 +1175,13 @@ SUBROUTINE wrwfns(nw,nstate_to_write,ierror,c,ca,cr,icmp,mapw,&
      IF (cntl%use_mpi_io) THEN
         ! start at 0 (so -1)
         fpos_wfn_beg=fpos_wfn_beg-1
-#ifdef __PARALLEL
         IF (my_io_parent) CALL file_open(file_name,'X','X',&
-             'READWRITE',.TRUE.,.TRUE.,parai%cp_inter_grp%MPI_VAL,nw_para)
-#else
-        IF (my_io_parent) CALL file_open(file_name,'X','X',&
-             'READWRITE',.TRUE.,.TRUE.,parai%cp_inter_grp,nw_para)
-#endif
+             'READWRITE',.TRUE.,.TRUE.,nw_para,parai%cp_inter_grp)
      ELSE
         IF (.NOT.paral%io_parent.AND.my_io_parent) THEN
            nw_para=666
            CALL file_open(file_name,'UNFORMATTED','OLD',&
-                'READWRITE',.TRUE.,.FALSE.,0,nw_para)
+                'READWRITE',.TRUE.,.FALSE.,nw_para)
         ENDIF
      ENDIF
   ENDIF
@@ -1220,7 +1215,7 @@ SUBROUTINE wrwfns(nw,nstate_to_write,ierror,c,ca,cr,icmp,mapw,&
      ! reopen file and point to the end
      IF (paral%io_parent) THEN
         CALL file_open(file_name,'UNFORMATTED','OLD','READWRITE',&
-             cntl%is_out_stream,.FALSE.,0,nw)
+             cntl%is_out_stream,.FALSE.,nw)
         CALL file_seek(nw,.FALSE.,fpos_wfn_end)
      ENDIF
 
@@ -1306,18 +1301,13 @@ SUBROUTINE rdwfns(nr,nstate_to_read,c,ca,cr,icmp,mapw,ngwks0,&
      IF (cntl%use_mpi_io) THEN
         ! start at 0 (so -1)
         fpos_wfn_beg=fpos_wfn_beg-1
-#ifdef __PARALLEL
         IF (my_io_parent) CALL file_open(file_name,'X','X',&
-             'READ',.TRUE.,.TRUE.,parai%cp_inter_grp%MPI_VAL,nr_para)
-#else
-        IF (my_io_parent) CALL file_open(file_name,'X','X',&
-             'READ',.TRUE.,.TRUE.,parai%cp_inter_grp,nr_para)
-#endif
+             'READ',.TRUE.,.TRUE.,nr_para,parai%cp_inter_grp)
      ELSE
         IF (.NOT.paral%io_parent.AND.my_io_parent) THEN
            nr_para=666
            CALL file_open(file_name,'UNFORMATTED','OLD',&
-                'READ',.TRUE.,.FALSE.,0,nr_para)
+                'READ',.TRUE.,.FALSE.,nr_para)
         ENDIF
      ENDIF
      ! need to zero the state that we can allreduce

@@ -1,0 +1,18 @@
+&ATOM
+ Z  =   8
+ ZV =   6
+ XC = 1100        .666667
+ TYPE = NORMCONSERVING GOEDECKER
+&END
+&INFO
+ Goedecker-Teter-Hutter LDA pseudopotential for O (s projector only;
+ the p projector of the published set is zero)
+ S. Goedecker, M. Teter, J. Hutter, PRB 54, 1703 (1996)
+&END
+&POTENTIAL
+    GOEDECKER
+    1                                    LMAX
+    0.24762086                           RC
+    2  -16.58031797  2.39570092          #C  C1 C2
+    0.22178614  1  18.26691718           #R0 NPRO H11 (s)
+&END

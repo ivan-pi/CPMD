@@ -1,9 +1,3 @@
-#if defined(__FFT_HAS_LOW_LEVEL_TIMERS)
-#define HAS_LOW_LEVEL_TIMERS .TRUE.
-#else
-#define HAS_LOW_LEVEL_TIMERS .FALSE.
-#endif
-
 #include "cpmd_global.h"
 
 MODULE fftmain_utils
@@ -111,7 +105,7 @@ CONTAINS
     INTEGER                                  :: lda, m, mm, n1o, n1u, ierr,isub
     INTEGER(int_8)                           :: il_xf(2)
     REAL(real_8)                             :: scale
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN//'get_scratch',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN//'get_scratch',isub)
 #ifdef _USE_SCRATCHLIBRARY
     il_xf(1)=maxfft
     il_xf(2)=1
@@ -122,8 +116,8 @@ CONTAINS
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem', &
          __LINE__,__FILE__)
 #endif
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN//'get_scratch',isub)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN//'get_scratch',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
     xf_ptr => xf(:,1)
     yf_ptr => yf(:,1)
 
@@ -199,8 +193,8 @@ CONTAINS
           CALL mltfft('T','N',xf_ptr,m,qr1s,f,qr1s,m,lr1s,m,isign,scale )
        ENDIF
     ENDIF
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN//'release_scratch',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN//'release_scratch',isub)
 #ifdef _USE_SCRATCHLIBRARY
     CALL free_scratch(il_xf,yf,procedureN//'_yf',ierr)
     IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
@@ -209,7 +203,7 @@ CONTAINS
     IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
          __LINE__,__FILE__)
 #endif
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tihalt(procedureN//'release_scratch',isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tihalt(procedureN//'release_scratch',isub)
     ! ==--------------------------------------------------------------==
   END SUBROUTINE fftnew
 
@@ -529,7 +523,7 @@ CONTAINS
 ! ==--------------------------------------------------------------==
 !vw for the moment we use CPU FFT 
 !IF( cp_cuda_env%use_fft ) THEN
-    IF (HAS_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
+    IF (_FFT_LOW_LEVEL_TIMERS) CALL tiset(procedureN,isub)
     IF( .FALSE. ) THEN
 
        PRINT *,'START DEBUG ----------------------------------------'
@@ -580,11 +574,11 @@ CONTAINS
        PRINT *,'DONE DEBUG ----------------------------------------'
     ELSE
 
-#if defined(__HAS_FFT_DEFAULT)
+#if defined(_HAS_FFT_DEFAULT)
        CALL mltfft_default(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale)
-#elif defined(__HAS_FFT_ESSL)
+#elif defined(_HAS_FFT_ESSL)
        CALL mltfft_essl(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale)
-#elif defined(__HAS_FFT_HP)
+#elif defined(_HAS_FFT_HP)
        CALL mltfft_hp(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale)
 #elif defined(_HAS_FFT_FFTW3)
        CALL mltfft_fftw(transa,transb,a,ldax,lday,b,ldbx,ldby,n,m,isign,scale,.FALSE.)

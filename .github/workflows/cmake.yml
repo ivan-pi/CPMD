@@ -11,6 +11,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checks:
+    name: Source checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: MPI is only used through the mpi_f08 module
+        run: |
+          if grep -rniE --include='*.F90' --include='*.F' --include='*.f90' \
+               --include='*.f' --include='*.inc' --include='*.h' \
+               '^[[:space:]]*(use[[:space:]]+mpi[[:space:]]*(,|$)|use[[:space:]]*,[[:space:]]*intrinsic.*::[[:space:]]*mpi[[:space:]]*$|include[[:space:]]+.mpif\.h)' \
+               src modules; then
+            echo "::error::Use the mpi_f08 module instead of the mpi module or mpif.h"
+            exit 1
+          fi
+
   build:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
@@ -18,9 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Native CMake configuration (find_package for MPI, OpenMP, LAPACK).
-          # Serial builds (CPMD_ENABLE_MPI=OFF) do not compile with the
-          # current sources: mp_interface uses MPI types unconditionally.
+          # Native CMake configuration (find_package for MPI, OpenMP, LAPACK)
           - name: gfortran-12, MPI
             gcc: 12
             cmake-args: -DCPMD_ENABLE_OPENMP=OFF
@@ -30,6 +44,26 @@ jobs:
           - name: gfortran-14, MPI + OpenMP
             gcc: 14
             cmake-args: -DCPMD_ENABLE_OPENMP=ON
+          # FFTW3 instead of the built-in FFT
+          - name: gfortran-13, MPI + OpenMP, FFTW3
+            gcc: 13
+            cmake-args: -DCPMD_ENABLE_OPENMP=ON -DCPMD_FFT=FFTW3
+            packages: libfftw3-dev
+          # Optional libraries from modules/ (adds the vdW D3 test), with
+          # 2 OpenMP threads per MPI process
+          - name: gfortran-13, MPI + OpenMP, scratch and vdW libraries
+            gcc: 13
+            cmake-args: >-
+              -DCPMD_ENABLE_OPENMP=ON -DCPMD_ENABLE_SCRATCHLIB=ON
+              -DCPMD_ENABLE_VDWLIB=ON -DCPMD_TEST_NTHREADS=2
+            ctest-parallel: 1
+          # Serial build without MPI, with 2 OpenMP threads and the vdW
+          # library (which has its own MPI calls)
+          - name: gfortran-13, serial + OpenMP, vdW library
+            gcc: 13
+            cmake-args: >-
+              -DCPMD_ENABLE_MPI=OFF -DCPMD_ENABLE_OPENMP=ON
+              -DCPMD_ENABLE_VDWLIB=ON -DCPMD_TEST_NTHREADS=2
           # Machine configuration from configure/ (mpif90 wrapper, gfortran-13)
           - name: configure/CRAY-HPE-GFORTRAN-AMDEPYC
             gcc: 13
@@ -44,7 +78,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             gcc-${{ matrix.gcc }} gfortran-${{ matrix.gcc }} ninja-build \
-            libopenmpi-dev openmpi-bin liblapack-dev libblas-dev
+            libopenmpi-dev openmpi-bin liblapack-dev libblas-dev \
+            ${{ matrix.packages }}
 
       - name: Select compilers
         if: ${{ !matrix.config }}
@@ -59,7 +94,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --parallel ${{ matrix.ctest-parallel || 2 }}
 
       - name: Upload test output
         if: failure()
