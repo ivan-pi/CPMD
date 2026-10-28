@@ -205,7 +205,7 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'cannot deallocate deltar', &
             __LINE__,__FILE__)
 
-       IF(PRESENT(psi)) CALL invfftn(psi(:ncpw%nhg), .FALSE.,parai%allgrp)
+       IF(PRESENT(psi)) CALL invfftn(psi(:maxfftn), .FALSE.,parai%allgrp)
     END IF
     IF(do_hfx.OR.do_dipole)THEN
        DEALLOCATE(na, stat=ierr)
