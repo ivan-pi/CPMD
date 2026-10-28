@@ -111,13 +111,15 @@ CONTAINS
     IF (func1%mhfx .EQ. 0) RETURN
     
     CALL tiset(procedureN,isub)
+    ! deeq_fnl_hfx is passed to nonallocatable dummies below, so it must be
+    ! allocated even without Vanderbilt pseudopotentials
+    IF(.NOT.ALLOCATED(deeq_fnl_hfx))THEN
+       ALLOCATE(deeq_fnl_hfx(ions1%nat,maxsys%nhxs,nstate)&
+            ,stat=ierr)
+       IF (ierr.NE.0) CALL stopgm(procedureN,'Allocation problem',&
+            __LINE__,__FILE__)
+    END IF
     IF(pslo_com%tivan)THEN
-       IF(.NOT.ALLOCATED(deeq_fnl_hfx))THEN
-          ALLOCATE(deeq_fnl_hfx(ions1%nat,maxsys%nhxs,nstate)&
-               ,stat=ierr)
-          IF (ierr.NE.0) CALL stopgm(procedureN,'Allocation problem',& 
-               __LINE__,__FILE__)
-       END IF
        CALL zeroing(deeq_fnl_hfx)
     END IF
 
