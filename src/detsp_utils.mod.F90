@@ -265,6 +265,7 @@ CONTAINS
     ALLOCATE(wsg(maxsys%nsx,nhx),STAT=ierr)
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
          __LINE__,__FILE__)
+    wsg=0.0_real_8 ! read before it is set when USPP and NC PP are mixed
     ALLOCATE(rgh(nhx,maxsys%nsx),STAT=ierr)
     IF(ierr/=0) CALL stopgm(procedureN,'allocation problem',&
          __LINE__,__FILE__)
