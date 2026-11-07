@@ -422,7 +422,9 @@ set(CPMD_SRC_WF
     hesele_utils.mod.F90
     ainitwf_utils.mod.F90
     wv30_utils.mod.F90
+    wv30_utils_ext.F90
     rv30_utils.mod.F90
+    rv30_utils_ext.F90
     wr30wfn_utils.mod.F90
     merge_utils.mod.F90
     ptheory_utils.mod.F90
@@ -705,6 +707,7 @@ set(CPMD_SRC_PE
     epr_dv0_utils.mod.F90
     jrotation_utils.mod.F90
     epr_efg_utils.mod.F90
+    epr_efg_utils_ext.F90
     nuclear_p_utils.mod.F90
     rwfopt_nuc_utils.mod.F90
     rinforce_nuc_utils.mod.F90

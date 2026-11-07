@@ -212,7 +212,7 @@ SRC_MODULES = kinds.mod.F90 machine.mod.F90 timer.mod.F90 error_handling.mod.F90
            u_upd_exp_utils.mod.F90  g_loc_dr_utils.mod.F90  g_loc_exp_sum_utils.mod.F90  u_upd_exp_sum_utils.mod.F90 \
            g_loc_spread_sum_utils.mod.F90  u_upd_spread_sum_utils.mod.F90  g_loc_realspace_utils.mod.F90 \
            g_loc_opeigr_utils.mod.F90  efield_utils.mod.F90  molorb_utils.mod.F90 \
-           molstates_utils.mod.F90  epr_efg_utils.mod.F90  core_spect_utils.mod.F90  potmed_utils.mod.F90  nuclear_p_utils.mod.F90 \
+           molstates_utils.mod.F90  epr_efg_utils.mod.F90 epr_efg_utils_ext.F90  core_spect_utils.mod.F90  potmed_utils.mod.F90  nuclear_p_utils.mod.F90 \
            rwfopt_nuc_utils.mod.F90  rinforce_nuc_utils.mod.F90  write_pp_utils.mod.F90  td_nacvs_utils.mod.F90  proylm_utils.mod.F90 \
            secder_utils.mod.F90 sdlinres_utils.mod.F90 sd_ii_utils.mod.F90 sd_loc2_utils.mod.F90 sd_nl2_utils.mod.F90 \
            rnlsm_2d_utils.mod.F90 rho1ofr_utils.mod.F90 v1ofrho1_utils.mod.F90 lr_force_utils.mod.F90 opt_lr_utils.mod.F90 \
@@ -241,7 +241,7 @@ SRC_MODULES = kinds.mod.F90 machine.mod.F90 timer.mod.F90 error_handling.mod.F90
            densto_utils.mod.F90 proja_utils.mod.F90 wrintf_utils.mod.F90 ainitwf_utils.mod.F90 \
            nfunc_utils.mod.F90 gcxctbl_utils.mod.F90 hfx_utils.mod.F90 rhoofr_c_utils.mod.F90 jacobi_c_utils.mod.F90 \
            velocitinp_utils.mod.F90 setirec_utils.mod.F90 interp3d_utils.mod.F90 hfx_drivers.mod.F90 \
-           wv30_utils.mod.F90 rv30_utils.mod.F90 wr30wfn_utils.mod.F90 debfor_utils.mod.F90 merge_utils.mod.F90 \
+           wv30_utils.mod.F90 wv30_utils_ext.F90 rv30_utils.mod.F90 rv30_utils_ext.F90 wr30wfn_utils.mod.F90 debfor_utils.mod.F90 merge_utils.mod.F90 \
            ptheory_utils.mod.F90 clinbcg_utils.mod.F90 elstpo_utils.mod.F90 mulliken_utils.mod.F90 espchg_utils.mod.F90 \
            secder_driver.mod.F90 atimes_utils.mod.F90 projv_utils.mod.F90 vdw_wf_alloc_utils.mod.F90 \
            kin_energy_utils.mod.F90 vpsi_lse_utils.mod.F90 disortho_utils.mod.F90 ssic_utils.mod.F90 \
