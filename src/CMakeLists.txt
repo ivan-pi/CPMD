@@ -477,6 +477,7 @@ set(CPMD_SRC_GM
 # MD - Molecular Dynamics (CP and BO), thermostats and barostats
 set(CPMD_SRC_MD
     md_driver.mod.F90
+    md_driver_ext.F90
     nose.mod.F90
     gle_utils.mod.F90
     exterp_utils.mod.F90

@@ -83,7 +83,7 @@ SRC_XC  = # moved to modules section
 
 SRC_MODULES = kinds.mod.F90 machine.mod.F90 timer.mod.F90 error_handling.mod.F90 para_global.mod.F90 \
            mp_interface.mod.F90 mp_multiple_comm_init.mod.F90 system.mod.F90 system_utils.mod.F90 reshaper.mod.F90 \
-           mm_parallel.mod.F90 if_parallel.mod.F90 md_driver.mod.F90 \
+           mm_parallel.mod.F90 if_parallel.mod.F90 md_driver.mod.F90 md_driver_ext.F90 \
            control_utils.mod.F90 dftin_utils.mod.F90 sysin_utils.mod.F90 setsc_utils.mod.F90 detsp_utils.mod.F90 \
            adat.mod.F90 atom.mod.F90 atwf.mod.F90 bc.mod.F90 benc.mod.F90 aavan.mod.F90 \
            cell.mod.F90 cnst.mod.F90 coor.mod.F90 cotr.mod.F90 \
