@@ -710,6 +710,7 @@ set(CPMD_SRC_PE
     epr_efg_utils_ext.F90
     nuclear_p_utils.mod.F90
     rwfopt_nuc_utils.mod.F90
+    rwfopt_nuc_utils_ext.F90
     rinforce_nuc_utils.mod.F90
     voa_p_utils.mod.F90
 )

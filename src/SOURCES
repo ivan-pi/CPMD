@@ -213,7 +213,7 @@ SRC_MODULES = kinds.mod.F90 machine.mod.F90 timer.mod.F90 error_handling.mod.F90
            g_loc_spread_sum_utils.mod.F90  u_upd_spread_sum_utils.mod.F90  g_loc_realspace_utils.mod.F90 \
            g_loc_opeigr_utils.mod.F90  efield_utils.mod.F90  molorb_utils.mod.F90 \
            molstates_utils.mod.F90  epr_efg_utils.mod.F90 epr_efg_utils_ext.F90  core_spect_utils.mod.F90  potmed_utils.mod.F90  nuclear_p_utils.mod.F90 \
-           rwfopt_nuc_utils.mod.F90  rinforce_nuc_utils.mod.F90  write_pp_utils.mod.F90  td_nacvs_utils.mod.F90  proylm_utils.mod.F90 \
+           rwfopt_nuc_utils.mod.F90 rwfopt_nuc_utils_ext.F90  rinforce_nuc_utils.mod.F90  write_pp_utils.mod.F90  td_nacvs_utils.mod.F90  proylm_utils.mod.F90 \
            secder_utils.mod.F90 sdlinres_utils.mod.F90 sd_ii_utils.mod.F90 sd_loc2_utils.mod.F90 sd_nl2_utils.mod.F90 \
            rnlsm_2d_utils.mod.F90 rho1ofr_utils.mod.F90 v1ofrho1_utils.mod.F90 lr_force_utils.mod.F90 opt_lr_utils.mod.F90 \
            lr_upd_utils.mod.F90 dd_xc_utils.mod.F90 eind_ii_utils.mod.F90 eind_loc_utils.mod.F90 eind_nl_utils.mod.F90 \
