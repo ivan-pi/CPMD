@@ -1335,10 +1335,10 @@ CONTAINS
           tlse0=irecord.EQ.4*nr1s0
           IF (tlse0)irecord=irecord/4
           ! For LSD RHOO(1,1)=alpha+beta density, RHOO(1,2)=beta density
-          CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(1,1))
+          CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo)
           IF (cntl%tlsd) THEN
              IF (tlsd0) THEN
-                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(1,2))
+                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(:,2:))
              ELSE
                 CALL zeroing(rhoo(:,2))!,nnr1)
                 CALL daxpy(fpar%nnr1,0.5_real_8,rhoo(1,1),1,rhoo(1,2),1)
@@ -1347,9 +1347,9 @@ CONTAINS
              ! For LSE RHOO(1,3)=total density, RHOO(1,4)=beta density, t state
           ELSEIF (lspin2%tlse) THEN
              IF (tlse0) THEN
-                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(1,2))
-                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(1,3))
-                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(1,4))
+                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(:,2:))
+                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(:,3:))
+                CALL rd30pot(nr,irecord,nr1s0,nr2s0,nr3s0,rhoo(:,4:))
              ELSE
                 CALL zeroing(rhoo(:,2))!,nnr1)
                 CALL daxpy(fpar%nnr1,0.5_real_8,rhoo(1,1),1,rhoo(1,2),1)

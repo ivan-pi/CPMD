@@ -831,14 +831,14 @@ CONTAINS
        IF (paral%io_parent) THEN
           WRITE (unit=nw,iostat=ierror) irecord,fpos_null
        ENDIF
-       CALL wr30pot(nw,ierror,rhoo(1,1))
+       CALL wr30pot(nw,ierror,rhoo)
        IF (cntl%tlsd) THEN
-          CALL wr30pot(nw,ierror,rhoo(1,2))
+          CALL wr30pot(nw,ierror,rhoo(:,2:))
        ENDIF
        IF (lspin2%tlse) THEN
-          CALL wr30pot(nw,ierror,rhoo(1,2))
-          CALL wr30pot(nw,ierror,rhoo(1,3))
-          CALL wr30pot(nw,ierror,rhoo(1,4))
+          CALL wr30pot(nw,ierror,rhoo(:,2:))
+          CALL wr30pot(nw,ierror,rhoo(:,3:))
+          CALL wr30pot(nw,ierror,rhoo(:,4:))
        ENDIF
     ELSE
        IF (paral%io_parent) THEN

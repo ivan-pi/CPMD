@@ -391,7 +391,7 @@ CONTAINS
              ENDIF
              CALL cuda_memcpy_device_to_host ( a2mat_d, a2mat )
           ELSE
-             CALL ovlap2(ncpw%ngw,nstate,nx,a2mat,c1,c2(1,NWA12_grp(ipp,1)),.FALSE.)
+             CALL ovlap2(ncpw%ngw,nstate,nx,a2mat,c1,c2(:,NWA12_grp(ipp,1):),.FALSE.)
           ENDIF
           CALL mp_sum(a2mat,a3mat,nstate*NSTX_grp,parap%pgroup(ip+1),parai%allgrp)
           IF (parai%me.EQ.parap%pgroup(ip+1)) CALL dcopy(nstate*NSTX_grp,a3mat,1,a,1)
