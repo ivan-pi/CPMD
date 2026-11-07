@@ -427,7 +427,7 @@ CONTAINS
        IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
             __LINE__,__FILE__)
        CALL RANDOM_NUMBER(rnd)
-       d=d*(1.0_real_8+1.0e-12_real_8*(2.0_real_8*rnd-1.0_real_8))
+       d(1:index4)=d(1:index4)*(1.0_real_8+1.0e-12_real_8*(2.0_real_8*rnd-1.0_real_8))
        DEALLOCATE(rnd,STAT=ierr)
        IF(ierr/=0) CALL stopgm(procedureN,'deallocation problem', &
             __LINE__,__FILE__)
