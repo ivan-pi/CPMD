@@ -5,7 +5,7 @@ MODULE lxc_utils
   USE error_handling,                  ONLY: stopgm
   USE kinds,                           ONLY: real_8
 
-  USE, INTRINSIC :: iso_c_binding,     ONLY: C_PTR,C_NULL_PTR
+  USE, INTRINSIC :: iso_c_binding,     ONLY: C_PTR,C_NULL_PTR,C_SIZE_T
 
 #if defined(_HAS_LIBXC)
 
@@ -134,7 +134,7 @@ CONTAINS
 #if defined(_HAS_LIBXC)
     REAL(real_8), INTENT(out)                :: zk(*), vrho(*)
 
-    CALL xc_f03_lda_exc_vxc( p, np, rho, zk, vrho )
+    CALL xc_f03_lda_exc_vxc( p, INT(np,C_SIZE_T), rho, zk, vrho )
 
 #else
     REAL(real_8), INTENT(inout)                :: zk(*), vrho(*)
@@ -155,7 +155,7 @@ CONTAINS
 #if defined(_HAS_LIBXC)
     REAL(real_8), INTENT(out)                :: zk(*), vrho(*), vsigma(*)
 
-    CALL xc_f03_gga_exc_vxc( p, np, rho, sigma, zk, vrho, vsigma )
+    CALL xc_f03_gga_exc_vxc( p, INT(np,C_SIZE_T), rho, sigma, zk, vrho, vsigma )
 
 #else
     REAL(real_8), INTENT(inout)                :: zk(*), vrho(*), vsigma(*)
