@@ -618,7 +618,7 @@ CONTAINS
     ! == DIAGONALIZATION ROUTINE: FOLLOW THE ESSL CONVENTION          ==
     ! ==--------------------------------------------------------------==
     INTEGER                                  :: iopt, ldz, n
-    REAL(real_8)                             :: z(ldz,n), w(n), ap(n*(n+1)/2)
+    REAL(real_8)                             :: z(ldz,*), w(n), ap(n*(n+1)/2)
     INTEGER                                  :: naux
     REAL(real_8)                             :: aux(naux)
 

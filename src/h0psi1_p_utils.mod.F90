@@ -69,9 +69,7 @@ CONTAINS
     CHARACTER(len=30)                        :: tag
     INTEGER                                  :: nstate
 
-    INTEGER                                  :: lv0psi1
-
-    lv0psi1 = 2*maxfft
+    l_h0psi1 = 2*maxfft
 
     RETURN
   END SUBROUTINE give_scr_h0psi1

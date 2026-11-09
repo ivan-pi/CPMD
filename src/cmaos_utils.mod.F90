@@ -509,7 +509,7 @@ CONTAINS
     ! ==--------------------------------------------------------------==
     INTEGER                                  :: n, m
     REAL(real_8)                             :: sac, d(n,n), s(n,n), c(n,m), &
-                                                t2(n*n), t3(n,n)
+                                                t2(*), t3(n,n)
 
     INTEGER                                  :: i, info, j
 
